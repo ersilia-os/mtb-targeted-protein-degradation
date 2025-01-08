@@ -1,0 +1,21 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd04322	LysRS_N	cdd	domain	IPR044136			p9wfu9	505	61..168
+G3DSA:2.40.50.140	Nucleic acid-binding proteins	cathgene3d	homologous_superfamily	IPR012340			p9wfu9	505	10..151
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wfu9	505	152..503
+IPR002313	Lysine-tRNA ligase, class II	interpro	family		MF_00252,TIGR00499	GO:0004824,GO:0005524,GO:0006430	p9wfu9	505	12..503
+IPR004364	Aminoacyl-tRNA synthetase, class II (D/K/N)	interpro	domain		PF00152	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfu9	505	156..499
+IPR004365	OB-fold nucleic acid binding domain, AA-tRNA synthetase-type	interpro	domain		PF01336	GO:0003676	p9wfu9	505	64..140
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wfu9	505	179..502
+IPR012340	Nucleic acid-binding, OB-fold	interpro	homologous_superfamily		G3DSA:2.40.50.140,SSF50249		p9wfu9	505	9..151
+IPR018149	Lysyl-tRNA synthetase, class II, C-terminal	interpro	domain		cd00775,PR00982	GO:0000166,GO:0004824,GO:0005524,GO:0006430,GO:0005737	p9wfu9	505	193..203,209..225,238..251,256..273,386..402
+IPR044136	Lysine-tRNA ligase, class II, N-terminal	interpro	domain		cd04322	GO:0000166	p9wfu9	505	61..168
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wfu9	505	152..503
+MF_00252	Lysine--tRNA ligase [lysS]	hamap	family	IPR002313			p9wfu9	505	16..503
+PF00152	tRNA synthetases class II (D, K and N)	pfam	domain	IPR004364			p9wfu9	505	156..499
+PF01336	OB-fold nucleic acid binding domain	pfam	domain	IPR004365			p9wfu9	505	64..140
+PR00982	TRNASYNTHLYS	prints	family	IPR018149			p9wfu9	505	193..203,209..225,238..251,256..273,386..402
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wfu9	505	179..502
+PTHR42918	Lysine--tRNA ligase	panther	family				p9wfu9	505	8..504
+SSF50249	Nucleic acid-binding proteins	ssf	homologous_superfamily	IPR012340			p9wfu9	505	9..149
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wfu9	505	156..501
+TIGR00499	lysine--tRNA ligase	ncbifam	family	IPR002313			p9wfu9	505	12..503

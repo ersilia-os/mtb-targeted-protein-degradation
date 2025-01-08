@@ -1,0 +1,17 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00806	catalytic core domain of tryptophanyl-tRNA synthetase	cdd	domain	IPR002306			p9wft3	336	9..288
+G3DSA:1.10.240.10	Tyrosyl-Transfer RNA Synthetase	cathgene3d	homologous_superfamily				p9wft3	336	194..304
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wft3	336	10..193,305..333
+IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	interpro	conserved_site		PS00178	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wft3	336	16..26
+IPR002305	Aminoacyl-tRNA synthetase, class Ic	interpro	family		PF00579	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wft3	336	7..289
+IPR002306	Tryptophan-tRNA ligase	interpro	family		cd00806,PR01039,TIGR00233	GO:0000166,GO:0004830,GO:0005524,GO:0006436	p9wft3	336	8..334
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wft3	336	10..333
+IPR024109	Tryptophan-tRNA ligase, bacterial-type	interpro	family		MF_00140_B	GO:0004830	p9wft3	336	7..335
+IPR050203	Tryptophan--tRNA ligase	interpro	family		PTHR43766		p9wft3	336	7..335
+MF_00140_B	Tryptophan--tRNA ligase [trpS]	hamap	family	IPR024109			p9wft3	336	7..335
+PF00579	tRNA synthetases class I (W and Y)	pfam	family	IPR002305			p9wft3	336	7..289
+PR01039	TRNASYNTHTRP	prints	family	IPR002306			p9wft3	336	21..37,71..90,148..169,201..211
+PS00178	Aminoacyl-transfer RNA synthetases class-I signature	prosite	conserved_site	IPR001412			p9wft3	336	16..26
+PTHR43766	Tryptophan--tRNA ligase	panther	family	IPR050203			p9wft3	336	7..335
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wft3	336	9..334
+TIGR00233	tryptophan--tRNA ligase	ncbifam	family	IPR002306			p9wft3	336	8..334

@@ -1,0 +1,40 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00769	PheRS_beta_core	cdd	domain	IPR041616			p9wfu1	831	504..725
+cd02796	tRNA_bind_bactPheRS	cdd	domain	IPR033714			p9wfu1	831	50..153
+G3DSA:2.40.50.140	Nucleic acid-binding proteins	cathgene3d	homologous_superfamily	IPR012340			p9wfu1	831	44..161
+G3DSA:3.30.56.10		cathgene3d	homologous_superfamily				p9wfu1	831	7..43,162..187,416..489
+G3DSA:3.30.70.380	Ferrodoxin-fold anticodon-binding domain	cathgene3d	homologous_superfamily	IPR036690			p9wfu1	831	739..831
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wfu1	831	499..726
+G3DSA:3.50.40.10	Phenylalanyl-trna Synthetase, Chain B, domain 3	cathgene3d	homologous_superfamily	IPR020825			p9wfu1	831	211..407
+IPR002547	tRNA-binding domain	interpro	domain		PS50886,PF01588	GO:0000049	p9wfu1	831	44..155
+IPR004532	Phenylalanine-tRNA ligase, class IIc, beta subunit, bacterial type	interpro	family		MF_00283,TIGR00472	GO:0000287,GO:0004826,GO:0005524,GO:0006432	p9wfu1	831	1..830
+IPR005121	Ferrodoxin-fold anticodon-binding domain	interpro	domain		PS51447,SM00896,PF03147		p9wfu1	831	737..830
+IPR005146	B3/B4 tRNA-binding domain	interpro	domain		SM00873,PF03483	GO:0003723,GO:0004826	p9wfu1	831	222..395
+IPR005147	tRNA synthetase, B5-domain	interpro	domain		SM00874,PS51483,PF03484	GO:0000287,GO:0003723,GO:0005524,GO:0006432	p9wfu1	831	414..489
+IPR009061	Putative DNA-binding domain superfamily	interpro	homologous_superfamily		SSF46955		p9wfu1	831	416..488
+IPR012340	Nucleic acid-binding, OB-fold	interpro	homologous_superfamily		G3DSA:2.40.50.140,SSF50249		p9wfu1	831	44..197
+IPR020825	Phenylalanyl-tRNA synthetase-like, B3/B4	interpro	homologous_superfamily		G3DSA:3.50.40.10		p9wfu1	831	211..407
+IPR033714	Phenylalanly tRNA synthetase, tRNA-binding-domain	interpro	domain		cd02796	GO:0000049	p9wfu1	831	50..153
+IPR036690	Ferrodoxin-fold anticodon-binding domain superfamily	interpro	homologous_superfamily		G3DSA:3.30.70.380,SSF54991		p9wfu1	831	735..831
+IPR041616	Phenylalanyl tRNA synthetase beta chain, core domain	interpro	domain		PF17759,cd00769		p9wfu1	831	487..725
+IPR045060	Phenylalanine-tRNA ligase, class IIc, beta subunit	interpro	family		PTHR10947	GO:0004826,GO:0006432	p9wfu1	831	158..723
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wfu1	831	480..726
+MF_00283	Phenylalanine--tRNA ligase beta subunit [pheT]	hamap	family	IPR004532			p9wfu1	831	1..824
+PF01588	Putative tRNA binding domain	pfam	domain	IPR002547			p9wfu1	831	50..152
+PF03147	Ferredoxin-fold anticodon binding domain	pfam	domain	IPR005121			p9wfu1	831	737..830
+PF03483	B3/4 domain	pfam	domain	IPR005146			p9wfu1	831	223..395
+PF03484	tRNA synthetase B5 domain	pfam	domain	IPR005147			p9wfu1	831	420..483
+PF17759	Phenylalanyl tRNA synthetase beta chain CLM domain	pfam	domain	IPR041616			p9wfu1	831	487..722
+PS50886	tRNA-binding domain profile	profile	domain	IPR002547			p9wfu1	831	44..155
+PS51447	Ferredoxin-fold anticodon binding (FDX-ACB) domain profile	profile	domain	IPR005121			p9wfu1	831	737..830
+PS51483	B5 domain profile	profile	domain	IPR005147			p9wfu1	831	414..489
+PTHR10947	PHENYLALANYL-TRNA SYNTHETASE BETA CHAIN AND LEUCINE-RICH REPEAT-CONTAINING PROTEIN 47	panther	family	IPR045060			p9wfu1	831	158..723
+SM00873	B3/4 domain	smart	domain	IPR005146			p9wfu1	831	222..395
+SM00874	tRNA synthetase B5 domain	smart	domain	IPR005147			p9wfu1	831	416..484
+SM00896	Ferredoxin-fold anticodon binding domain	smart	domain	IPR005121			p9wfu1	831	737..830
+SSF46955	Putative DNA-binding domain	ssf	homologous_superfamily	IPR009061			p9wfu1	831	416..488
+SSF50249	Nucleic acid-binding proteins	ssf	homologous_superfamily	IPR012340			p9wfu1	831	49..197
+SSF54991	Anticodon-binding domain of PheRS	ssf	homologous_superfamily	IPR036690			p9wfu1	831	735..830
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wfu1	831	480..596,626..725
+SSF56037	PheT/TilS domain	ssf	homologous_superfamily				p9wfu1	831	213..404
+TIGR00472	phenylalanine--tRNA ligase subunit beta	ncbifam	family	IPR004532			p9wfu1	831	1..830

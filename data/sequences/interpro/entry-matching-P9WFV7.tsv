@@ -1,0 +1,23 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00774	GlyRS-like_core	cdd	domain	IPR033731			p9wfv7	463	12..337
+cd00858	GlyRS_anticodon	cdd	domain				p9wfv7	463	341..461
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wfv7	463	9..89,130..366
+G3DSA:3.40.50.800	Anticodon-binding domain	cathgene3d	homologous_superfamily	IPR036621			p9wfv7	463	367..463
+IPR002314	Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)	interpro	domain		PF00587	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfv7	463	160..331
+IPR002315	Glycyl-tRNA synthetase	interpro	family		TIGR00389	GO:0000166,GO:0004820,GO:0005524,GO:0006426,GO:0005737	p9wfv7	463	10..239
+IPR004154	Anticodon-binding	interpro	domain		PF03129		p9wfv7	463	369..457
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wfv7	463	10..367
+IPR022961	Glycine-tRNA ligase, bacterial	interpro	family		MF_00253_B	GO:0004820	p9wfv7	463	6..461
+IPR027031	Glycyl-tRNA synthetase/DNA polymerase subunit gamma-2	interpro	family		PTHR10745		p9wfv7	463	226..314
+IPR033731	Glycyl-tRNA synthetase-like core domain	interpro	domain		cd00774		p9wfv7	463	12..337
+IPR036621	Anticodon-binding domain superfamily	interpro	homologous_superfamily		G3DSA:3.40.50.800		p9wfv7	463	367..463
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wfv7	463	9..372
+MF_00253_B	Glycine--tRNA ligase [glyQS]	hamap	family	IPR022961			p9wfv7	463	6..461
+PF00587	tRNA synthetase class II core domain (G, H, P, S and T)	pfam	domain	IPR002314			p9wfv7	463	160..331
+PF03129	Anticodon binding domain	pfam	domain	IPR004154			p9wfv7	463	369..457
+PR01043	TRNASYNTHGLY	prints	family				p9wfv7	463	28..42,140..152,161..178,193..210,210..220,320..332,406..425
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wfv7	463	10..367
+PTHR10745	GLYCYL-TRNA SYNTHETASE/DNA POLYMERASE SUBUNIT GAMMA-2	panther	family	IPR027031			p9wfv7	463	226..314
+SSF52954	Class II aaRS ABD-related	ssf	homologous_superfamily				p9wfv7	463	356..461
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wfv7	463	10..372
+TIGR00389	glycine--tRNA ligase, homodimeric type	ncbifam	family	IPR002315			p9wfv7	463	10..239

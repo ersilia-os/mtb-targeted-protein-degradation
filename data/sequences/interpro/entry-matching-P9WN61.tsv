@@ -1,0 +1,19 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+G3DSA:1.10.10.410		cathgene3d	homologous_superfamily	IPR023168			p9wn61	509	446..505
+IPR003789	Aspartyl/glutamyl-tRNA amidotransferase subunit B-like	interpro	homologous_superfamily		SSF89095	GO:0016884	p9wn61	509	359..504
+IPR004413	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase subunit B	interpro	family		MF_00121,TIGR00133	GO:0016884	p9wn61	509	24..507
+IPR006075	Aspartyl/Glutamyl-tRNA(Gln) amidotransferase, subunit B/E, catalytic	interpro	domain		PF02934	GO:0016874	p9wn61	509	28..321
+IPR014746	Glutamine synthetase/guanido kinase, catalytic domain	interpro	homologous_superfamily		SSF55931	GO:0003824	p9wn61	509	27..328
+IPR017958	Glutamyl-tRNA(Gln) amidotransferase, subunit B, conserved site	interpro	conserved_site		PS01234	GO:0016884	p9wn61	509	173..187
+IPR017959	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, subunit B /E	interpro	family		PTHR11659	GO:0016884	p9wn61	509	23..505
+IPR018027	Asn/Gln amidotransferase	interpro	domain		SM00845,PF02637	GO:0016884	p9wn61	509	359..506
+IPR023168	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, C-terminal, domain 2	interpro	homologous_superfamily		G3DSA:1.10.10.410		p9wn61	509	446..505
+MF_00121	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase subunit B [gatB]	hamap	family	IPR004413			p9wn61	509	24..507
+PF02637	GatB domain	pfam	domain	IPR018027			p9wn61	509	360..504
+PF02934	GatB/GatE catalytic domain	pfam	domain	IPR006075			p9wn61	509	28..321
+PS01234	Glutamyl-tRNA(Gln) amidotransferase subunit B signature	prosite	conserved_site	IPR017958			p9wn61	509	173..187
+PTHR11659	GLUTAMYL-TRNA GLN AMIDOTRANSFERASE SUBUNIT B MITOCHONDRIAL AND PROKARYOTIC PET112-RELATED	panther	family	IPR017959			p9wn61	509	23..505
+SM00845	GatB domain	smart	domain	IPR018027			p9wn61	509	359..506
+SSF55931	Glutamine synthetase/guanido kinase	ssf	homologous_superfamily	IPR014746			p9wn61	509	27..328
+SSF89095	GatB/YqeY motif	ssf	homologous_superfamily	IPR003789			p9wn61	509	359..504
+TIGR00133	Asp-tRNA(Asn)/Glu-tRNA(Gln) amidotransferase subunit GatB	ncbifam	family	IPR004413			p9wn61	509	25..504

@@ -1,0 +1,23 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00814	catalytic core domain of methioninyl-tRNA synthetases	cdd	domain	IPR033911			p9wfu5	519	3..338
+cd07957	Anticodon-binding domain of methionyl tRNA synthetases	cdd	domain	IPR041872			p9wfu5	519	347..478
+G3DSA:1.10.730.10	Isoleucyl-tRNA Synthetase; Domain 1	cathgene3d	homologous_superfamily				p9wfu5	519	339..519
+G3DSA:2.170.220.10		cathgene3d	homologous_superfamily				p9wfu5	519	115..227
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wfu5	519	4..114,228..335
+IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	interpro	conserved_site		PS00178	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfu5	519	13..22
+IPR009080	Aminoacyl-tRNA synthetase, class Ia, anticodon-binding	interpro	homologous_superfamily		SSF47323	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfu5	519	355..514
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wfu5	519	4..335
+IPR014758	Methionyl-tRNA synthetase	interpro	family		TIGR00398	GO:0000166,GO:0004825,GO:0005524,GO:0006431	p9wfu5	519	4..483
+IPR015413	Methionyl/Leucyl tRNA synthetase	interpro	domain		PF09334	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfu5	519	4..137,149..362
+IPR023457	Methionine-tRNA synthetase, type 2	interpro	family		PTHR43326,MF_01228	GO:0004825	p9wfu5	519	1..511
+IPR033911	Methioninyl-tRNA synthetase core domain	interpro	domain		cd00814,PR01041	GO:0004825,GO:0006431	p9wfu5	519	3..338,350..361
+IPR041872	Methionyl-tRNA synthetase, anticodon-binding domain	interpro	domain		cd07957,PF19303		p9wfu5	519	347..508
+MF_01228	Methionine--tRNA ligase [metG]	hamap	family	IPR023457			p9wfu5	519	1..511
+PF09334	tRNA synthetases class I (M)	pfam	family	IPR015413			p9wfu5	519	4..137,149..362
+PF19303	Anticodon binding domain of methionyl tRNA ligase	pfam	domain	IPR041872			p9wfu5	519	374..508
+PR01041	TRNASYNTHMET	prints	family	IPR033911			p9wfu5	519	6..19,38..52,86..97,225..236,258..273,350..361
+PS00178	Aminoacyl-transfer RNA synthetases class-I signature	prosite	conserved_site	IPR001412			p9wfu5	519	13..22
+PTHR43326	METHIONYL-TRNA SYNTHETASE	panther	family	IPR023457			p9wfu5	519	2..487
+SSF47323	Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases	ssf	homologous_superfamily	IPR009080			p9wfu5	519	355..514
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wfu5	519	2..353
+TIGR00398	methionine--tRNA ligase	ncbifam	family	IPR014758			p9wfu5	519	4..483

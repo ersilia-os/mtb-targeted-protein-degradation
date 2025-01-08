@@ -1,0 +1,18 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00496	PheRS_alpha_core	cdd	domain				p9wfu3	341	110..332
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wfu3	341	10..338
+IPR002319	Phenylalanyl-tRNA synthetase	interpro	domain		PF01409	GO:0000049,GO:0004812,GO:0005524,GO:0043039	p9wfu3	341	95..334
+IPR004188	Phenylalanine-tRNA ligase, class II, N-terminal	interpro	domain		PF02912	GO:0000166,GO:0004826,GO:0005524,GO:0006432,GO:0005737	p9wfu3	341	23..90
+IPR004529	Phenylalanyl-tRNA synthetase, class IIc, alpha subunit	interpro	family		TIGR00468	GO:0000166,GO:0004826,GO:0005524,GO:0006432,GO:0005737	p9wfu3	341	49..333
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wfu3	341	115..336
+IPR010978	Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm	interpro	homologous_superfamily		SSF46589	GO:0000166	p9wfu3	341	17..101
+IPR022911	Phenylalanine-tRNA ligase alpha chain 1, bacterial	interpro	family		MF_00281	GO:0004826	p9wfu3	341	11..337
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wfu3	341	10..338
+MF_00281	Phenylalanine--tRNA ligase alpha subunit [pheS]	hamap	family	IPR022911			p9wfu3	341	11..337
+PF01409	tRNA synthetases class II core domain (F)	pfam	domain	IPR002319			p9wfu3	341	95..334
+PF02912	Aminoacyl tRNA synthetase class II, N-terminal domain	pfam	domain	IPR004188			p9wfu3	341	23..90
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wfu3	341	115..336
+PTHR11538	Phenylalanyl-tRNA synthetase/O-phosphoseryl-tRNA(Cys) synthetase	panther	family				p9wfu3	341	131..337
+SSF46589	tRNA-binding arm	ssf	homologous_superfamily	IPR010978			p9wfu3	341	17..101
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wfu3	341	95..333
+TIGR00468	phenylalanine--tRNA ligase subunit alpha	ncbifam	family	IPR004529			p9wfu3	341	49..333

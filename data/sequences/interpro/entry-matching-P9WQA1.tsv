@@ -1,0 +1,13 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+G3DSA:3.90.1300.10	Amidase signature (AS) domain	cathgene3d	homologous_superfamily	IPR036928			p9wqa1	494	3..488
+IPR000120	Amidase	interpro	family		PTHR11895	GO:0003824	p9wqa1	494	3..485
+IPR004412	Glutamyl-tRNA(Gln) amidotransferase A subunit	interpro	family		MF_00120,TIGR00132	GO:0050567,GO:0006412,GO:0030956	p9wqa1	494	12..488
+IPR020556	Amidase, conserved site	interpro	conserved_site		PS00571		p9wqa1	494	154..185
+IPR023631	Amidase signature domain	interpro	domain		PF01425		p9wqa1	494	25..476
+IPR036928	Amidase signature (AS) superfamily	interpro	homologous_superfamily		G3DSA:3.90.1300.10,SSF75304		p9wqa1	494	1..488
+MF_00120	Glutamyl-tRNA(Gln) amidotransferase subunit A [gatA]	hamap	family	IPR004412			p9wqa1	494	12..488
+PF01425	Amidase	pfam	family	IPR023631			p9wqa1	494	25..476
+PS00571	Amidases signature	prosite	conserved_site	IPR020556			p9wqa1	494	154..185
+PTHR11895	TRANSAMIDASE	panther	family	IPR000120			p9wqa1	494	3..485
+SSF75304	Amidase signature (AS) enzymes	ssf	homologous_superfamily	IPR036928			p9wqa1	494	1..487
+TIGR00132	Asp-tRNA(Asn)/Glu-tRNA(Gln) amidotransferase subunit GatA	ncbifam	family	IPR004412			p9wqa1	494	14..486

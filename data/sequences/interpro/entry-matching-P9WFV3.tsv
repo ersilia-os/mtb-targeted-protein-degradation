@@ -1,0 +1,26 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00818	catalytic core domain of isoleucyl-tRNA synthetases	cdd	domain				p9wfv3	1041	420..657
+cd07961	Anticodon-binding domain of archaeal, bacterial, and eukaryotic cytoplasmic isoleucyl tRNA synthetases	cdd	domain	IPR033709			p9wfv3	1041	659..825
+G3DSA:1.10.730.10	Isoleucyl-tRNA Synthetase; Domain 1	cathgene3d	homologous_superfamily				p9wfv3	1041	661..832
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wfv3	1041	11..213,395..653
+G3DSA:3.90.740.10	Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain	cathgene3d	homologous_superfamily	IPR009008			p9wfv3	1041	214..394
+IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	interpro	conserved_site		PS00178	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfv3	1041	53..64
+IPR002300	Aminoacyl-tRNA synthetase, class Ia	interpro	domain		PF00133	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfv3	1041	23..653
+IPR002301	Isoleucine-tRNA ligase	interpro	family		PR00984,TIGR00392	GO:0000166,GO:0004822,GO:0005524,GO:0006428	p9wfv3	1041	15..849
+IPR009008	Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain	interpro	homologous_superfamily		SSF50677,G3DSA:3.90.740.10	GO:0002161,GO:0006418	p9wfv3	1041	209..394
+IPR009080	Aminoacyl-tRNA synthetase, class Ia, anticodon-binding	interpro	homologous_superfamily		SSF47323	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfv3	1041	674..898
+IPR013155	Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding	interpro	domain		PF08264	GO:0004812,GO:0006418	p9wfv3	1041	701..841
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wfv3	1041	11..213,395..653
+IPR023586	Isoleucine-tRNA ligase, type 2	interpro	family		PTHR42780,MF_02003	GO:0004822	p9wfv3	1041	7..1037
+IPR033709	Isoleucyl tRNA synthetase type 2, anticodon-binding domain	interpro	domain		cd07961	GO:0000049	p9wfv3	1041	659..825
+MF_02003	Isoleucine--tRNA ligase [ileS]	hamap	family	IPR023586			p9wfv3	1041	7..1037
+PF00133	tRNA synthetases class I (I, L, M and V)	pfam	domain	IPR002300			p9wfv3	1041	23..653
+PF08264	Anticodon-binding domain of tRNA ligase	pfam	domain	IPR013155			p9wfv3	1041	701..841
+PF19302	Domain of unknown function (DUF5915)	pfam	domain				p9wfv3	1041	857..1026
+PR00984	TRNASYNTHILE	prints	family	IPR002301			p9wfv3	1041	46..57,235..258,409..424,538..551,578..587
+PS00178	Aminoacyl-transfer RNA synthetases class-I signature	prosite	conserved_site	IPR001412			p9wfv3	1041	53..64
+PTHR42780	SOLEUCYL-TRNA SYNTHETASE	panther	family	IPR023586			p9wfv3	1041	14..1020
+SSF47323	Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases	ssf	homologous_superfamily	IPR009080			p9wfv3	1041	674..898
+SSF50677	ValRS/IleRS/LeuRS editing domain	ssf	homologous_superfamily	IPR009008			p9wfv3	1041	209..391
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wfv3	1041	14..203,411..651
+TIGR00392	isoleucine--tRNA ligase	ncbifam	family	IPR002301			p9wfv3	1041	15..849

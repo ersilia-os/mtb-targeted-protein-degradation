@@ -1,0 +1,30 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00817	catalytic core domain of valyl-tRNA synthetases	cdd	domain				p9wfs9	886	44..578
+cd07962	Anticodon-binding domain of valyl tRNA synthetases	cdd	domain	IPR033705			p9wfs9	886	580..708
+G3DSA:1.10.287.380	Valyl-tRNA synthetase, C-terminal domain	cathgene3d	homologous_superfamily	IPR037118			p9wfs9	886	814..885
+G3DSA:1.10.730.10	Isoleucyl-tRNA Synthetase; Domain 1	cathgene3d	homologous_superfamily				p9wfs9	886	538..755
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wfs9	886	14..225,309..537
+G3DSA:3.90.740.10	Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain	cathgene3d	homologous_superfamily	IPR009008			p9wfs9	886	244..308
+IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	interpro	conserved_site		PS00178	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfs9	886	53..64
+IPR002300	Aminoacyl-tRNA synthetase, class Ia	interpro	domain		PF00133	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfs9	886	25..436,446..579
+IPR002303	Valine-tRNA ligase	interpro	family		MF_02004,TIGR00422,PTHR11946,PR00986	GO:0000166,GO:0004832,GO:0005524,GO:0006438	p9wfs9	886	11..886
+IPR009008	Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain	interpro	homologous_superfamily		SSF50677,G3DSA:3.90.740.10	GO:0002161,GO:0006418	p9wfs9	886	201..346
+IPR009080	Aminoacyl-tRNA synthetase, class Ia, anticodon-binding	interpro	homologous_superfamily		SSF47323	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfs9	886	592..835
+IPR010978	Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm	interpro	homologous_superfamily		SSF46589	GO:0000166	p9wfs9	886	821..885
+IPR013155	Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding	interpro	domain		PF08264	GO:0004812,GO:0006418	p9wfs9	886	621..760
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wfs9	886	14..225,309..537
+IPR019499	Valyl-tRNA synthetase, tRNA-binding arm	interpro	domain		PF10458	GO:0000166,GO:0004832,GO:0005524,GO:0006438,GO:0005737	p9wfs9	886	821..886
+IPR033705	Valyl tRNA synthetase, anticodon-binding domain	interpro	domain		cd07962		p9wfs9	886	580..708
+IPR037118	Valyl-tRNA synthetase, tRNA-binding arm superfamily	interpro	homologous_superfamily		G3DSA:1.10.287.380		p9wfs9	886	814..885
+MF_02004	Valine--tRNA ligase [valS]	hamap	family	IPR002303			p9wfs9	886	12..886
+PF00133	tRNA synthetases class I (I, L, M and V)	pfam	domain	IPR002300			p9wfs9	886	25..436,446..579
+PF08264	Anticodon-binding domain of tRNA ligase	pfam	domain	IPR013155			p9wfs9	886	621..760
+PF10458	Valyl tRNA synthetase tRNA binding arm	pfam	domain	IPR019499			p9wfs9	886	821..886
+PR00986	TRNASYNTHVAL	prints	family	IPR002303			p9wfs9	886	46..57,241..258,357..370,449..470,480..498
+PS00178	Aminoacyl-transfer RNA synthetases class-I signature	prosite	conserved_site	IPR001412			p9wfs9	886	53..64
+PTHR11946	VALYL-TRNA SYNTHETASES	panther	family	IPR002303			p9wfs9	886	11..878
+SSF46589	tRNA-binding arm	ssf	homologous_superfamily	IPR010978			p9wfs9	886	821..885
+SSF47323	Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases	ssf	homologous_superfamily	IPR009080			p9wfs9	886	592..835
+SSF50677	ValRS/IleRS/LeuRS editing domain	ssf	homologous_superfamily	IPR009008			p9wfs9	886	201..346
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wfs9	886	13..202,352..590
+TIGR00422	valine--tRNA ligase	ncbifam	family	IPR002303			p9wfs9	886	13..864

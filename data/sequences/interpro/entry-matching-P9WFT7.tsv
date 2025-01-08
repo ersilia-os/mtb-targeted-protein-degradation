@@ -1,0 +1,22 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00770	SerRS_core	cdd	domain	IPR033729			p9wft7	419	124..409
+G3DSA:1.10.287.40	Serine-tRNA synthetase, tRNA binding domain	cathgene3d	homologous_superfamily	IPR042103			p9wft7	419	1..102
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wft7	419	105..418
+IPR002314	Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)	interpro	domain		PF00587	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wft7	419	217..393
+IPR002317	Serine-tRNA ligase, type1	interpro	family		MF_00176,TIGR00414,PIRSF001529,PTHR11778,PR00981	GO:0000166,GO:0004828,GO:0005524,GO:0006434	p9wft7	419	1..417
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wft7	419	135..403
+IPR010978	Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm	interpro	homologous_superfamily		SSF46589	GO:0000166	p9wft7	419	1..111
+IPR015866	Serine-tRNA synthetase, type1, N-terminal	interpro	domain		PF02403		p9wft7	419	1..105
+IPR033729	Serine-tRNA ligase catalytic core domain	interpro	domain		cd00770		p9wft7	419	124..409
+IPR042103	Serine-tRNA synthetase, type1, N-terminal domain superfamily	interpro	homologous_superfamily		G3DSA:1.10.287.40		p9wft7	419	1..102
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wft7	419	105..418
+MF_00176	Serine--tRNA ligase [serS]	hamap	family	IPR002317			p9wft7	419	1..415
+PF00587	tRNA synthetase class II core domain (G, H, P, S and T)	pfam	domain	IPR002314			p9wft7	419	217..393
+PF02403	Seryl-tRNA synthetase N-terminal domain	pfam	domain	IPR015866			p9wft7	419	1..105
+PIRSF001529	Serine-tRNA ligase	pirsf	family	IPR002317			p9wft7	419	1..417
+PR00981	TRNASYNTHSER	prints	family	IPR002317			p9wft7	419	259..271,271..284,311..324,328..344,346..362
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wft7	419	135..403
+PTHR11778	SERYL-TRNA SYNTHETASE	panther	family	IPR002317			p9wft7	419	1..415
+SSF46589	tRNA-binding arm	ssf	homologous_superfamily	IPR010978			p9wft7	419	1..111
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wft7	419	124..418
+TIGR00414	serine--tRNA ligase	ncbifam	family	IPR002317			p9wft7	419	1..409

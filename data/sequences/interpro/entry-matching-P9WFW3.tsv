@@ -1,0 +1,28 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00777	AspRS_core	cdd	domain	IPR047090			p9wfw3	594	140..561
+cd04317	EcAspRS_like_N	cdd	domain	IPR047089			p9wfw3	594	3..135
+G3DSA:2.40.50.140	Nucleic acid-binding proteins	cathgene3d	homologous_superfamily	IPR012340			p9wfw3	594	1..109
+G3DSA:3.30.1360.30	GAD-like domain	cathgene3d	homologous_superfamily	IPR004115			p9wfw3	594	273..412
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wfw3	594	116..272,413..582
+IPR002312	Aspartyl/Asparaginyl-tRNA synthetase, class IIb	interpro	family		PR01042	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfw3	594	192..204,209..222,477..493,521..535
+IPR004115	GAD-like domain superfamily	interpro	homologous_superfamily		G3DSA:3.30.1360.30,SSF55261	GO:0004812,GO:0005524,GO:0005737	p9wfw3	594	273..412
+IPR004364	Aminoacyl-tRNA synthetase, class II (D/K/N)	interpro	domain		PF00152	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfw3	594	120..560
+IPR004365	OB-fold nucleic acid binding domain, AA-tRNA synthetase-type	interpro	domain		PF01336	GO:0003676	p9wfw3	594	19..104
+IPR004524	Aspartate-tRNA ligase, type 1	interpro	family		MF_00044,TIGR00459	GO:0005524,GO:0016874	p9wfw3	594	2..587
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wfw3	594	140..558
+IPR012340	Nucleic acid-binding, OB-fold	interpro	homologous_superfamily		G3DSA:2.40.50.140,SSF50249		p9wfw3	594	1..109
+IPR029351	GAD domain	interpro	domain		PF02938		p9wfw3	594	313..393
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wfw3	594	115..586
+IPR047089	Aspartate-tRNA ligase, type 1, anticodon recognition domain	interpro	domain		cd04317		p9wfw3	594	3..135
+IPR047090	Aspartate-tRNA ligase, type 1, core domain	interpro	domain		cd00777		p9wfw3	594	140..561
+MF_00044	Aspartate--tRNA(Asp/Asn) ligase [aspS]	hamap	family	IPR004524			p9wfw3	594	2..587
+PF00152	tRNA synthetases class II (D, K and N)	pfam	domain	IPR004364			p9wfw3	594	120..312,394..560
+PF01336	OB-fold nucleic acid binding domain	pfam	domain	IPR004365			p9wfw3	594	19..104
+PF02938	GAD domain	pfam	domain	IPR029351			p9wfw3	594	313..393
+PR01042	TRNASYNTHASP	prints	family	IPR002312			p9wfw3	594	192..204,209..222,477..493,521..535
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wfw3	594	140..558
+PTHR22594	Aspartate/asparagine--tRNA ligase	panther	family				p9wfw3	594	4..560
+SSF50249	Nucleic acid-binding proteins	ssf	homologous_superfamily	IPR012340			p9wfw3	594	3..107
+SSF55261	GAD domain-like	ssf	homologous_superfamily	IPR004115			p9wfw3	594	290..412
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wfw3	594	115..293,417..586
+TIGR00459	aspartate--tRNA ligase	ncbifam	family	IPR004524			p9wfw3	594	3..585

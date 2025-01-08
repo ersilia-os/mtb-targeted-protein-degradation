@@ -1,0 +1,26 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00808	catalytic core domain of discriminating glutamyl-tRNA synthetase	cdd	domain	IPR033910			p9wfv9	490	6..334
+G3DSA:1.10.10.350		cathgene3d	homologous_superfamily	IPR020751			p9wfv9	490	388..490
+G3DSA:1.10.1160.10	Glutamyl-trna Synthetase; Domain 2	cathgene3d	homologous_superfamily	IPR020061			p9wfv9	490	252..334
+G3DSA:1.10.8.70	Glutamate-tRNA synthetase, class I, anticodon-binding domain 1	cathgene3d	homologous_superfamily	IPR020752			p9wfv9	490	336..387
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wfv9	490	7..75,196..248
+G3DSA:3.90.800.10	Glutamyl-tRNA Synthetase; Domain 3	cathgene3d	homologous_superfamily				p9wfv9	490	76..195
+IPR000924	Glutamyl/glutaminyl-tRNA synthetase	interpro	family		PR00987	GO:0000166,GO:0004812,GO:0005524,GO:0043039	p9wfv9	490	10..22,24..35,39..52,194..204,210..218
+IPR004527	Glutamate-tRNA ligase, bacterial/mitochondrial	interpro	family		MF_00022,TIGR00464	GO:0000166,GO:0004818,GO:0005524,GO:0006424	p9wfv9	490	6..484
+IPR008925	Aminoacyl-tRNA synthetase, class I, anticodon-binding superfamily	interpro	homologous_superfamily		SSF48163	GO:0000049	p9wfv9	490	320..483
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wfv9	490	7..248
+IPR020058	Glutamyl/glutaminyl-tRNA synthetase, class Ib, catalytic domain	interpro	domain		PF00749	GO:0004812,GO:0005524,GO:0043039	p9wfv9	490	7..323
+IPR020061	Glutamine-tRNA ligase, alpha-bundle domain superfamily	interpro	homologous_superfamily		G3DSA:1.10.1160.10	GO:0005524	p9wfv9	490	252..334
+IPR020751	Aminoacyl-tRNA synthetase, class I, anticodon-binding domain, subdomain 2	interpro	homologous_superfamily		G3DSA:1.10.10.350		p9wfv9	490	388..490
+IPR020752	Glutamate-tRNA synthetase, class I, anticodon-binding domain, subdomain 1	interpro	homologous_superfamily		G3DSA:1.10.8.70	GO:0000049	p9wfv9	490	336..387
+IPR033910	Glutamyl-tRNA synthetase	interpro	domain		cd00808	GO:0008270,GO:0006424	p9wfv9	490	6..334
+IPR045462	Aminoacyl-tRNA synthetase, class I, anticodon-binding	interpro	domain		PF19269		p9wfv9	490	351..483
+IPR049940	Glutamyl-Q tRNA(Asp) synthetase/Glutamate--tRNA ligase	interpro	family		PTHR43311		p9wfv9	490	4..485
+MF_00022	Glutamate--tRNA ligase [gltX]	hamap	family	IPR004527			p9wfv9	490	6..484
+PF00749	tRNA synthetases class I (E and Q), catalytic domain	pfam	domain	IPR020058			p9wfv9	490	7..323
+PF19269	Anticodon binding domain	pfam	domain	IPR045462			p9wfv9	490	351..483
+PR00987	TRNASYNTHGLU	prints	family	IPR000924			p9wfv9	490	10..22,24..35,39..52,194..204,210..218
+PTHR43311	GLUTAMATE--TRNA LIGASE	panther	family	IPR049940			p9wfv9	490	4..485
+SSF48163	An anticodon-binding domain of class I aminoacyl-tRNA synthetases	ssf	homologous_superfamily	IPR008925			p9wfv9	490	320..483
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wfv9	490	7..319
+TIGR00464	glutamate--tRNA ligase	ncbifam	family	IPR004527			p9wfv9	490	6..482

@@ -1,0 +1,26 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00165	S4	cdd	domain				p9wft1	424	358..401
+cd00805	catalytic core domain of tyrosinyl-tRNA synthetase	cdd	domain	IPR002307			p9wft1	424	33..307
+G3DSA:1.10.240.10	Tyrosyl-Transfer RNA Synthetase	cathgene3d	homologous_superfamily				p9wft1	424	224..328
+G3DSA:3.10.290.10	RNA-binding S4 domain	cathgene3d	homologous_superfamily	IPR036986			p9wft1	424	329..424
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wft1	424	2..223
+IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	interpro	conserved_site		PS00178	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wft1	424	41..51
+IPR002305	Aminoacyl-tRNA synthetase, class Ic	interpro	family		PF00579	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wft1	424	30..325
+IPR002307	Tyrosine-tRNA ligase	interpro	family		cd00805,TIGR00234,PR01040	GO:0000166,GO:0004831,GO:0005524,GO:0006437	p9wft1	424	5..419
+IPR002942	RNA-binding S4 domain	interpro	domain		PF01479,SM00363	GO:0003723	p9wft1	424	357..418
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wft1	424	2..223
+IPR024088	Tyrosine-tRNA ligase, bacterial-type	interpro	family		PTHR11766	GO:0004831	p9wft1	424	5..417
+IPR024107	Tyrosine-tRNA ligase, bacterial-type, type 1	interpro	family		MF_02006	GO:0004831	p9wft1	424	3..422
+IPR036986	RNA-binding S4 domain superfamily	interpro	homologous_superfamily		G3DSA:3.10.290.10	GO:0003723	p9wft1	424	329..424
+IPR054608	Tyrosine--tRNA ligase SYY-like, C-terminal domain	interpro	domain		PF22421		p9wft1	424	354..415
+MF_02006	Tyrosine--tRNA ligase [tyrS]	hamap	family	IPR024107			p9wft1	424	3..422
+PF00579	tRNA synthetases class I (W and Y)	pfam	family	IPR002305			p9wft1	424	30..325
+PF22421	Tyrosine--tRNA ligase SYY-like C-terminal domain	pfam	domain	IPR054608			p9wft1	424	354..415
+PR01040	TRNASYNTHTYR	prints	family	IPR002307			p9wft1	424	45..67,163..178,184..206,217..229
+PS00178	Aminoacyl-transfer RNA synthetases class-I signature	prosite	conserved_site	IPR001412			p9wft1	424	41..51
+PS50889	S4 RNA-binding domain profile	profile	domain				p9wft1	424	358..413
+PTHR11766	TYROSYL-TRNA SYNTHETASE	panther	family	IPR024088			p9wft1	424	5..417
+SM00363	S4 RNA-binding domain	smart	domain	IPR002942			p9wft1	424	357..418
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wft1	424	5..325
+SSF55174	Alpha-L RNA-binding motif	ssf	homologous_superfamily				p9wft1	424	328..420
+TIGR00234	tyrosine--tRNA ligase	ncbifam	family	IPR002307			p9wft1	424	5..419

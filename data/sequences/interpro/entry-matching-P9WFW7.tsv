@@ -1,0 +1,32 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00673	AlaRS_core	cdd	domain				p9wfw7	904	3..244
+G3DSA:2.40.30.130		cathgene3d	homologous_superfamily				p9wfw7	904	497..572
+G3DSA:3.10.310.40		cathgene3d	homologous_superfamily				p9wfw7	904	785..897
+G3DSA:3.30.54.20		cathgene3d	homologous_superfamily				p9wfw7	904	644..698
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wfw7	904	1..245
+G3DSA:3.30.980.10	Threonyl-trna Synthetase; Chain A, domain 2	cathgene3d	homologous_superfamily				p9wfw7	904	584..643,699..719
+G3DSA:6.10.250.550		cathgene3d	homologous_superfamily				p9wfw7	904	721..781
+IPR002318	Alanine-tRNA ligase, class IIc	interpro	family		TIGR00344,PR00980	GO:0000166,GO:0005737	p9wfw7	904	5..880
+IPR003156	DHHA1 domain	interpro	domain		PF02272	GO:0003676	p9wfw7	904	754..896
+IPR009000	Translation protein, beta-barrel domain superfamily	interpro	homologous_superfamily		SSF50447		p9wfw7	904	461..572
+IPR012947	Threonyl/alanyl tRNA synthetase, SAD	interpro	domain		SM00863,PF07973	GO:0004812,GO:0005524,GO:0043039	p9wfw7	904	673..717
+IPR018162	Alanine-tRNA ligase, class IIc, anti-codon-binding domain superfamily	interpro	homologous_superfamily		SSF101353	GO:0000166,GO:0004813,GO:0005524,GO:0006419,GO:0005737	p9wfw7	904	249..443
+IPR018163	Threonyl/alanyl tRNA synthetase, class II-like, putative editing domain superfamily	interpro	homologous_superfamily		SSF55186	GO:0000166	p9wfw7	904	577..723
+IPR018164	Alanyl-tRNA synthetase, class IIc, N-terminal	interpro	domain		PF01411	GO:0000166,GO:0004813,GO:0005524,GO:0006419	p9wfw7	904	5..574
+IPR018165	Alanyl-tRNA synthetase, class IIc, core domain	interpro	domain		PS50860	GO:0003676,GO:0004813,GO:0005524,GO:0006419	p9wfw7	904	1..730
+IPR023033	Alanine-tRNA ligase, eukaryota/bacteria	interpro	family		MF_00036_B	GO:0004813	p9wfw7	904	1..903
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wfw7	904	1..248
+IPR050058	Alanine--tRNA ligase	interpro	family		PTHR11777		p9wfw7	904	1..897
+MF_00036_B	Alanine--tRNA ligase [alaS]	hamap	family	IPR023033			p9wfw7	904	1..903
+PF01411	tRNA synthetases class II (A)	pfam	family	IPR018164			p9wfw7	904	5..574
+PF02272	DHHA1 domain	pfam	family	IPR003156			p9wfw7	904	754..896
+PF07973	Threonyl and Alanyl tRNA synthetase second additional domain	pfam	domain	IPR012947			p9wfw7	904	673..717
+PR00980	TRNASYNTHALA	prints	family	IPR002318			p9wfw7	904	69..80,196..207,229..242,280..296,304..317
+PS50860	Alanyl-transfer RNA synthetases family profile	profile	domain	IPR018165			p9wfw7	904	1..730
+PTHR11777	Alanine--tRNA ligase	panther	family	IPR050058			p9wfw7	904	1..897
+SM00863	Threonyl and Alanyl tRNA synthetase second additional domain	smart	domain	IPR012947			p9wfw7	904	673..717
+SSF101353	Putative anticodon-binding domain of alanyl-tRNA synthetase (AlaRS)	ssf	homologous_superfamily	IPR018162			p9wfw7	904	249..443
+SSF50447	Translation proteins	ssf	homologous_superfamily	IPR009000			p9wfw7	904	461..572
+SSF55186	ThrRS/AlaRS common domain	ssf	homologous_superfamily	IPR018163			p9wfw7	904	577..723
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wfw7	904	2..248
+TIGR00344	alanine--tRNA ligase	ncbifam	family	IPR002318			p9wfw7	904	5..880

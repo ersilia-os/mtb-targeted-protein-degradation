@@ -1,0 +1,118 @@
+
+/----------------------------------------------------------------------------------------------------------\
+|Template Search Results                                                                                   |
+\----------------------------------------------------------------------------------------------------------/
+
+      Project : SXS3nH
+        Title : GATB_MYCTU P9WN61 Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase subunit B
+      Created : today at 15:24
+      Expires : Jan. 22, 2025 at 15:24
+
+
+/--------------------------------------------------------------------------------------------------------\
+| Found Templates                                                                                        |
+\--------------------------------------------------------------------------------------------------------/
+
+                    ID                        Name      Seq ID  Seq Sim   Cov   Resolu     Method      GMQE    Found By  
+-------------------------------------------------------------------------------------------------------------------------
+ 6e1048664b9a199078f5329a456d6e76444e0b6e  A1KN04.1.A   100.000    0.606  1.000   NA    AlphaFold v2   0.920 AFDB search 
+ 2b16714eb868cf04627de78627e8c1de4e682b9c  3h0l.7.B      41.895    0.412  0.933   2.300 X-ray          0.714 HHblits     
+ 99b7a334a220c9d9dcbdbe2b26b4581a853085fa  3h0l.7.B      43.710    0.419  0.921   2.300 X-ray          0.712 BLAST       
+ 69b9744428dcfb9794d04693cfac2df16285e5de  3al0.1.B      39.749    0.395  0.939   3.368 X-ray          0.689 HHblits     
+ d941483e062e5b02f629145a200caedb3746b975  2df4.1.B      42.585    0.405  0.927   3.200 X-ray          0.650 HHblits     
+ 00e8d8c8907edec8de532880a3fc10d608474b25  2g5i.1.B      42.585    0.405  0.927   3.350 X-ray          0.658 HHblits     
+ a93af6bea41c78c7e89cc216d84f89651e142ae0  3ip4.1.B      42.585    0.405  0.927   1.900 X-ray          0.777 HHblits     
+ fde99d6df122d5d956e8ab5689136fda79354f1a  2f2a.1.B      42.585    0.405  0.927   2.300 X-ray          0.654 HHblits     
+ 3269a316df8dd2c0a0ccf02dd31878d5b167820c  2df4.1.B      43.750    0.411  0.912   3.200 X-ray          0.646 BLAST       
+ 5d2c47981a7344b981fa1a9442a27e426243e156  2g5i.1.B      43.750    0.411  0.912   3.350 X-ray          0.655 BLAST       
+ e4a0821f4d29cd79cc04b8c04bc1fd6fafa2ae2e  3ip4.1.B      43.750    0.411  0.912   1.900 X-ray          0.765 BLAST       
+ 1014190a766b1e364cc6454213874c2130e41404  2f2a.1.B      43.750    0.411  0.912   2.300 X-ray          0.647 BLAST       
+ 01a53a5cb6e38f0d2518967d2bb0416616a4540c  3al0.1.B      41.570    0.404  0.851   3.368 X-ray          0.625 BLAST       
+ 1f919b11910ce7385fa0c77293b99567165138a8  2d6f.1.E      26.281    0.334  0.882   3.150 X-ray          0.421 HHblits     
+ 936552b181ff32dc230c1d66a867290a344dda04  2d6f.1.F      26.281    0.334  0.882   3.150 X-ray          0.476 HHblits     
+ bc7d4efa234b00d58d0a42e57fc7646fdfab9d31  1zq1.1.C      25.828    0.326  0.890   3.000 X-ray          0.453 HHblits     
+ 421c90c8f91147458ea3d34b18e764df38c23d2d  4wj3.1.B      40.767    0.387  0.819   3.705 X-ray          0.650 HHblits     
+ 1e08f3150a0157fae884606efbf389feb364aaf0  4wj3.1.E      40.767    0.387  0.819   3.705 X-ray          0.640 HHblits     
+ dbd5098abb0df339ba84e5e436986786c5cfb753  4wj3.2.B      40.767    0.387  0.819   3.705 X-ray          0.652 HHblits     
+ 4597689f5f89ffdd7781ba1ea5eb8751cc08a3aa  4wj3.2.E      40.767    0.387  0.819   3.705 X-ray          0.651 HHblits     
+ 384a86e05d3963fe66296a4cf51da9aed4e83644  3kfu.1.F      42.752    0.402  0.800   3.000 X-ray          0.640 HHblits     
+ 827f940735b2b7ffb8ded0931975233b86afbfa1  3kfu.1.I      42.752    0.402  0.800   3.000 X-ray          0.629 HHblits     
+ c08381d0f8e710ea5b44691dced8169434d0b9e7  3kfu.1.F      46.649    0.429  0.762   3.000 X-ray          0.621 BLAST       
+ 3f6724ba446d1f5c21bc9012abed42dc19fa1085  3kfu.1.I      46.649    0.429  0.762   3.000 X-ray          0.620 BLAST       
+ 8a8f10df7c000afe6913dcf5e875ccd39cb9194f  4wj3.1.B      44.557    0.414  0.776   3.705 X-ray          0.612 BLAST       
+ ea1592baa022ad0b1d7ed0a1016ada40c609fcf1  4wj3.1.E      44.557    0.414  0.776   3.705 X-ray          0.600 BLAST       
+ e3d1116583d77569c37ee228c1c5afb775a3c227  4wj3.2.B      44.557    0.414  0.776   3.705 X-ray          0.613 BLAST       
+ b673e61f104e2c1433c11f1d3038fb2aecc7d2b6  4wj3.2.E      44.557    0.414  0.776   3.705 X-ray          0.608 BLAST       
+ 468d13ab83f6bb81105ebca58ec796f7fa5a5023  4n0h.1.B      33.445    0.369  0.587   1.952 X-ray          0.393 HHblits     
+ 015c8d3d17626cea560a52616ae216c7d9b6f0ad  4n0h.1.B      36.879    0.391  0.554   1.952 X-ray          0.397 BLAST       
+ a2572b62d06d515dd16815b0a31c0ee16b184365  2d6f.1.E      34.112    0.372  0.420   3.150 X-ray          0.298 BLAST       
+ ee9e55670ca41a67dd68ce209ab0c4b493a71c3a  2d6f.1.F      34.112    0.372  0.420   3.150 X-ray          0.299 BLAST       
+ b22e893e7866c20c3c9cb25df2e754d6b74503d9  2d6f.1.E      30.256    0.353  0.383   3.150 X-ray          0.150 BLAST       
+ 42c774c3cbe5db8d1c638643c08276665daeedad  2d6f.1.F      30.256    0.353  0.383   3.150 X-ray          0.161 BLAST       
+ e76be05beae0585e8e4a2d1f8f3adc9c497a911f  1zq1.1.C      31.953    0.355  0.332   3.000 X-ray          0.248 BLAST       
+ 2ac057126d6ba02f2c72ad7b37828265f5ac6a15  3tl4.1.A      11.538    0.265  0.306   2.300 X-ray          0.129 HHblits     
+ 760eb3739861aa8198d15986a460b7c6161a3700  4ye9.1.A      11.613    0.262  0.305   2.700 X-ray          0.134 HHblits     
+ f4c392e17afcab24d935f84564fafed408376d20  4ye8.1.A      11.613    0.262  0.305   3.300 X-ray          0.137 HHblits     
+ 057bbc9c52e297f1c6ba2d50379001405059d85b  4ye6.1.A      11.688    0.262  0.303   2.400 X-ray          0.135 HHblits     
+ 2a730bf06df404ad753d012cf93c7b2130f2ac9e  1ng6.1.A      20.312    0.317  0.126   1.400 X-ray          0.040 HHblits     
+ 823d73043f330b9c6eaade8c78c5daccb1ec18e9  8xjg.1.A      20.312    0.309  0.126   1.700 X-ray          0.039 HHblits     
+ 1d2d6616a53778812bad9ab0c8efe671ce12d34b  8xje.1.A       9.524    0.254  0.124   2.100 X-ray          0.038 HHblits     
+ 94c5518ed1987c1a521fae9d7ab7c92f6310d119  8xje.2.A       9.524    0.254  0.124   2.100 X-ray          0.038 HHblits     
+ 218dea0089028bdf22dfb733b325a0affd8093fc  8xje.3.A       9.524    0.254  0.124   2.100 X-ray          0.035 HHblits     
+ acf27a62bd0090a67b87b80ac7b7e5d3af913dcb  3ayh.1.A      10.000    0.261  0.098   2.193 X-ray          0.020 HHblits     
+ 1c526a0ec93811218573f1710578589216aa8d41  7aea.1.D      10.000    0.236  0.098   NA    EM             0.020 HHblits     
+ c6fe03a32b78cf8a25c9e1bd7fba01e6620e06d7  7du2.1.N      10.000    0.236  0.098   NA    EM             0.021 HHblits     
+ 905abbcf95d79648ab475830726340121a781271  7d59.1.D      10.000    0.236  0.098   NA    EM             0.017 HHblits     
+ c44d5f2324aebc0df15ba6fd9b6b8aa807ac97c1  7d58.1.D      10.000    0.236  0.098   NA    EM             0.021 HHblits     
+ cf71da73a31542952f3d855c5acce29236441c09  8iuh.1.G      10.000    0.236  0.098   NA    EM             0.022 HHblits     
+ 5de18a6fe9156d9c49cf543d45c3b032ae2688ee  8ity.1.G      10.000    0.236  0.098   NA    EM             0.022 HHblits     
+ 2f8abc98b6ccd2ae72f6521a86d6b95652e63251  7ast.1.J      10.000    0.236  0.098   NA    EM             0.020 HHblits     
+ 451135e3ef3e3ba8e311ddbac533a685664a7866  6dxo.1.A       8.333    0.240  0.094   1.800 X-ray          0.010 HHblits     
+ faa8d1586c2964890b9e7bcf65a7f2a75f037840  5it7.70.A     11.364    0.280  0.086   NA    EM             0.016 HHblits     
+ c42b6d88de4ccc12bb56a79cc743e55f4ad16626  5it9.1.Z      11.364    0.280  0.086   3.800 EM             0.010 HHblits     
+ 127270be9453da296ec8c2f712090db98671919c  6gsm.1.1      11.364    0.280  0.086   5.150 EM             0.003 HHblits     
+ d24177949aae3e13b5903027d4b8f3cf09db10bf  6gsn.1.M      11.364    0.280  0.086   NA    EM             0.012 HHblits     
+ 9f86c05c97feb17783b90f20421c6a8b6aad3294  6zn5.1.Z       9.091    0.277  0.086   NA    EM             0.012 HHblits     
+ 5a7043338efbfb59a76e18ff1e2885b854d63443  7tql.1.3       9.091    0.277  0.086   3.200 EM             0.014 HHblits     
+ 4475e0a1846aa7a8cb259229908ee0d97f53c2c2  6r7q.19.A      9.091    0.277  0.086   NA    EM             0.018 HHblits     
+ 8ced3c00cc0d80e98956930c73c013030e9d159c  5k0y.1.S       9.091    0.277  0.086   NA    EM             0.014 HHblits     
+ 905bd43d500290c9efedb951b95cd8b2465f8723  6mte.72.A      9.091    0.277  0.086   NA    EM             0.019 HHblits     
+ ecca57366b93e2f0b5fb9d3868858f1573a2d6a4  7toq.70.A      9.091    0.277  0.086   NA    EM             0.012 HHblits     
+ d3497891dcdca665335e77664c2a5dc255057337  6qzp.73.A      9.091    0.277  0.086   NA    EM             0.015 HHblits     
+ d935eb6ebd574f5259f64b8c253433748b65c714  6zvk.62.A      9.091    0.277  0.086   NA    EM             0.008 HHblits     
+ f1bce320c5ec00b32fa5ef8ab638e3962f6f06e1  6zvh.1.4       9.091    0.277  0.086   NA    EM             0.017 HHblits     
+ 87964183d1d7b6563807e13c1b9a7d2667d5174c  6yam.1.5       9.091    0.277  0.086   NA    EM             0.015 HHblits     
+ b9a1da21176887fd26f2396ba1a25878c06f2902  6fec.1.Y       9.091    0.277  0.086   6.300 EM             0.017 HHblits     
+ 17bfd110874293da6f2de368262f14053d44f461  6yan.1.4       9.091    0.277  0.086   NA    EM             0.015 HHblits     
+ dd62b7199dfe2652a25388a0de6a11e49ee53c5a  6gz3.11.A      9.091    0.277  0.086   NA    EM             0.011 HHblits     
+ 889e4aa598530c121514cfc9c114130b1e6597af  6gz4.17.A      9.091    0.277  0.086   NA    EM             0.010 HHblits     
+ 604cf502c91c30dd123cd234f3e387f5d1024c4f  8g5z.27.A      9.091    0.277  0.086   NA    EM             0.010 HHblits     
+ 3625b7321b71929330bfda50dcd65ee919dfcca2  6xu8.52.A      9.091    0.276  0.086   NA    EM             0.000 HHblits     
+ 943a9d15f085253e71143e579d423e0120878c3d  7mpj.26.A     13.953    0.288  0.084   NA    EM             0.018 HHblits     
+ 9423874cdfc1e0d3c127a25a54ff3ada83bda14c  7nrd.11.A     13.953    0.288  0.084   NA    EM             0.011 HHblits     
+ cb794cb108d48057d69b962aea4abb3857a4706b  6zvi.1.2      13.953    0.288  0.084   NA    EM             0.009 HHblits     
+ 714b0bcab9b60a3cc9a6b683d5ea2726fefbe2d3  5mei.144.A    13.953    0.288  0.084   3.500 X-ray          0.004 HHblits     
+ 8e8e8bd122335c184d555451152cb9716406ad96  5mei.111.A    13.953    0.288  0.084   3.500 X-ray          0.013 HHblits     
+ 4280bf9b79f129ad1e08e55285945fd34c169d47  6gq1.69.A     13.953    0.288  0.084   NA    EM             0.000 HHblits     
+ 890194bf12615e9c09fb600b101a27a0f0b22f1a  6gqv.69.A     13.953    0.288  0.084   NA    EM             0.000 HHblits     
+ 9b87909afc9fcc32c9e1f4ad16102184ca55ffd6  6gqb.69.A     13.953    0.288  0.084   NA    EM             0.000 HHblits     
+ 2a04c832a6f852587c0dba3fec222388b2b92650  5ndv.67.A     13.953    0.288  0.084   3.300 X-ray          0.003 HHblits     
+ 1eb82d7a7a9c543dc91a767cbc0dfbd06e898201  5obm.67.A     13.953    0.288  0.084   3.400 X-ray          0.012 HHblits     
+ c9ad8ee2c874d847735fa9309d2121f7e2494361  5ndv.141.A    13.953    0.288  0.084   3.300 X-ray          0.009 HHblits     
+ eaf3eede47fd078a89ff438f5de3cbb85d2559ec  5m1j.33.A     13.953    0.288  0.084   3.300 EM             0.014 HHblits     
+ 5844c8ef4de62a54b6bbdc19f71076948ebcddca  6zvj.1.4       9.302    0.282  0.084   NA    EM             0.006 HHblits     
+ df63f5e66022586f31a77bfa7a2bd200b38fb932  7pb4.1.B       8.571    0.301  0.069   2.490 X-ray          0.004 HHblits     
+ a2825508d4ee0549bd3f784f86cf59c29551597d  4bm5.1.A      21.875    0.290  0.063   4.200 X-ray          0.000 HHblits     
+ f2ad190a33084dd667b2cf1c319d3824b27dca4b  2ckz.2.A      16.129    0.295  0.061   3.200 X-ray          0.003 HHblits     
+ 1e2860a55c872aaaba0f5a0d86792d12fe95d786  8tl7.1.C      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ 69e3ea09bf00e0ccef720c4c519780a5310e0a66  8tl7.1.B      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ 7ae119027f491a26c5f50e7204a67d079be90f05  8tl7.1.A      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ 7ddfd6cc388aa41c0be03e36d46ee74daa389f30  8tl7.1.D      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ 8a3dbca9503e970f55f8135c06ea31de9c33efae  8tl7.1.E      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ da46a18aa068ac900115fe0e26ed5c7228cb4854  8tl7.1.F      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ de5124ddbe5e9573ee51df2053c9bcc4afe778df  8tl7.1.G      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ 70692397f30458c3fe42855b61919eeebe23386c  8tl7.1.H      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ 182676db873125fea0829e0c0ddede4cc43073f3  8tl7.1.I      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ bb45d48d76e3d558f2b67c5b18d54de7caddb738  8tl7.1.K      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+ f5b038f74bf8f75d52992fbc2d1d33ec56a90877  8tl7.1.L      13.636    0.315  0.043   NA    EM             0.000 HHblits     
+

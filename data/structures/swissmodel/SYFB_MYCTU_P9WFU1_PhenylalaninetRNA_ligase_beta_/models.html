@@ -1,0 +1,3021 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../web/css/bootstrap-3.4.1.min.css"/> 
+    <link rel="stylesheet" href="../web/css/master.css"/>
+    <link rel="stylesheet" href="../web/css/jquery.fancybox.css"/>
+    <link rel="stylesheet" href="../web/css/jquery-ui.min.css"/>  
+    <title>SYFB_MYCTU P9WFU1 Phenylalanine--tRNA ligase beta subunit | Models</title>
+    <style>
+      .noborder > thead > tr > th,
+      .noborder > tbody > tr > td {
+        border:0px;
+        padding:0px 5px 0px 5px;
+      }
+      .alignTbl tr[keyseqchain] span[nores] {
+        opacity:.3;
+      }
+
+      @media (min-width: 768px) {
+      #flex-panel-container > #left-panel {
+          width: 450px;
+          min-width: 280px;
+          padding-bottom: 16px;
+        }
+      }
+      dl.dl-models {
+        margin-bottom: 0px;
+      }
+      .dl-models dt, dd {
+        border-top: none;
+        padding: 0;
+      }
+      .dl-models dt {
+        font-size: 85%;
+        line-height: 90%;
+      }
+      .dl-models dd {
+        margin: 2px 0px 8px 12px;
+      }
+
+      .noborder tr > th:first-child, .noborder tr > td:first-child {
+        padding-left: 0px;
+      }
+      .noborder tr > th:last-child, .noborder tr > td:last-child {
+        padding-right: 0px;
+      }
+
+      #annotateDiv {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        z-index: 100;
+        opacity: .7;
+        display: none; 
+        text-align:right;
+      }
+      #annotate {
+        width: 350px; 
+        opacity:.8; 
+        margin-bottom:4px;
+        color: #000
+      }
+      #annotateBtn {
+        margin-right:2px;
+      }
+    </style>
+  </head>
+  <body><div id="alignmentOptions" style="display:none;">
+  <form class="alignmentOptions form form-inline" autocomplete="off">
+    <div id="exportOptions" style="padding-bottom:8px">
+      <b>Export Alignment</b>
+      <br>
+      <button type="button" class="btn btn-sm btn-default" onclick="$('#alignTbl'+$('#currentAlignmentIndex').val()).alignment('exportAlignment', {'format':'FASTA'});">FASTA format</button>
+      <button type="button" class="btn btn-sm btn-default" onclick="$('#alignTbl'+$('#currentAlignmentIndex').val()).alignment('exportAlignment', {'format':'ClustalW'});">Clustal Format</button>
+      <button type="button" class="btn btn-sm btn-default" onclick="$('.alTbl').first().alignment('html2image')">PNG Image</button>
+    </div>
+    <div>
+      <div id="ssOptions">
+        <b>Secondary Structure</b>
+        <br>
+        <label><input type="radio" name="sstype" id="secStruct_none" onclick="$('.alignTbl').alignment('secondaryStructure',{sstype:'none'})"  >None</label> 
+        <label><input type="radio" name="sstype" id="secStruct_dssp" onclick="$('.alignTbl').alignment('secondaryStructure',{sstype:'dssp'})" checked="checked" />DSSP</label>  
+        <label><input type="radio" name="sstype" id="secStruct_psipred" onclick="$('.alignTbl').alignment('secondaryStructure',{sstype:'psipred'})"  />PSIPRED</label>
+        <label><input type="radio" name="sstype" id="secStruct_sspro" onclick="$('.alignTbl').alignment('secondaryStructure',{sstype:'sspro'})"  />SSpro</label>   
+      </div>
+
+      <div id="colourOptions" style="padding-top:8px">
+        <b>Colour Scheme </b>
+        <a class="smng-help" href="/docs/help#colour_schemes"></a>
+        <div id="fadeMismatches">
+        <label class="inline checkbox" style="margin-right:12px;"><input type="checkbox" id="fadeMismatch_cb" onclick="$('.alignTbl').alignment('targetMismatch',{match:this.checked?'fade':null})" checked="checked" />Fade Mismatches</label>
+        <label class="inline checkbox"><input type="checkbox" id="enhanceMismatch_cb" onclick="$('.alignTbl').alignment('targetMismatch',{match:this.checked?'enhance':null})"  />Enhance Mismatches</label></div>
+        
+        
+
+         
+
+        
+        <label class="confLabel"><input title="Per residue confidence colours" type="radio" name="csRadioGroup" id="qmean_localButton" value="qmean_local" checked="checked" />Confidence<sup>gradient</sup></label>
+        <label class="confLabel"><input title="Confidence classes" type="radio" name="csRadioGroup" id="confClassButton" value="confClass" checked="checked" />Confidence<sup>class</sup></label>
+        <label><input type="radio" name="csRadioGroup" id="indelsButton" value="indels"  />Indels</label>
+
+        <label><input type="radio" name="csRadioGroup" id="chainButton" value="chain" >Chain</label>
+        <label><input type="radio" name="csRadioGroup" id="uniqueChainButton" value="uniqueChain" >Unique Chain</label>
+        <label><input type="radio" name="csRadioGroup" id="rainbowButton" value="rainbow" checked="checked">Rainbow</label>
+        <label><input type="radio" name="csRadioGroup" id="secstrucButton" value="secstruc" checked="checked">2&deg; Structure</label>
+
+        
+
+        
+
+
+        
+        <label><input type="radio" name="csRadioGroup" id="clustalButton" value="clustal"  />Clustal</label>
+        <label><input type="radio" name="csRadioGroup" id="hydrophobicButton" value="hydrophobic"  />Hydrophobic</label>
+        <label><input type="radio" name="csRadioGroup" id="sizeButton" value="size"  />Size</label>
+        <label><input type="radio" name="csRadioGroup" id="chargedButton" value="charged"  />Charged</label>
+        <label><input type="radio" name="csRadioGroup" id="polarButton" value="polar"  />Polar</label>
+        <label><input type="radio" name="csRadioGroup" id="prolineButton" value="proline"  />Proline</label>
+        <label><input type="radio" name="csRadioGroup" id="serThrButton" value="serThr"  />Ser/Thr</label>
+        <label><input type="radio" name="csRadioGroup" id="cysButton" value="cysteine"  />Cysteine</label>      
+        <label><input type="radio" name="csRadioGroup" id="aliphaticButton" value="aliphatic"  />Aliphatic</label>
+        <label><input type="radio" name="csRadioGroup" id="aromaticButton" value="aromatic"  />Aromatic</label>
+        
+        <label><input type="radio" name="csRadioGroup" id="noColourButton" value="none"  />No Colour</label> 
+      </div>
+      
+      
+      <label class="checkbox" style="display: none" id="qmeanbraneLbl">
+        <input type="checkbox" id="qmeanbraneCB" onclick="toggleQMEANBrane($(this).prop('checked'))">Use QMEANBrane values
+      </label>
+
+      <table>
+        <tr>
+          <td><div style="margin-right:16px">Background</div></td>
+          <td><div style="height:16px; width:16px; border:1px solid #777;cursor:pointer;background-color:black" onclick="$('#bgColSlider').slider('value',0);"> </div></td>
+          <td style="width:220px"><div id="bgColSlider" style="margin:8px"></div></td>
+          <td><div style="height:16px; width:16px; border:1px solid #777;cursor:pointer;background-color:white" onclick="$('#bgColSlider').slider('value',255);"> </div></td>
+        </tr>
+      </table>
+    </div>
+
+    <div id="viewerSelect" style="padding-top:8px">
+      <b>3D Viewer</b><br>
+      <label><input type="radio" name="3dRG" value="NGL" checked="checked" />NGL</label>
+      <label><input type="radio" name="3dRG" value="PV"  />PV</label>
+    </div>
+  </form>
+  <div id="formattedAlignment" style="width:610px;height:470px;" class="fancy_box_swap">
+    <label class="checkbox-inline" >
+      <select style="height:28px;width:150px;" class="form-control" name="alignmentFormatSelect" id="alignmentFormatSelect" onchange="$('.alignTbl').first().alignment('changeExportFormat')">
+        <option value="FASTA" selected="selected">FASTA</option>
+        <option value="Multi FASTA">Multi FASTA</option>
+        <option value="ClustalW">ClustalW</option>
+      </select>
+    </label>
+    <button type="button" class="btn btn-sm btn-default" onclick="$('.alignTbl').first().alignment('html2image')">PNG</button>
+    <div align="center">
+      <textarea name="formattedAlignmentTextarea" id="formattedAlignmentTextarea" style="margin-top:8px;font-family:'Courier New', Courier, monospace; font-size:12px;width:100%;height:400px"></textarea>
+    </div>
+  </div>
+</div>
+<input type="hidden" id="currentAlignmentIndex" value="">
+
+    <div class="container-fluid" style="padding-left:15px">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom:12px">
+        <a href="https://swissmodel.expasy.org">
+          <img style="height:4rem" src="../web/images/SWISS-MODEL.tsb.svg">
+        </a> 
+        <h3 style="display:inline-block; margin:0px" id="title_BFTuTA">SYFB_MYCTU P9WFU1 Phenylalanine--tRNA ligase beta subunit
+        </h3>
+        <h3 style="display:inline-block; margin:0px;">
+          <small>Created: Jan. 8, 2025, 3:28 p.m. at 15:28</small>
+        </h3>
+      </div>
+    </div>
+      
+    
+    <div id="main-content">
+    
+
+
+<div id="flex-panel-container">
+  <div id="left-panel">
+    <div class="row" style="margin:10px 0">
+      
+
+      
+      <ul class="nav nav-pills" style="margin-bottom:0px; display: inline-block;">
+        <li><a href="templates.html">Templates</a></li>
+        
+        <li class="active"><a href="models.html">Models </a></li>
+      </ul>
+      
+      <div style="font-size:.9em;" class="pull-right">
+        Order by:
+        <select class="form-control"  id="sortby" onchange="sortModels(this.options[this.selectedIndex].value)" style="display:inline;width:150px;margin-bottom:2px;">
+          <option value="gmqe">GMQE</option>
+          <option value="qmeanDisCo">QMEANDisCo</option>
+          <option value="oligo_state">Oligo State</option>
+          <option value="included_ligands">Ligands</option>
+          <option value="sequence_identity">Seq Identity</option>
+          <option value="sequence_similarity">Similarity</option>
+          <option value="coverage">Coverage</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="modelRangeContainer" style="border:1px solid #DDD; border-radius:10px; padding:8px; margin-bottom: 12px; display: none; position:relative">
+      <div id="model-range"></div>
+    </div>
+
+    
+
+    
+
+    <div id="modelSummaryTable"><script>const modelData = {};</script>
+      <div id="mdl_row_01">
+        
+          
+
+<div class="container-fluid" style="padding:0; ">
+  <div id="mdl_left_col_01" style="padding:5px; position: relative">
+    <div class="mLabel" style="position: absolute; 
+     top: -18px; 
+     left: 50%; 
+     transform: translate(-50%, 0%);
+     font-size: 1.3em; 
+     line-height: 1.3rem;
+     color: #555;
+     background: white; 
+     padding: 0px 6px;">Model 01</div>   
+
+     
+    
+    <div style="display: flex; justify-content: space-evenly; align-items: center;">
+      <div style="justify-self: center;">
+        <a style="justify-self: center;" href="#" onclick="if(selectedModels['01']){removeModel('01');}else{loadModel('01');}return false;"><img class="boxedImage" id="modelImage_01"
+        style="height:120px; width:120px;"
+        src="models/01/01.png"
+        title="Click to show / hide model 01 in 3D viewer"></a>
+      </div>
+
+      
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-evenly;">
+        <div style="display: flex; flex-direction: column; gap: 4px 0px; justify-content: center;">
+          
+            
+           
+
+          <div class="dropdown" style="display: flex;	justify-content: center; gap: 4px; flex-wrap: wrap">
+            
+
+            <span>
+              <button class="btn btn-default btn-sm" data-toggle="dropdown">
+                Display files <i class="glyphicon glyphicon-file" ></i>
+              </button>
+              <ul class="dropdown-menu pull-right">
+                <li title="Display coordinates in PDB format"><a href="models/01/model.pdb" target="_blank" tabindex="-1" role="menuitem">PDB Format</a></li>
+                <li title="Display coordinates in ModelCIF format"><a href="models/01/model.cif.gz" target="_blank" tabindex="-1" role="menuitem">ModelCIF format</a></li>
+                                
+                <li title="Display model report"><a href="report.html#model_01" target="_blank" tabindex="-1" role="menuitem">Model Report</a></li>
+                <li title="Display model metadata"><a href="models/01/model.json" target="_blank" tabindex="-1" role="menuitem">Metadata</a></li>
+                
+              </ul>
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 12px">
+      <dl class="dl-models" >
+        <dt>
+          Oligo-State 
+          <a class="smng-help" href="/docs/help#oligo-state"></a>
+        </dt>
+        <dd>
+          Monomer<br>(matching prediction)
+        </dd>
+      </dl>
+      <dl class="dl-models">
+        <dt title="Global Model Quality Estimate">
+          GMQE <a class="smng-help" href="/docs/help#GMQE"></a>
+        </dt>
+        <dd>
+          0.95
+        </dd>
+      </dl>
+       
+      <dl class="dl-models">        
+        <dt>
+          QMEANDisCo Global: <a class="smng-help" href="/docs/help#qmean"></a>
+        </dt>
+        <dd>
+          <span id="avgLocalScore_01">0.92</span> <span class="qmError"> &plusmn; 0.05</span> 
+        </dd>
+      </dl>
+    </div>
+
+    <dl class="dl-models">
+      
+      <dt style="display:none">
+        Ligands <a class="smng-help" href="/docs/help#ligand_modelling"></a>
+      </dt>
+      <dd style="display:none">
+        
+        <script>
+        
+"use strict";
+var plip_bonds = plip_bonds || null;
+var plip_residues = plip_residues || null
+var all_ligands = all_ligands || null
+var extra_residues_selection = extra_residues_selection || []
+var extra_ranges_selection = extra_ranges_selection || []
+function loadPLIPBonds_model_01() {
+    if (plip_bonds == null) {
+        plip_bonds = new PLIP.Bonds();
+    }
+    if (plip_residues == null) {
+        plip_residues = new PLIP.Residues();
+    }
+    if (all_ligands == null) {
+        all_ligands = new PLIP.Ligands();
+    }
+    
+    
+    
+    
+    
+    
+    
+}
+ window.addEventListener("DOMContentLoaded", function() {
+    loadPLIPBonds_model_01();
+ });
+
+var html = ``;
+
+        </script>
+        
+        <span id="showLigandContacts_01" title="Show Ligand Contacts" class="glyphicon glyphicon-chevron-down ignore-toggle-event" style="opacity:.7; margin-left:4px; cursor:pointer;" onclick="$('#ligandContacts_01').toggle();"></span>
+
+        
+      </dd>
+    </dl>
+
+     
+    <div>
+      <small style="font-weight: bold">QMEANDisCo Local</small>
+      <div class="pull-right">
+        <span id="showQmeanLocal_01" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_local_01').toggle(); drawQMEAN('01', true);"></span>
+      </div>
+    </div>
+    <div id="quality_local_01" style="display: none">
+      <a href="#lq-chart-01" rel="lq-01" class="fancybox">
+        <div id="lq-chart-01-thumb"></div>
+      </a>
+    </div>
+    <div>
+      <small style="font-weight: bold">QMEAN Z-Scores</small>
+      <div class="pull-right">
+        <span id="showQmeanGlobal_01" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_global_01').toggle(); drawQMEAN('01', true);"></span>
+      </div>
+    </div>
+    <div class="row" id="quality_global_01" style="display:none">
+      <div class="col-sm-6">
+        <div style="max-width: 220px; margin: auto">
+          <table id="qmeanGlobalTbl01" style="font-size:.8em"></table>
+        </div>
+      </div>
+      <div class="col-sm-6 text-center">
+        <div style="max-width: 220px; margin: auto">
+          <a href="#qn-chart-01" class="fancybox">
+          <div id="qn-chart-01-thumb"></div></a>
+          <div id="qn-chart-01" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- End of Model details section -->
+
+    
+    <div style="margin-top:12px"><small style="font-weight: bold;">Template</small>
+      <div class="pull-right"><span class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#templates_01_2ccf4d69ad17f02ce323de7a28381f918543d44c').toggle();"></span></div>
+    </div>
+    <div style="display: flex; flex-direction: row;">
+      <div style="flex-grow: 3; overflow: auto;">
+        
+                  <a href="models/01/templates/7k9m.1.B.pdb.gz" target="_blank">7k9m.1.B</a>
+              </a>
+        Phenylalanine--tRNA ligase beta subunit<br><small>Crystal structure of the complex of M. tuberculosis PheRS with cognate precursor tRNA and 5'-O-(N-phenylalanyl)sulfamoyl-adenosine</small>
+      </div>
+      <div style="flex-grow: 3;">
+        <dl class="dl-models">
+          <dt>
+            Seq Identity
+          </dt>
+          <dd>
+            100.00%
+          </dd>
+          <dt>
+            Coverage
+          </dt>
+          <dd>
+            <div template_count="1">
+                
+                <div id="range_01_0_0"
+                 seqlength="831"
+                 resFrom="1"
+                 resTo="831"
+                 seqSim="0.61"
+                 title="Model-Template: B 1-831"></div>
+              </div>
+          </dd>
+        </dl>
+      </div>
+
+    </div>
+
+
+    <div id="templates_01_2ccf4d69ad17f02ce323de7a28381f918543d44c" style="overflow: auto; display:none;">
+      <table class="table noborder table-condensed" >
+        <tr>
+          <td width=200><small><b>Biounit Oligo State</b></small></td>
+          <td>Hetero-tetramer</td>
+        </tr>
+        <tr>
+          <td><small><b>QSQE</b></small></td>
+          <td>0.89</td>
+        </tr>
+        <tr>
+          <td>
+            <small><b>Method</b></small>
+          </td>
+          <td>X-ray, 2.50 &Aring;</td>
+        </tr>
+        <tr>
+          <td><small><b>Seq Similarity</b></small></td>
+          <td>0.61</td>
+        </tr>
+        <tr>
+          <td><small><b>Coverage</b></small></td>
+          <td>1.00</td>
+        </tr>
+        <tr>
+          <td><small><b>Range</b></small></td>
+          <td>1-831</td>
+        </tr>
+        
+      </table>
+
+      
+
+      
+      <div style="max-height:420px; overflow-y: auto;">
+        <table class="table noborder table-condensed">
+          <thead>
+            <tr>
+              <th><small>Ligand</small></th>
+              <th><small>Added to Model</small></th>
+              <th><small>Description</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=4" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=5" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=6" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=7" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=11" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=12" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=13" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=17" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=18" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=19" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=20" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=24" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=25" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=26" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=2" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=3" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=8" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=15" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=16" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=21" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="HEXAETHYLENE GLYCOL" ligand_name="P6G"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=9" target="_blank">P6G </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">HEXAETHYLENE GLYCOL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="HEXAETHYLENE GLYCOL" ligand_name="P6G"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=22" target="_blank">P6G </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">HEXAETHYLENE GLYCOL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="TRIETHYLENE GLYCOL" ligand_name="PGE"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=10" target="_blank">PGE </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">TRIETHYLENE GLYCOL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="TRIETHYLENE GLYCOL" ligand_name="PGE"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=23" target="_blank">PGE </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">TRIETHYLENE GLYCOL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="5&#x27;-O-(L-phenylalanylsulfamoyl)adenosine" ligand_name="W5Y"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=1" target="_blank">W5Y </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">5&#x27;-O-(L-phenylalanylsulfamoyl)adenosine</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="5&#x27;-O-(L-phenylalanylsulfamoyl)adenosine" ligand_name="W5Y"><a href="https://swissmodel.expasy.org/templates/7k9m.1?l=14" target="_blank">W5Y </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">5&#x27;-O-(L-phenylalanylsulfamoyl)adenosine</td>
+            </tr>
+          </tbody>
+       </table>
+      </div>
+      
+
+    </div><!-- end templates_01_2ccf4d69ad17f02ce323de7a28381f918543d44c -->
+    
+
+
+    <div style="font-weight:bold; "><small>Model-Template Alignment</small> <span id="showAlignment_01" class="glyphicon glyphicon-chevron-down pull-right" style="opacity:.7; cursor:pointer;"></span></div>
+  </div> <!-- end of templates_modelid_uniqueid -->
+
+</div>
+
+
+
+<div id="alignment_01_B" style="display:none; margin-bottom:12px">
+<table cellpadding="0" cellspacing="0" class="alignTblContainer notranslate">
+    <tr>
+        <td valign="top">
+            <div class="hidden-print">
+                <a id="options_01_B" class="poponthis glyphicon glyphicon-cog" style="color:#333;opacity:.7;margin-right:2px"></a> 
+            </div>
+        </td>
+        <td valign="top">
+            <table class="alignNameTbl" id="alignNameTbl01_B" border="0" cellspacing="0" cellpadding="0"></table>
+        </td>
+        <td valign="top">
+            <table class="alignTbl" id="alignTbl01_B" cols_cookie="mdl_cols" border="0" cellspacing="0" cellpadding="0" ></table>
+            <div id="alignTbl01_B_features" style="z-index:-1; position: absolute;"></div>
+        </td>
+    </tr>
+</table><div id="offscreen_selection" style="position:absolute; top:-5000px; word-break: break-all;"></div>
+
+</div>
+
+
+<script>
+  modelData['01'] = {"model_id":"01","status":"COMPLETED","json_version":"0.1","sequence_similarity":0.6105891466140747,"sequence_identity":100.0,"coverage":1.0,"major_issues":null,"built_with":"ProMod3 3.4.1","smtl_version":"2025-01-08","pdb_release":"2025-01-03","targets":[{"model_chains":[{"psipred":"CCCCHHHHHHHCCCCCCCCCCCHHHHHHHHHHCCCEEEEEEECCCCCCCEEEEEEEEEEECCCCCCCCEEEEEECCCCCEEEEEECCCCCCCCCEEEEECCCCCCCCCCEEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEECCCCCCCCCCHHCCCCCCCEEEEEECCCCCCHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCEEECCCCCCCCEEEEEEECCCCCCCCHHHHHHHHHHCCCCCCCCHHHHHHHHHHHHCCCCCCCCCCCCCCCEEEEECCCCCEEEECCCCEEECCCCCEEEECCCCCEEEECCCCCCCEEEECCCCEEEEEEEECCHHHHHHHHHHHCCCCHHHHHHCCCCCHHHHHHHHHHHHHHHHHHCCCEEECEEEEECCCCCCCCCCCCCEEECCCHHHHHCCCCCCHHHHHHHHHHCCCEEEECCCEEEEECCCCCCCCCCCCHHHHHHHHHCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHHHHCCCCEECCCCCCCHHHHHHCCCCCCCCCCCEEEEECCCCCCCCCHHCCHHHHHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCCCCCCCCCCCCCHHHHHCCCCCCCCCEEEEEEECCCCCCCCCCCCCCCCHHHHHHHHHHHHHHCCCCEEECCCCCCCCCCCCEEEEEECCEEEEEEEEECHHHHHHCCCCCCEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEEEEECCCCCHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","dssp":"CEEEHHHHHHHHHHHSTTCCCCHHHHHHHHHHHTCEEEEEEECCCCBSCEEEEEEEEEEEECSSSSCEEEEEEECSTTCEEEEEECCCSCCTTCEEEEECTTCEETTTEECCCEEETTEEESSEECCTTTTTSSCCCSSCCEECTTSSCTTCBHHHHHTTTCEEEEEECCTTCGGGSSHHHHHHHHHHHTTCCCCCTTCTTTSCCCCCCSCSSCEEECGGGCCCEEEEEEEESCCTTCCCCHHHHHHHHHTTCCCCCHHHHHHHHHHHHHSCCEEEEEGGGCCSCEEEEECCTTCEEEBTTSCEEECCTTCEEEECSSSEEEETTTEEBTTTBCCTTCCSEEEEEEECCHHHHHHHHHHHTCCCHHHHHHHTCCCGGGHHHHHHHHHHHHHHHHCCEECSCCEEECTTTTCCCCCCCCEEEETTHHHHHHTSCCCTTHHHHHHHHTTCEEEEETTEEEEECCTTCTTCCSHHHHHHHHHHHHCGGGSCCCCCCCCCCCCCCHHHHHHHHHHHHHHHTTCEECCCCSBCCTTHHHHHTCCTTCGGGCCCBCSSCSSTTCCBBCSSSHHHHHHHHHHHHHTTCCSEEEEEEEECCBCCTTCCCCCCCCSSSCCCHHHHHHHHHHSCBCCEEEEEEEESEEECCBTTBSCEECCHHHHHHHHHHHHHHHTCCCEEEECCCTTEEEEEEEEEEETTEEEEEEEEECHHHHHHHTCCTTCEEEEEEGGGSCCCCCCCCCCCCCSCEEEEEEEEEEETTSCHHHHHHHHHHHHGGGEEEEEEEEEECSTTTCTTEEEEEEEEEEECSSSCCCHHHHHHHHHHHHHHHHHHHCCEECC","qmean":[0.87,0.85,0.96,0.97,0.95,0.94,0.94,0.95,0.88,0.91,0.96,0.95,0.94,0.92,0.89,0.92,0.89,0.9,0.89,0.92,0.92,0.9,0.93,0.93,0.89,0.93,0.91,0.9,0.95,0.94,0.93,0.87,0.95,0.97,0.91,0.91,0.93,0.9,0.9,0.92,0.93,0.93,0.93,0.92,0.93,0.94,0.92,0.95,0.97,0.97,0.95,0.96,0.97,0.89,0.94,0.93,0.9,0.91,0.88,0.88,0.89,0.86,0.8,0.84,0.71,0.81,0.88,0.91,0.87,0.94,0.95,0.93,0.95,0.93,0.94,0.95,0.9,0.79,0.88,0.91,0.86,0.89,0.94,0.94,0.98,0.94,0.96,0.94,0.94,0.96,0.96,0.93,0.94,0.94,0.95,0.99,0.99,0.99,0.98,0.97,0.97,0.98,0.98,0.95,0.95,0.95,0.92,0.89,0.91,0.94,0.94,0.93,0.91,0.81,0.8,0.89,0.88,0.83,0.84,0.85,0.92,0.93,0.96,0.95,0.98,1.0,0.98,0.96,0.95,0.94,0.97,0.93,0.95,0.91,0.87,0.78,0.78,0.9,0.95,0.98,0.98,0.98,0.96,0.96,0.94,0.94,0.95,0.96,0.91,0.95,0.96,0.96,0.94,0.96,0.95,0.94,0.95,0.96,0.95,0.94,0.92,0.94,0.96,0.97,0.94,0.91,0.93,0.95,0.94,0.94,0.92,0.92,0.89,0.96,0.97,0.99,0.96,0.98,0.99,0.9,0.98,0.97,1.0,0.9,0.94,0.96,0.97,0.98,0.98,0.95,0.93,0.93,0.91,0.93,0.94,0.93,0.95,0.95,0.89,0.83,0.82,0.81,0.69,0.68,0.88,0.92,0.93,0.92,0.87,0.94,0.95,0.96,0.9,0.93,0.93,0.93,0.93,0.89,0.9,0.91,0.96,0.96,0.96,0.91,0.92,0.96,0.96,0.95,0.89,0.96,0.95,0.92,0.94,0.92,0.9,0.89,0.83,0.91,0.93,0.94,0.96,0.91,0.91,0.95,0.9,0.87,0.89,0.94,0.92,0.94,0.97,0.94,0.91,0.82,0.9,0.83,0.88,0.94,0.95,0.91,0.93,0.96,0.96,0.94,0.96,0.97,0.95,0.98,0.94,0.96,0.98,0.97,0.99,0.95,0.93,0.96,0.92,0.93,0.88,0.9,0.89,0.93,0.91,0.94,0.93,0.93,0.94,0.95,0.89,0.94,0.93,0.85,0.82,0.88,0.88,0.9,0.93,0.92,0.94,0.91,0.89,0.91,0.9,0.87,0.86,0.86,0.9,0.89,0.91,0.94,0.93,0.96,0.95,0.96,0.95,0.92,0.86,0.85,0.9,0.95,0.96,0.97,0.95,0.96,0.97,0.96,0.94,0.96,0.96,0.95,0.93,0.96,0.91,0.93,0.8,0.81,0.83,0.89,0.93,0.93,0.95,0.94,0.94,0.9,0.97,0.97,0.95,0.92,0.95,0.95,0.96,0.96,0.96,0.94,0.86,0.93,0.9,0.86,0.87,0.92,0.9,0.93,0.93,0.93,0.91,0.96,0.95,0.91,0.92,0.95,0.92,0.9,0.95,0.97,0.95,0.97,0.95,0.93,0.93,0.94,0.95,0.97,0.95,0.94,0.88,0.97,0.97,0.87,0.95,0.94,0.96,0.93,0.94,0.95,0.96,0.9,0.88,0.95,0.92,0.95,0.95,0.95,0.95,0.94,0.92,0.9,0.93,0.86,0.87,0.89,0.9,0.85,0.89,0.89,0.94,0.95,0.93,0.93,0.91,0.87,0.9,0.92,0.91,0.9,0.93,0.96,0.92,0.86,0.91,0.94,0.92,0.92,0.91,0.92,0.91,0.86,0.93,0.93,0.95,0.96,0.87,0.9,0.96,0.97,0.92,0.95,0.97,0.98,0.95,0.94,0.91,0.88,0.87,0.87,0.89,0.92,0.92,0.92,0.94,0.94,0.96,0.97,0.95,0.91,0.91,0.96,0.94,0.95,0.87,0.9,0.94,0.95,0.94,0.96,0.97,0.93,0.94,0.98,0.96,0.9,0.97,0.94,0.96,0.93,0.85,0.89,0.87,0.88,0.79,0.78,0.78,0.78,0.73,0.74,0.67,0.74,0.81,0.69,0.77,0.85,0.87,0.92,0.93,0.86,0.87,0.87,0.87,0.85,0.93,0.93,0.94,0.85,0.92,0.93,0.92,0.82,0.92,0.94,0.95,0.95,0.91,0.94,0.94,0.97,0.96,0.97,0.96,0.97,0.98,0.98,0.96,0.98,0.96,0.95,0.96,0.95,0.97,0.94,0.85,0.86,0.86,0.91,0.93,0.92,0.91,0.93,0.96,0.96,0.9,0.95,0.9,0.88,0.88,0.86,0.85,0.86,0.89,0.91,0.96,0.94,0.97,1.0,1.0,1.0,0.99,0.98,0.99,0.99,0.97,0.96,0.93,0.98,0.95,0.96,0.85,0.91,0.94,0.91,0.82,0.88,0.92,0.95,0.96,0.98,0.98,0.96,0.96,0.99,0.96,0.99,0.95,1.0,1.0,0.95,0.97,0.91,0.81,0.76,0.81,0.76,0.86,0.85,0.79,0.86,0.81,0.82,0.78,0.82,0.75,0.75,0.86,0.85,0.86,0.85,0.84,0.87,0.91,0.84,0.85,0.84,0.89,0.87,0.91,0.96,0.89,0.94,0.98,0.94,0.95,0.98,0.99,0.99,0.98,0.97,0.99,0.98,0.97,0.91,0.92,0.96,0.84,0.85,0.8,0.74,0.85,0.9,0.94,0.91,0.99,0.98,0.94,0.98,0.96,0.94,0.97,0.94,0.93,0.98,0.97,0.89,0.94,0.94,0.96,0.87,0.96,0.94,0.88,0.94,0.91,0.94,0.93,0.93,0.88,0.93,0.96,0.91,0.95,0.97,0.99,0.96,0.95,0.96,0.94,0.9,0.98,0.96,0.92,0.96,0.93,0.95,0.94,0.89,0.93,0.95,0.97,0.98,0.95,0.99,0.98,0.95,0.98,0.95,0.96,0.96,0.96,0.94,0.91,0.87,0.93,0.94,0.94,0.96,0.92,0.98,0.97,1.0,0.99,0.98,0.95,0.97,0.96,0.96,0.94,0.97,0.94,0.94,0.93,0.85,0.82,0.89,0.81,0.79,0.76,0.7,0.62,0.75,0.83,0.84,0.86,0.91,0.95,0.94,0.93,0.88,0.91,0.93,0.92,0.93,0.95,0.94,0.93,0.9,0.87,0.9,0.92,0.94,0.88,0.96,0.95,0.96,0.94,0.98,0.95,0.87,0.97,0.95,0.95,0.95,0.9,0.91,0.92,0.9,0.92,0.92,0.92,0.89,0.81,0.87,0.87,0.84,0.87,0.85,0.85,0.82,0.87,0.87,0.83,0.84,0.86,0.88,0.89,0.93,0.93,0.92,0.94,0.93,0.88,0.92,0.87,0.91,0.9,0.89,0.85,0.9,0.9,0.88,0.86,0.85,0.87,0.92,0.89,0.9,0.94,0.88,0.89,0.92,0.95,0.91,0.86,0.91,0.94,0.92,0.87,0.88,0.92,0.92,0.94,0.91,0.9,0.74,0.74],"id":"B","templates":[{"id":"2ccf4d69ad17f02ce323de7a28381f918543d44c","pdb_id":"7k9m","chain":"B","method":"X-RAY DIFFRACTION","short_method":"X-ray","coverage":1.0,"resolution":2.5,"description":"Phenylalanine--tRNA ligase beta subunit","assembly_id":1,"score":2.1848652362823486,"found_by":"HHblits","oligo_state":"homo-dimer","comment":"e_value=2e-187, p_value=1e-191, score=1704.5, ss_score=103.5, prob=100, sw_version=3.2.0, gmqe_dist_const=0.9608988761901855, gmqe_reduced=0.06751049309968948, gmqe_cb_packing=-0.08176235854625702, gmqe_torsion=-0.46039149165153503, gmqe_ss_agreement=0.6999680995941162, gmqe_coverage=0.9987966418266296, gmqe_seq_id=100.0, gmqe_seq_sim=0.6106827259063721, gmqe_n_insertions=1, gmqe_n_deletions=0, gmqe_seqres_length=831, gmqe_seqres_coverage=1.0, gmqe_profile_aln_score=1704.5, gmqe_avg_entropy=2.029780387878418","offset":4,"afdb_struct_serve_idx":null,"oligo_state_bu":"hetero-tetramer","oligo_state_bu_full":"hetero-2-2-mer","is_whole_complex":"","qualified_name":"7k9m.1.B","biounit_name":"7k9m.1","gmqe":1.0,"sequence_identity":100.0,"sequence_similarity":0.6105891466140747,"alignment":{"target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVDVTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIERSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG","template_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVDVTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIERSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG"},"annotation":{"dssp":"CTTEEEEEHHHHHHHHHHHSTTCCCCHHHHHHHHHHHTCEEEEEEECCCCBSCEEEEEEEEEEEECSSSSCEEEEEEECSTTCEEEEEECCCSCCTTCEEEEECTTCEETTTEECCCEEETTEEESSEECCTTTTTSSCCCSSCCEECTTSCCTTCBHHHHHTTTCEEEEEECCTTCGGGSSHHHHHHHHHHHTTCCCCCTTSSCCXCCCCCCSCSSCEEECGGGCCCEEEEEEEECCCTTCCCCHHHHHHHHHTTCCCCCHHHHHHHHHHHHHSCCCEEEEGGGCCSCEEEEECCTTCEEEBTTSCEEECCTTCEEEECSSSEEEETTTEEBSSSBCCTTCCSEEEEEEECCHHHHHHHHHHHTCCCHHHHHHHTCCCGGGHHHHHHHHHHHHHHHHCCEECSCCEEECTTTTCCCCCCCCEEEETTHHHHHHTSCCCTTHHHHHHHHTTCEEEEETTEEEEECCTTCTTCCSHHHHHHHHHHHHCGGGSCCCCCCCCCCCCCCHHHHHHHHHHHHHHHTTCEECCCCSBCCTTHHHHTTCCTTCGGGCCCBBSSCSSTTCCBBCSSSHHHHHHHHHHHHHTTCCSEEEEEEEECCBCCTTCCCCCCCCSSSCCCHHHHHHHHHHSCBCCEEEEEEEESEEECCBTTBSCEECCHHHHHHHHHHHHHHHTCCCEEEECCCTTEEEEEEEEEEETTEEEEEEEEECHHHHHHHTCCTTCEEEEEEGGGSCCCCCCCCCCCCCSCEEEEEEEEEEETTSCHHHHHHHHHHHHGGGEEEEEEEEEECSTTTCTTEEEEEEEEEEECSSSCCCHHHHHHHHHHHHHHHHHHHCCEECC","psipred":"CCCCCCCCHHHHHHHHCCCCCCCCCCHHHHHHHHHHCCCEEEEEEECCCCCCCEEEEEEEEEEECCCCCCCCEEEEEEECCCCEEEEEECCCCCCCCCEEEEECCCCCCCCCCEEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEECCCCCCCCCCCCCCCCCCCEEEEEECCCCCCHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCEEECCCCCCCCEEEEEEECCCCCCCCHHHHHHHHHHCCCCCCCHHHHHHHHHHHHHCCCCCCCCCCCCCCCEEEEECCCCCEEEECCCCEEECCCCCEEEECCCCCEEEEECCCCCCCEECCCCCEEEEEEEEECHHHHHHHHHHHCCCCHHHHHHCCCCCHHHHHHHHHHHHHHHHHHCCCEEECEEEEECCCCCCCCCCCCCEEECCCHHHHHCCCCCCHHHHHHHHHHCCCEEEECCCEEEEECCCCCCCCCCCCHHHHHHHHHCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHHHHCCCCEEECCCCCCHHHHHHCCCCCCCCCCCEEEEECCCCCCHHHHHHCHHHHHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCCCCCCCCCCCCCHHHHHCCCCCCCCCEEEEEEECCCCCCCCCCCCCCCCHHHHHHHHHHHHHHCCCCEEECCCCCCCCCCCCEEEEEECCEEEEEEEEECHHHHHHCCCCCCEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEEEEECCCCCHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","sspro":"CCCCEECCCCEEEEEEEECCCCCCCCCHHHHHHHHHHCCECCCCCCCCCCCCCEEECCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCHHCCEEEEEECEEEEECCCCCCCCEEEEEHHHHHCCCCCHHHHHHCCCCHHHHHCCCCCCCCCCCHHHHHHCCCCCCCHHHHHHHCCHHHCEEEEECCCCHHHCCCCCCCCCCCCCCCCCCCCCCCCCCCEEEEECCCCHHHHCCCCCCCCCHHCCCCHHHHHHHHHCCCCCCCHHHHHHHHHHHHCCCCCEEEEHHHCECEEEEEECCCCCEEEECCCCEEECCCCCEEEHCEEEEEEECCCEEECCCECCCCCCEEEEEEEECCHHHHHHHHHHCCCCCHHHHHHHHCCCCCCHHHHHHHHHHHHHHHCCCEEECCCEECCCCCCCCCCCCCCEEECHHHHHHHHCCCCCHHHHHHHHHHCCCEEECCCCCEEEECCCCCCCCCCHHHHHHHHHHHHCHHHCCCCCCCCCCCCCCCCCCCCCHHHHHHHHHCCCEEEECCCCCCCCHHHHCCCECCCCCCCCEEEECCCCCCCHHHHHHHHHHHHHHHHHHHHCCCCCEEEEEEEEEECCCCCECCCEEEECCCCCCCCHHHHHCCCCCCCCCEEEEEECCCCCCCCCCCCCCCCEHHCHHHHHHEEECCCCCEEEEECCCECCCCCCCEEEEEECCCCCCCCCCCCHHHHHHCCCCCCCEEEEEECHCCCCCCCCCCCCCCCCCCEEEEECCCEECCCCHHHHHHHHHHHHCCCEEEEEEEECCCCCCCCCCEECCEEEEEECCCCCCCCHHHHHHHHHHHHHHHHCCHHHHHCC"},"title":"Crystal structure of the complex of M. tuberculosis PheRS with cognate precursor tRNA and 5'-O-(N-phenylalanyl)sulfamoyl-adenosine","residue_from":"1","residue_to":"831","trg_seq_length":831}],"residue_from":"1","residue_to":"831"}],"id":"B","target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVDVTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIERSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG"}],"qsqe":0.8921444736246031,"oligo_state":"monomer","oligo_based_on":"prediction","gmqe":0.9459387764227458,"qmean_global":{"qmean4_norm_score":0.8032837329924405,"qmean4_z_score":1.1349390967942168,"qmean6_norm_score":0.7941904596119199,"qmean6_z_score":0.5726423811810442,"interaction_norm_score":-0.0226748309096294,"interaction_z_score":0.5153803990224802,"cbeta_norm_score":-0.01020123342709942,"cbeta_z_score":-0.4643923334201162,"packing_norm_score":-0.33961410363291356,"packing_z_score":-0.33238673432270277,"torsion_norm_score":-0.4479326527936853,"torsion_z_score":1.2680564336211169,"ss_agreement_norm_score":0.700216997966224,"ss_agreement_z_score":0.944169393458893,"acc_agreement_norm_score":0.6040914560770156,"acc_agreement_z_score":-1.0177006017550907,"avg_local_score":0.9174399349823021,"avg_local_score_error":0.053},"included_ligands":[],"excluded_ligands":[{"name":"GOL","description":"GLYCEROL","ligands":[{"exclusion_reason":"Not biologically relevant.","number":"4"},{"exclusion_reason":"Not biologically relevant.","number":"5"},{"exclusion_reason":"Not biologically relevant.","number":"6"},{"exclusion_reason":"Not biologically relevant.","number":"7"},{"exclusion_reason":"Not biologically relevant.","number":"11"},{"exclusion_reason":"Not biologically relevant.","number":"12"},{"exclusion_reason":"Not biologically relevant.","number":"13"},{"exclusion_reason":"Not biologically relevant.","number":"17"},{"exclusion_reason":"Not biologically relevant.","number":"18"},{"exclusion_reason":"Not biologically relevant.","number":"19"},{"exclusion_reason":"Not biologically relevant.","number":"20"},{"exclusion_reason":"Not biologically relevant.","number":"24"},{"exclusion_reason":"Not biologically relevant.","number":"25"},{"exclusion_reason":"Not biologically relevant.","number":"26"}]},{"name":"MG","description":"MAGNESIUM ION","ligands":[{"exclusion_reason":"Binding site not conserved.","number":"2"},{"exclusion_reason":"Binding site not conserved.","number":"3"},{"exclusion_reason":"Binding site not conserved.","number":"8"},{"exclusion_reason":"Binding site not conserved.","number":"15"},{"exclusion_reason":"Binding site not conserved.","number":"16"},{"exclusion_reason":"Binding site not conserved.","number":"21"}]},{"name":"P6G","description":"HEXAETHYLENE GLYCOL","ligands":[{"exclusion_reason":"Not biologically relevant.","number":"9"},{"exclusion_reason":"Not biologically relevant.","number":"22"}]},{"name":"PGE","description":"TRIETHYLENE GLYCOL","ligands":[{"exclusion_reason":"Not biologically relevant.","number":"10"},{"exclusion_reason":"Not biologically relevant.","number":"23"}]},{"name":"W5Y","description":"5'-O-(L-phenylalanylsulfamoyl)adenosine","ligands":[{"exclusion_reason":"Binding site not conserved.","number":"1"},{"exclusion_reason":"Binding site not conserved.","number":"14"}]}],"plip_ligands":{}};
+  if(modelData['01'].targets[0].model_chains[0].qmeanbrane)
+    document.getElementById('qmeanbraneLbl').style.display='inline';
+
+</script>
+
+        </div>
+        <div id="mdl_row_03">
+        
+          
+
+<div class="container-fluid" style="padding:0; ">
+  <div id="mdl_left_col_03" style="padding:5px; position: relative">
+    <div class="mLabel" style="position: absolute; 
+     top: -18px; 
+     left: 50%; 
+     transform: translate(-50%, 0%);
+     font-size: 1.3em; 
+     line-height: 1.3rem;
+     color: #555;
+     background: white; 
+     padding: 0px 6px;">Model 03</div>   
+
+     
+    
+    <div style="display: flex; justify-content: space-evenly; align-items: center;">
+      <div style="justify-self: center;">
+        <a style="justify-self: center;" href="#" onclick="if(selectedModels['03']){removeModel('03');}else{loadModel('03');}return false;"><img class="boxedImage" id="modelImage_03"
+        style="height:120px; width:120px;"
+        src="models/03/03.png"
+        title="Click to show / hide model 03 in 3D viewer"></a>
+      </div>
+
+      
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-evenly;">
+        <div style="display: flex; flex-direction: column; gap: 4px 0px; justify-content: center;">
+          
+            
+           
+
+          <div class="dropdown" style="display: flex;	justify-content: center; gap: 4px; flex-wrap: wrap">
+            
+
+            <span>
+              <button class="btn btn-default btn-sm" data-toggle="dropdown">
+                Display files <i class="glyphicon glyphicon-file" ></i>
+              </button>
+              <ul class="dropdown-menu pull-right">
+                <li title="Display coordinates in PDB format"><a href="models/03/model.pdb" target="_blank" tabindex="-1" role="menuitem">PDB Format</a></li>
+                <li title="Display coordinates in ModelCIF format"><a href="models/03/model.cif.gz" target="_blank" tabindex="-1" role="menuitem">ModelCIF format</a></li>
+                                
+                <li title="Display model report"><a href="report.html#model_03" target="_blank" tabindex="-1" role="menuitem">Model Report</a></li>
+                <li title="Display model metadata"><a href="models/03/model.json" target="_blank" tabindex="-1" role="menuitem">Metadata</a></li>
+                
+              </ul>
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 12px">
+      <dl class="dl-models" >
+        <dt>
+          Oligo-State 
+          <a class="smng-help" href="/docs/help#oligo-state"></a>
+        </dt>
+        <dd>
+          Monomer<br>
+        </dd>
+      </dl>
+      <dl class="dl-models">
+        <dt title="Global Model Quality Estimate">
+          GMQE <a class="smng-help" href="/docs/help#GMQE"></a>
+        </dt>
+        <dd>
+          0.20
+        </dd>
+      </dl>
+       
+      <dl class="dl-models">        
+        <dt>
+          QMEANDisCo Global: <a class="smng-help" href="/docs/help#qmean"></a>
+        </dt>
+        <dd>
+          <span id="avgLocalScore_03">0.45</span> <span class="qmError"> &plusmn; 0.05</span> 
+        </dd>
+      </dl>
+    </div>
+
+    <dl class="dl-models">
+      
+      <dt style="display:none">
+        Ligands <a class="smng-help" href="/docs/help#ligand_modelling"></a>
+      </dt>
+      <dd style="display:none">
+        
+        <script>
+        
+"use strict";
+var plip_bonds = plip_bonds || null;
+var plip_residues = plip_residues || null
+var all_ligands = all_ligands || null
+var extra_residues_selection = extra_residues_selection || []
+var extra_ranges_selection = extra_ranges_selection || []
+function loadPLIPBonds_model_03() {
+    if (plip_bonds == null) {
+        plip_bonds = new PLIP.Bonds();
+    }
+    if (plip_residues == null) {
+        plip_residues = new PLIP.Residues();
+    }
+    if (all_ligands == null) {
+        all_ligands = new PLIP.Ligands();
+    }
+    
+    
+    
+    
+    
+    
+    
+}
+ window.addEventListener("DOMContentLoaded", function() {
+    loadPLIPBonds_model_03();
+ });
+
+var html = ``;
+
+        </script>
+        
+        <span id="showLigandContacts_03" title="Show Ligand Contacts" class="glyphicon glyphicon-chevron-down ignore-toggle-event" style="opacity:.7; margin-left:4px; cursor:pointer;" onclick="$('#ligandContacts_03').toggle();"></span>
+
+        
+      </dd>
+    </dl>
+
+     
+    <div>
+      <small style="font-weight: bold">QMEANDisCo Local</small>
+      <div class="pull-right">
+        <span id="showQmeanLocal_03" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_local_03').toggle(); drawQMEAN('03', true);"></span>
+      </div>
+    </div>
+    <div id="quality_local_03" style="display: none">
+      <a href="#lq-chart-03" rel="lq-03" class="fancybox">
+        <div id="lq-chart-03-thumb"></div>
+      </a>
+    </div>
+    <div>
+      <small style="font-weight: bold">QMEAN Z-Scores</small>
+      <div class="pull-right">
+        <span id="showQmeanGlobal_03" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_global_03').toggle(); drawQMEAN('03', true);"></span>
+      </div>
+    </div>
+    <div class="row" id="quality_global_03" style="display:none">
+      <div class="col-sm-6">
+        <div style="max-width: 220px; margin: auto">
+          <table id="qmeanGlobalTbl03" style="font-size:.8em"></table>
+        </div>
+      </div>
+      <div class="col-sm-6 text-center">
+        <div style="max-width: 220px; margin: auto">
+          <a href="#qn-chart-03" class="fancybox">
+          <div id="qn-chart-03-thumb"></div></a>
+          <div id="qn-chart-03" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- End of Model details section -->
+
+    
+    <div style="margin-top:12px"><small style="font-weight: bold;">Template</small>
+      <div class="pull-right"><span class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#templates_03_e7c4c2fa9b904caee310c9d306e321b3608d6a3d').toggle();"></span></div>
+    </div>
+    <div style="display: flex; flex-direction: row;">
+      <div style="flex-grow: 3; overflow: auto;">
+        
+                  <a href="models/03/templates/5mgh.1.A.pdb.gz" target="_blank">5mgh.1.A</a>
+              </a>
+        Phenylalanine--tRNA ligase, mitochondrial<br><small>Crystal structure of pathogenic mutants of human mitochodnrial PheRS</small>
+      </div>
+      <div style="flex-grow: 3;">
+        <dl class="dl-models">
+          <dt>
+            Seq Identity
+          </dt>
+          <dd>
+            15.95%
+          </dd>
+          <dt>
+            Coverage
+          </dt>
+          <dd>
+            <div template_count="1">
+                
+                <div id="range_03_0_0"
+                 seqlength="831"
+                 resFrom="475"
+                 resTo="831"
+                 seqSim="0.28"
+                 title="Model-Template: A 475-831"></div>
+              </div>
+          </dd>
+        </dl>
+      </div>
+
+    </div>
+
+
+    <div id="templates_03_e7c4c2fa9b904caee310c9d306e321b3608d6a3d" style="overflow: auto; display:none;">
+      <table class="table noborder table-condensed" >
+        <tr>
+          <td width=200><small><b>Biounit Oligo State</b></small></td>
+          <td>Monomer</td>
+        </tr>
+        <tr>
+          <td><small><b>QSQE</b></small></td>
+          <td>0.00</td>
+        </tr>
+        <tr>
+          <td>
+            <small><b>Method</b></small>
+          </td>
+          <td>X-ray, 1.87 &Aring;</td>
+        </tr>
+        <tr>
+          <td><small><b>Seq Similarity</b></small></td>
+          <td>0.28</td>
+        </tr>
+        <tr>
+          <td><small><b>Coverage</b></small></td>
+          <td>0.39</td>
+        </tr>
+        <tr>
+          <td><small><b>Range</b></small></td>
+          <td>475-831</td>
+        </tr>
+        
+      </table>
+
+      
+
+      
+      <div style="max-height:420px; overflow-y: auto;">
+        <table class="table noborder table-condensed">
+          <thead>
+            <tr>
+              <th><small>Ligand</small></th>
+              <th><small>Added to Model</small></th>
+              <th><small>Description</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td>
+                <div class="ligand_summary" title="PHENYLALANINE" ligand_name="PHE"><a href="https://swissmodel.expasy.org/templates/5mgh.1?l=1" target="_blank">PHE </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">PHENYLALANINE</td>
+            </tr>
+          </tbody>
+       </table>
+      </div>
+      
+
+    </div><!-- end templates_03_e7c4c2fa9b904caee310c9d306e321b3608d6a3d -->
+    
+
+
+    <div style="font-weight:bold; "><small>Model-Template Alignment</small> <span id="showAlignment_03" class="glyphicon glyphicon-chevron-down pull-right" style="opacity:.7; cursor:pointer;"></span></div>
+  </div> <!-- end of templates_modelid_uniqueid -->
+
+</div>
+
+
+
+<div id="alignment_03_A" style="display:none; margin-bottom:12px">
+<table cellpadding="0" cellspacing="0" class="alignTblContainer notranslate">
+    <tr>
+        <td valign="top">
+            <div class="hidden-print">
+                <a id="options_03_A" class="poponthis glyphicon glyphicon-cog" style="color:#333;opacity:.7;margin-right:2px"></a> 
+            </div>
+        </td>
+        <td valign="top">
+            <table class="alignNameTbl" id="alignNameTbl03_A" border="0" cellspacing="0" cellpadding="0"></table>
+        </td>
+        <td valign="top">
+            <table class="alignTbl" id="alignTbl03_A" cols_cookie="mdl_cols" border="0" cellspacing="0" cellpadding="0" ></table>
+            <div id="alignTbl03_A_features" style="z-index:-1; position: absolute;"></div>
+        </td>
+    </tr>
+</table><div id="offscreen_selection" style="position:absolute; top:-5000px; word-break: break-all;"></div>
+
+</div>
+
+
+<script>
+  modelData['03'] = {"model_id":"03","status":"COMPLETED","json_version":"0.1","sequence_similarity":0.2760736644268036,"sequence_identity":15.950920104980469,"coverage":0.3922984302043915,"major_issues":null,"built_with":"ProMod3 3.4.1","smtl_version":"2025-01-08","pdb_release":"2025-01-03","targets":[{"model_chains":[{"psipred":"CCCCHHHHHHHCCCCCCCCCCCHHHHHHHHHHCCCEEEEEEECCCCCCCEEEEEEEEEEECCCCCCCCEEEEEECCCCCEEEEEECCCCCCCCCEEEEECCCCCCCCCCEEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEECCCCCCCCCCHHCCCCCCCEEEEEECCCCCCHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCEEECCCCCCCCEEEEEEECCCCCCCCHHHHHHHHHHCCCCCCCCHHHHHHHHHHHHCCCCCCCCCCCCCCCEEEEECCCCCEEEECCCCEEECCCCCEEEECCCCCEEEECCCCCCCEEEECCCCEEEEEEEECCHHHHHHHHHHHCCCCHHHHHHCCCCCHHHHHHHHHHHHHHHHHHCCCEEECEEEEECCCCCCCCCCCCCEEECCCHHHHHCCCCCCHHHHHHHHHHCCCEEEECCCEEEEECCCCCCCCCCCCHHHHHHHHHC---CCCCCCCCCCCCCC----CCCCCHHHHHHHHHHHHHHHC--------CCCEECC-CCCCCH-HHHHHCCCCCCCCCCCEEEEECCCCCCC-CCHHCCHHHHHHHHHHH----------------------HHHCCCCCEEEEEEEEEECCCCCCCCCCCCCCCCCCCCCHHHHHCCCCCCCCCEEEEEEECCCC-CCCCCCCCCCCCHHHHHHHHHHHHHHCCCC---EEECCCCCCCCCCCCEEEEEECCEEEEEEEE--ECHHHHHHCCCCCC-EEEEEEECCCCCC---------------------------CCCCCCCCCCCCCCCCEEEEEEECCC-CCHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","dssp":"------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------CEETTEECCCSCCCTTSSSCCCCCTTSHHHHHHHHHHHHTTTSCCBCCCCCCEEETHHHHHTTCCSSTTTCGGGCTTSSCBSSSEEECSSSGGGHHHHHHSCGGGCBTTEEECCHHHHTTTSSCSSCCCSSCTTCCSSCSTTCCSCCSSCSTTSCSBCCCCCCSSCSSBCTTHHHHHHHHHHHHHHHHGGGSCCCEEEEEECCTTCSSEEEEEEEETTEEEEEEEEECCGGGTTTTCCSCEEEEEECTTTTTTTSCTTSCCCCCCCCEEEEEEEECCSSCCHHHHHHHHHHHHGGGEEEEEEEEEECCTTTSSCCCEEEEEEEECCSSSCCCHHHHHHHHHHHHHHHHHHSCCEECC","qmean":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.39,0.5,0.55,0.26,0.27,0.25,0.26,0.35,0.3,0.33,0.27,0.26,0.32,0.48,0.53,0.56,0.52,0.51,0.47,0.4,0.24,0.28,0.35,0.41,0.27,0.61,0.37,0.42,0.48,0.47,0.51,0.48,0.5,0.55,0.62,0.6,0.7,0.49,0.54,0.36,0.34,0.15,0.24,0.28,0.36,0.48,0.51,0.47,0.42,0.21,0.41,0.5,0.48,0.54,0.49,0.5,0.56,0.52,0.52,0.54,0.5,0.45,0.61,0.54,0.49,0.54,0.5,0.26,0.41,0.38,0.33,0.39,0.4,0.32,0.31,0.41,0.43,0.43,0.4,0.46,0.42,0.39,0.39,0.3,0.42,0.44,0.47,0.53,0.57,0.5,0.43,0.4,0.49,0.54,0.39,0.33,0.4,0.53,0.39,0.31,0.34,0.28,0.36,0.21,0.27,0.37,0.29,0.3,0.55,0.52,0.46,0.41,0.38,0.45,0.41,0.27,0.33,0.34,0.27,0.3,0.31,0.37,0.26,0.19,0.15,0.29,0.37,0.32,0.3,0.42,0.24,0.33,0.36,0.45,0.39,0.27,0.38,0.34,0.33,0.27,0.26,0.26,0.32,0.12,0.15,0.25,0.14,0.17,0.16,0.15,0.31,0.19,0.2,0.3,0.33,0.41,0.37,0.29,0.29,0.28,0.26,0.34,0.35,0.36,0.37,0.38,0.34,0.51,0.48,0.46,0.53,0.5,0.52,0.42,0.43,0.43,0.53,0.5,0.56,0.61,0.58,0.5,0.57,0.51,0.51,0.48,0.39,0.46,0.49,0.38,0.31,0.37,0.28,0.35,0.42,0.49,0.53,0.51,0.47,0.47,0.51,0.49,0.44,0.45,0.51,0.45,0.47,0.43,0.49,0.41,0.42,0.47,0.46,0.44,0.33,0.41,0.42,0.47,0.47,0.47,0.37,0.4,0.41,0.47,0.5,0.43,0.42,0.4,0.43,0.49,0.51,0.47,0.48,0.4,0.42,0.52,0.49,0.41,0.49,0.47,0.5,0.51,0.51,0.5,0.48,0.45,0.41,0.37,0.37,0.39,0.37,0.32,0.26,0.29,0.36,0.28,0.26,0.35,0.39,0.3,0.31,0.28,0.27,0.53,0.56,0.63,0.75,0.77,0.74,0.72,0.75,0.7,0.72,0.61,0.63,0.48,0.36,0.2,0.31,0.53,0.55,0.57,0.54,0.63,0.55,0.5,0.51,0.6,0.51,0.41,0.53,0.59,0.55,0.53,0.51,0.55,0.54,0.62,0.66,0.64,0.68,0.64,0.61,0.63,0.62,0.51,0.52,0.54,0.51,0.38,0.23,0.34,0.52,0.42,0.44,0.48,0.57,0.59,0.68,0.64,0.74,0.69,0.63,0.68,0.56,0.53,0.5,0.51,0.52,0.64,0.66,0.72,0.68,0.67,0.62,0.7,0.69,0.71,0.64,0.6,0.62,0.63,0.61,0.59,0.61,0.6,0.57,0.57,0.59,0.49,0.56,0.54,0.53,0.57,0.57,0.66,0.66],"id":"A","templates":[{"id":"e7c4c2fa9b904caee310c9d306e321b3608d6a3d","pdb_id":"5mgh","chain":"A","method":"X-RAY DIFFRACTION","short_method":"X-ray","coverage":0.3922984302043915,"resolution":1.8700000047683716,"description":"Phenylalanine--tRNA ligase, mitochondrial","assembly_id":1,"score":0.5585796236991882,"found_by":"HHblits","oligo_state":"monomer","comment":"e_value=7.3e-45, p_value=4.5e-49, score=408.4, ss_score=31.1, prob=100, sw_version=3.2.0, gmqe_dist_const=0.6510559916496277, gmqe_reduced=0.15981213748455048, gmqe_cb_packing=0.04220603406429291, gmqe_torsion=0.2600383460521698, gmqe_ss_agreement=0.3245084285736084, gmqe_coverage=0.3922984302043915, gmqe_seq_id=15.950920104980469, gmqe_seq_sim=0.2760736048221588, gmqe_n_insertions=3, gmqe_n_deletions=13, gmqe_seqres_length=831, gmqe_seqres_coverage=0.39229843561973526, gmqe_profile_aln_score=408.4, gmqe_avg_entropy=2.029780387878418","offset":4,"afdb_struct_serve_idx":null,"oligo_state_bu":"monomer","oligo_state_bu_full":"monomer","is_whole_complex":"whole_complex","qualified_name":"5mgh.1.A","biounit_name":"5mgh.1","gmqe":0.20195266604423523,"sequence_identity":15.950920104980469,"sequence_similarity":0.2760736644268036,"alignment":{"target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLE---GLEVIPSVLPPAPA----GRGLTAGQQRRRTIGRSLALS--------GYVEILP-TPFLPA-GVFDLWGLEADDSRRMTTRVLNPLEADR-PQLATTLLPALLEALVR----------------------NVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLRE-PRGPWGPGRPVEAADAFEAVRIIARASRVD---VTLRPAQYLPWHPGRCAQVFVGESSVGHAGQ--LHPAVIERSGLPKG-TCAVELNLDAIPC---------------------------SAPLPAPRVSPYPAVFQDVSLVVAAD-IPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG","template_sequence":"------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------VELLGKSYPQDDHSNLTRKVLTRVGRNLHNQQHHALWLIKERVKEHFYKQYVGRFGTPLFSVYDNLSPVVTTWQNFDSLLIPADH---PSRKKGDNYYLNRTHMLRAHTSAHQWDLLHAGLDAFLVVGDVYRRDQIDSQHYPIFHQLEAVRLFSKHELFAGIKD--------------------------GESLQLFEQSSRSAHKQETHTMEAVKLVEFDLKQTLTRLMAHLFGDELEIRWVDCYFPFTHPSFEMEINFHGEWLEVLGCGVMEQQLVNSAGAQDRIGWAFGLGLERLAMILYDIPDIRLFWCEDERFLKQFCVSNINQKVKFQPLSKYPAVINDISFWLPSENYAENDFYDLVRTIGGDLVEKVDLIDKFVHPK--THKTSHCYRITYRHMERTLSQREVRHIHQALQEAAVQLLGVEGRF"},"annotation":{"dssp":"CCCCEEETTEEECCCSSCCCCHHHHTTTTCCGGGSTTCHHHHHHHHHHHHHHHSCCCSSSCCCCEEECCCCSEEEHHHHTGGGTCCTTCGGGCTTTSCBSSSSEEECSSGGGGHHHHHHTTCSEEEEEEEEECCCCCBTTBCSEEEEEEEEEEECHHHHTTTSTTGGGSCSBCCCCCCSSCCTTBCHHHHHHHHHHHHHHHHHHHHHHTCSCCCEEEEEEEETTEEEEEEEEEEETTEEEEEEEEEEECHHHHHHTTCTTCEEEEEEEEHHHHHHHHHTCCCGGGGGCCCHHHHGGGCCSSTTSCCCCCCCCCCCCEEEEEEEECCTTCCCHHHHHHHHHHHTGGGEEEEEEEEEEECTTTCCEEEEEEEEECCSSSCCCHHHHHHHHHHHHHHIIIIICCEECC","psipred":"CCCEEEECCEECCCCCCCCCCHHHHHHCCCCCCCCCCCHHHHHHHHHHHHHHHHCCCCCCCCCEEEECCCCCCCCCCHHHHHCCCCCCCCCCCCCCCEEECCCEECCCCCHHHHHHHHHHCCCEEEEEEEEEECCCCCCCCCCCCCCCCEEEEECCCCCCCCCCCCCCCCEEECCCCCCCCCCCCCHHHHHCCHHHHHHHHHHHHHHHCCCCEEEEEEECCCCCCCCCEEEEEEECCEEEEEEECCCCCHHHHHHCCCCCCEEEEEECCHHHHHHHHCCCCCCCCCCCCCHHHHHHHHHHCCCCCCCCCCCCCCCCEEEEEEEEECCCCCCHHHHHHHHHHHCCCCEEEEEEEEEEECCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","sspro":"CCEEEEHCCCCCCCCCCCCCCCHEEEECCCCCCHHCCHHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCEEEECEECCCCCCCCCCCCHHCCCCHHHCHHHHHHHHHHHHHHHHHHHCCCCCCCCCCHHHHHHHHHCCCHHHHHHHHHCCCCCCCCCCCCHHHHHHHHHHHHHHHHHHHHCCCHHHCCCCEEEEECCCCCCCCHCCHCHHHHHHHHHHCCCCCCEEEECCCCCCCCCEEEEEECCCCCCHHHHHHHHHHEEEEEEEHHHHHHHHCCCCCHHHCCCCCHHHHHHHCCCCCCCCCCCCCCCCCCHHHHHHHHCCHHHHHHHHHHHHHHHHHHHHCCCCCCCEEEEEEECCCCEHHHHHHEECCCHHHCCCHHHHHHHHHHHHHHHHHHCCCCCC"},"title":"Crystal structure of pathogenic mutants of human mitochodnrial PheRS","residue_from":"475","residue_to":"831","trg_seq_length":831}],"residue_from":"475","residue_to":"831"}],"id":"A","target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVDVTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIERSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG"}],"qsqe":0.0,"oligo_state":"monomer","oligo_based_on":"prediction","gmqe":0.19692699412974585,"qmean_global":{"qmean4_norm_score":0.5191592631395777,"qmean4_z_score":-7.302813371926519,"qmean6_norm_score":0.5038878866178481,"qmean6_z_score":-6.6631652189690405,"interaction_norm_score":-0.014674318796030249,"interaction_z_score":-1.9807089275411616,"cbeta_norm_score":0.0029622629169584708,"cbeta_z_score":-4.648141692976143,"packing_norm_score":-0.21219837216103413,"packing_z_score":-2.9904973837842714,"torsion_norm_score":0.22769414503180102,"torsion_z_score":-5.560245760452105,"ss_agreement_norm_score":0.46663963933493574,"ss_agreement_z_score":-1.529921110806054,"acc_agreement_norm_score":0.4957983193277311,"acc_agreement_z_score":-1.9389459978664048,"avg_local_score":0.44796966718823783,"avg_local_score_error":0.05},"included_ligands":[],"excluded_ligands":[{"name":"PHE","description":"PHENYLALANINE","ligands":[{"exclusion_reason":"Binding site not conserved.","number":"1"}]}],"plip_ligands":{}};
+  if(modelData['03'].targets[0].model_chains[0].qmeanbrane)
+    document.getElementById('qmeanbraneLbl').style.display='inline';
+
+</script>
+
+        </div>
+        <div id="mdl_row_04">
+        
+          
+
+<div class="container-fluid" style="padding:0; ">
+  <div id="mdl_left_col_04" style="padding:5px; position: relative">
+    <div class="mLabel" style="position: absolute; 
+     top: -18px; 
+     left: 50%; 
+     transform: translate(-50%, 0%);
+     font-size: 1.3em; 
+     line-height: 1.3rem;
+     color: #555;
+     background: white; 
+     padding: 0px 6px;">Model 04</div>   
+
+     
+    
+    <div style="display: flex; justify-content: space-evenly; align-items: center;">
+      <div style="justify-self: center;">
+        <a style="justify-self: center;" href="#" onclick="if(selectedModels['04']){removeModel('04');}else{loadModel('04');}return false;"><img class="boxedImage" id="modelImage_04"
+        style="height:120px; width:120px;"
+        src="models/04/04.png"
+        title="Click to show / hide model 04 in 3D viewer"></a>
+      </div>
+
+      
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-evenly;">
+        <div style="display: flex; flex-direction: column; gap: 4px 0px; justify-content: center;">
+          
+            
+           
+
+          <div class="dropdown" style="display: flex;	justify-content: center; gap: 4px; flex-wrap: wrap">
+            
+
+            <span>
+              <button class="btn btn-default btn-sm" data-toggle="dropdown">
+                Display files <i class="glyphicon glyphicon-file" ></i>
+              </button>
+              <ul class="dropdown-menu pull-right">
+                <li title="Display coordinates in PDB format"><a href="models/04/model.pdb" target="_blank" tabindex="-1" role="menuitem">PDB Format</a></li>
+                <li title="Display coordinates in ModelCIF format"><a href="models/04/model.cif.gz" target="_blank" tabindex="-1" role="menuitem">ModelCIF format</a></li>
+                                
+                <li title="Display model report"><a href="report.html#model_04" target="_blank" tabindex="-1" role="menuitem">Model Report</a></li>
+                <li title="Display model metadata"><a href="models/04/model.json" target="_blank" tabindex="-1" role="menuitem">Metadata</a></li>
+                
+              </ul>
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 12px">
+      <dl class="dl-models" >
+        <dt>
+          Oligo-State 
+          <a class="smng-help" href="/docs/help#oligo-state"></a>
+        </dt>
+        <dd>
+          Monomer<br>
+        </dd>
+      </dl>
+      <dl class="dl-models">
+        <dt title="Global Model Quality Estimate">
+          GMQE <a class="smng-help" href="/docs/help#GMQE"></a>
+        </dt>
+        <dd>
+          0.18
+        </dd>
+      </dl>
+       
+      <dl class="dl-models">        
+        <dt>
+          QMEANDisCo Global: <a class="smng-help" href="/docs/help#qmean"></a>
+        </dt>
+        <dd>
+          <span id="avgLocalScore_04">0.45</span> <span class="qmError"> &plusmn; 0.05</span> 
+        </dd>
+      </dl>
+    </div>
+
+    <dl class="dl-models">
+      
+      <dt style="display:none">
+        Ligands <a class="smng-help" href="/docs/help#ligand_modelling"></a>
+      </dt>
+      <dd style="display:none">
+        
+        <script>
+        
+"use strict";
+var plip_bonds = plip_bonds || null;
+var plip_residues = plip_residues || null
+var all_ligands = all_ligands || null
+var extra_residues_selection = extra_residues_selection || []
+var extra_ranges_selection = extra_ranges_selection || []
+function loadPLIPBonds_model_04() {
+    if (plip_bonds == null) {
+        plip_bonds = new PLIP.Bonds();
+    }
+    if (plip_residues == null) {
+        plip_residues = new PLIP.Residues();
+    }
+    if (all_ligands == null) {
+        all_ligands = new PLIP.Ligands();
+    }
+    
+    
+    
+    
+    
+    
+    
+}
+ window.addEventListener("DOMContentLoaded", function() {
+    loadPLIPBonds_model_04();
+ });
+
+var html = ``;
+
+        </script>
+        
+        <span id="showLigandContacts_04" title="Show Ligand Contacts" class="glyphicon glyphicon-chevron-down ignore-toggle-event" style="opacity:.7; margin-left:4px; cursor:pointer;" onclick="$('#ligandContacts_04').toggle();"></span>
+
+        
+      </dd>
+    </dl>
+
+     
+    <div>
+      <small style="font-weight: bold">QMEANDisCo Local</small>
+      <div class="pull-right">
+        <span id="showQmeanLocal_04" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_local_04').toggle(); drawQMEAN('04', true);"></span>
+      </div>
+    </div>
+    <div id="quality_local_04" style="display: none">
+      <a href="#lq-chart-04" rel="lq-04" class="fancybox">
+        <div id="lq-chart-04-thumb"></div>
+      </a>
+    </div>
+    <div>
+      <small style="font-weight: bold">QMEAN Z-Scores</small>
+      <div class="pull-right">
+        <span id="showQmeanGlobal_04" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_global_04').toggle(); drawQMEAN('04', true);"></span>
+      </div>
+    </div>
+    <div class="row" id="quality_global_04" style="display:none">
+      <div class="col-sm-6">
+        <div style="max-width: 220px; margin: auto">
+          <table id="qmeanGlobalTbl04" style="font-size:.8em"></table>
+        </div>
+      </div>
+      <div class="col-sm-6 text-center">
+        <div style="max-width: 220px; margin: auto">
+          <a href="#qn-chart-04" class="fancybox">
+          <div id="qn-chart-04-thumb"></div></a>
+          <div id="qn-chart-04" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- End of Model details section -->
+
+    
+    <div style="margin-top:12px"><small style="font-weight: bold;">Template</small>
+      <div class="pull-right"><span class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#templates_04_76e9d0141c57aeac2f6555f8444a2850c66367a5').toggle();"></span></div>
+    </div>
+    <div style="display: flex; flex-direction: row;">
+      <div style="flex-grow: 3; overflow: auto;">
+        
+                  <a href="models/04/templates/3tup.1.A.pdb.gz" target="_blank">3tup.1.A</a>
+              </a>
+        Phenylalanyl-tRNA synthetase, mitochondrial<br><small>Crystal structure of human mitochondrial PheRS complexed with tRNAPhe in the active open state</small>
+      </div>
+      <div style="flex-grow: 3;">
+        <dl class="dl-models">
+          <dt>
+            Seq Identity
+          </dt>
+          <dd>
+            15.53%
+          </dd>
+          <dt>
+            Coverage
+          </dt>
+          <dd>
+            <div template_count="1">
+                
+                <div id="range_04_0_0"
+                 seqlength="831"
+                 resFrom="479"
+                 resTo="831"
+                 seqSim="0.28"
+                 title="Model-Template: A 479-831"></div>
+              </div>
+          </dd>
+        </dl>
+      </div>
+
+    </div>
+
+
+    <div id="templates_04_76e9d0141c57aeac2f6555f8444a2850c66367a5" style="overflow: auto; display:none;">
+      <table class="table noborder table-condensed" >
+        <tr>
+          <td width=200><small><b>Biounit Oligo State</b></small></td>
+          <td>Monomer</td>
+        </tr>
+        <tr>
+          <td><small><b>QSQE</b></small></td>
+          <td>0.00</td>
+        </tr>
+        <tr>
+          <td>
+            <small><b>Method</b></small>
+          </td>
+          <td>X-ray, 3.05 &Aring;</td>
+        </tr>
+        <tr>
+          <td><small><b>Seq Similarity</b></small></td>
+          <td>0.28</td>
+        </tr>
+        <tr>
+          <td><small><b>Coverage</b></small></td>
+          <td>0.39</td>
+        </tr>
+        <tr>
+          <td><small><b>Range</b></small></td>
+          <td>479-831</td>
+        </tr>
+        
+      </table>
+
+      
+
+      
+
+    </div><!-- end templates_04_76e9d0141c57aeac2f6555f8444a2850c66367a5 -->
+    
+
+
+    <div style="font-weight:bold; "><small>Model-Template Alignment</small> <span id="showAlignment_04" class="glyphicon glyphicon-chevron-down pull-right" style="opacity:.7; cursor:pointer;"></span></div>
+  </div> <!-- end of templates_modelid_uniqueid -->
+
+</div>
+
+
+
+<div id="alignment_04_A" style="display:none; margin-bottom:12px">
+<table cellpadding="0" cellspacing="0" class="alignTblContainer notranslate">
+    <tr>
+        <td valign="top">
+            <div class="hidden-print">
+                <a id="options_04_A" class="poponthis glyphicon glyphicon-cog" style="color:#333;opacity:.7;margin-right:2px"></a> 
+            </div>
+        </td>
+        <td valign="top">
+            <table class="alignNameTbl" id="alignNameTbl04_A" border="0" cellspacing="0" cellpadding="0"></table>
+        </td>
+        <td valign="top">
+            <table class="alignTbl" id="alignTbl04_A" cols_cookie="mdl_cols" border="0" cellspacing="0" cellpadding="0" ></table>
+            <div id="alignTbl04_A_features" style="z-index:-1; position: absolute;"></div>
+        </td>
+    </tr>
+</table><div id="offscreen_selection" style="position:absolute; top:-5000px; word-break: break-all;"></div>
+
+</div>
+
+
+<script>
+  modelData['04'] = {"model_id":"04","status":"COMPLETED","json_version":"0.1","sequence_similarity":0.27639755606651306,"sequence_identity":15.527950286865234,"coverage":0.38748496770858765,"major_issues":null,"built_with":"ProMod3 3.4.1","smtl_version":"2025-01-08","pdb_release":"2025-01-03","targets":[{"model_chains":[{"psipred":"CCCCHHHHHHHCCCCCCCCCCCHHHHHHHHHHCCCEEEEEEECCCCCCCEEEEEEEEEEECCCCCCCCEEEEEECCCCCEEEEEECCCCCCCCCEEEEECCCCCCCCCCEEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEECCCCCCCCCCHHCCCCCCCEEEEEECCCCCCHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCEEECCCCCCCCEEEEEEECCCCCCCCHHHHHHHHHHCCCCCCCCHHHHHHHHHHHHCCCCCCCCCCCCCCCEEEEECCCCCEEEECCCCEEECCCCCEEEECCCCCEEEECCCCCCCEEEECCCCEEEEEEEECCHHHHHHHHHHHCCCCHHHHHHCCCCCHHHHHHHHHHHHHHHHHHCCCEEECEEEEECCCCCCCCCCCCCEEECCCHHHHHCCCCCCHHHHHHHHHHCCCEEEECCCEEEEECCCCCCCCCCCCHHHHHHHHHCCCCCCCCCCCCCCC----CCCCCHHHHHHHHHHHHHHH-----CC---CCEECC-CCCCCH-HHHHHCCCCCCCCCCCEEEEECCCCCCC-CCHHCCHHHHHHHHHHH----------------------HHHCCCCCEEEEEEEEEECCCCCCCCCCCCCCCCCCCCCHHHHHCCCCCCCCCEEEEEEECC-CCCCCCCCCCCCCCHHHHHHHHHHHHHHCCCC---EEECCCCCCCCCCCCEEEEEECCEEEEEEEE--ECHHHHHHCCCCCC-EEEEEEECCCCCC---------------------------CCCCCCCCCCCCCCCCEEEEEEECCC-CCHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","dssp":"----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------CCCCSSCCCCSSSTTSTTCCCCHHHHHHHHHHHHHSCSTTCCCCCCCSEECGGGTGGGTCCCSTTTCGGGCSSSSEESSSSEECSSSGGGHHHHHHSCSGGGCTTBCCCCHHHHSCSSCTTCSSSSCCSSSCCCSSSSSCCCTTCCSCCCCSCCSCCCSSSCSSSCTTHHHHHHHHHHHHHHHHHHHTTCCCCEEEECCSSSSCEEEEEEEETTEEEEEEEEECCSCSGGGTCCCCCCEEEECTTTGGGTTTTTSCCCCCSCCCCEEEEEEECSCCCHHHHHHHHHHTTCSTTCCEEEEEEECHHHHSSSCEEEEEEECCCCSSSCCCHHHHHHHHHHHHHHHHHTTCCEECC","qmean":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.48,0.43,0.43,0.46,0.46,0.47,0.53,0.51,0.45,0.41,0.34,0.41,0.39,0.41,0.34,0.4,0.46,0.47,0.25,0.28,0.25,0.24,0.39,0.4,0.43,0.46,0.52,0.47,0.48,0.52,0.62,0.59,0.63,0.5,0.55,0.4,0.34,0.19,0.15,0.41,0.39,0.38,0.48,0.45,0.46,0.38,0.43,0.48,0.52,0.54,0.54,0.56,0.46,0.45,0.49,0.52,0.45,0.4,0.58,0.52,0.43,0.52,0.51,0.28,0.4,0.33,0.36,0.42,0.39,0.34,0.31,0.44,0.34,0.39,0.41,0.49,0.51,0.47,0.43,0.36,0.49,0.55,0.52,0.53,0.57,0.52,0.44,0.4,0.47,0.52,0.41,0.35,0.41,0.51,0.39,0.33,0.37,0.23,0.2,0.22,0.24,0.36,0.25,0.34,0.53,0.5,0.44,0.33,0.3,0.39,0.3,0.25,0.27,0.33,0.27,0.34,0.35,0.3,0.26,0.25,0.21,0.2,0.36,0.4,0.48,0.46,0.43,0.49,0.5,0.65,0.54,0.43,0.42,0.45,0.48,0.28,0.32,0.3,0.26,0.34,0.42,0.37,0.17,0.25,0.24,0.24,0.19,0.2,0.18,0.28,0.25,0.38,0.39,0.31,0.27,0.24,0.27,0.28,0.34,0.34,0.35,0.44,0.4,0.5,0.47,0.44,0.48,0.47,0.49,0.39,0.39,0.38,0.47,0.51,0.52,0.56,0.56,0.48,0.56,0.53,0.55,0.54,0.5,0.54,0.58,0.49,0.46,0.48,0.5,0.49,0.41,0.47,0.51,0.47,0.44,0.5,0.54,0.5,0.47,0.54,0.39,0.23,0.47,0.43,0.49,0.43,0.4,0.47,0.46,0.43,0.31,0.34,0.34,0.35,0.39,0.45,0.35,0.37,0.41,0.46,0.5,0.43,0.42,0.41,0.4,0.37,0.46,0.43,0.4,0.35,0.42,0.41,0.41,0.39,0.45,0.44,0.44,0.48,0.51,0.47,0.48,0.47,0.44,0.32,0.4,0.39,0.39,0.34,0.28,0.39,0.41,0.27,0.28,0.3,0.43,0.36,0.4,0.4,0.52,0.52,0.53,0.65,0.71,0.72,0.68,0.66,0.7,0.67,0.68,0.57,0.55,0.45,0.38,0.36,0.38,0.55,0.52,0.48,0.52,0.57,0.51,0.49,0.49,0.54,0.47,0.38,0.47,0.56,0.51,0.51,0.46,0.5,0.53,0.56,0.57,0.6,0.65,0.59,0.57,0.59,0.58,0.55,0.53,0.5,0.4,0.36,0.29,0.36,0.52,0.47,0.47,0.52,0.62,0.6,0.66,0.65,0.69,0.66,0.61,0.66,0.59,0.61,0.62,0.63,0.62,0.7,0.64,0.7,0.66,0.63,0.6,0.63,0.63,0.6,0.6,0.59,0.57,0.56,0.56,0.54,0.54,0.54,0.55,0.54,0.55,0.5,0.57,0.53,0.52,0.56,0.54,0.58,0.47],"id":"A","templates":[{"id":"76e9d0141c57aeac2f6555f8444a2850c66367a5","pdb_id":"3tup","chain":"A","method":"X-RAY DIFFRACTION","short_method":"X-ray","coverage":0.38748496770858765,"resolution":3.049999952316284,"description":"Phenylalanyl-tRNA synthetase, mitochondrial","assembly_id":1,"score":0.5519546866416931,"found_by":"HHblits","oligo_state":"monomer","comment":"e_value=2.3e-42, p_value=1.4e-46, score=389, ss_score=30.4, prob=100, sw_version=3.2.0, gmqe_dist_const=0.6255842447280884, gmqe_reduced=0.1765117198228836, gmqe_cb_packing=0.03911350667476654, gmqe_torsion=0.7017530202865601, gmqe_ss_agreement=0.293050616979599, gmqe_coverage=0.38748496770858765, gmqe_seq_id=15.527950286865234, gmqe_seq_sim=0.2763975262641907, gmqe_n_insertions=3, gmqe_n_deletions=13, gmqe_seqres_length=831, gmqe_seqres_coverage=0.38748495788206977, gmqe_profile_aln_score=389.0, gmqe_avg_entropy=2.029780387878418","offset":21,"afdb_struct_serve_idx":null,"oligo_state_bu":"monomer","oligo_state_bu_full":"monomer","is_whole_complex":"whole_complex","qualified_name":"3tup.1.A","biounit_name":"3tup.1","gmqe":0.1901385486125946,"sequence_identity":15.527950286865234,"sequence_similarity":0.27639755606651306,"alignment":{"target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLEGLEVIPSVLPPAPA----GRGLTAGQQRRRTIGRSLAL-----SG---YVEILP-TPFLPA-GVFDLWGLEADDSRRMTTRVLNPLEADR-PQLATTLLPALLEALVR----------------------NVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGL-REPRGPWGPGRPVEAADAFEAVRIIARASRVD---VTLRPAQYLPWHPGRCAQVFVGESSVGHAGQ--LHPAVIERSGLPKG-TCAVELNLDAIPC---------------------------SAPLPAPRVSPYPAVFQDVSLVVAAD-IPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG","template_sequence":"----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------YPQDDHSNLTRKVLTRVGRNLHNQQHHPLWLIKERVKEHFYKQYVGRFGTPLFSVYDNLSPVVTTWQNFDSLLIPADH---PSRKKGDNYYLNRTHMLRAHTSAHQWDLLHAGLDAFLVVGDVYRRDQIDSQHYPIFHQLEAVRLFSKHELFAGIKD--------------------------GESLQLFEQSSRSAHKQETHTMEAVKLVEFDLKQTLTRLMAHLFGDELEIRWVDCYFPFTHPSFEMEINFHGEWLEVLGCGVMEQQLVNSAGAQDRIGWAFGLGLERLAMILYDIPDIRLFWCEDERFLKQFCVSNINQKVKFQPLSKYPAVINDISFWLPSENYAENDFYDLVRTIGGDLVEKVDLIDKFVHPK--THKTSHCYRITYRHMERTLSQREVRHIHQALQEAAVQLLGVEGRF"},"annotation":{"dssp":"XXXXXXXXXXXCCCEECSSCEECCCSSCCCCHHHHHHTTCCCTTSSSSHHHHHHHHHHHHHHHHCCCSSSSCSSBCCCCCCSEEEHIIIIITTTCCTTCGGGCGGGSCEEETTEEECSCGGGTHHHHHHHTCSEEEEEEEEECCCCCSSSCCSEEEEEEEEEEECTTTSSCSSSSCCCCCSCCSCCCBTTBCTTCCHHHHHHHHHHHHHHHHHHHHHHHCSCCEEECCEEEETTEEEEECCEEEETTEEEECEEEEECCHHHHHHTTCSSCEEEEEEEEHHHHHHHTTTCCSGGGGGCCCHHHHTTTCCSCTTCCCCCCCCCCSCCEEEEEEEECCSSCCCHHHHHHHHHHTTCSSCCCEEEEEEEECTTTCCEEEEEEEEECCSSSCCCHHHHHHHHHHHHHHHHHHHTCEECC","psipred":"CCCHHHCCCCCCCEEEECCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHHHHHCCCCCCCCCEEEECCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCHHHHHHHHHCCCCEEEEEEEEEECCCCCCCCCCEECCCCEEEEECCCCCCCCCCCCCCHHEEECCCCCCCCCCCCCHHHHHCCHHHHHHHHHHHHHHHCCCCEEEEEEECCCCCCCCCEEEEEEECCEEEEEEEECCCCHHHHHHCCCCCCEEEEECCCHHHHHHHHCCCCCCCCCCCCCHHHHHHHHHHCCCCCCCEEECCCCCCEEEEEEEEECCCCCCHHHHHHHHHHHCCCCEEEEEEEEEEECCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","sspro":"CCHHHCCCCCCCCHHHHHCCCCCCHCCCCCCCCCCEEECCCCHHCCCCCCCCCHHHCCCCCCEEEEECCCCCCCHHHHHCCCCCCCCCCCCCCCCHHHCCCCCHCCCCCCCCCCCCCCHHHHHHHHHHHCHHCCCEECCCEEECCEEECCCCCHHHHHHHHHHHHHCHCCCCCCCCCCCCCCCCCHHHHHCCCCHHHHHHHHHHCCHHHHHHHHHHHHCCCCCCCCCEEEEEEEECCCCCCCCECCCCHHHHHHHHHHHHHHCCCHCHHHHEEEEEEEEHHHHHHHHCCCCCHHHCCCCCHHHHHHHCCCCCCCCCCECCHHCCCCHHECCEEECCCCCHHHHHHHHHHHHHHCCCEEEEEEHHHHHCCCCCCCCCEEEEEEEEECCCCCCCCHHHHHHHHHHHHHHHHHHCCCC"},"title":"Crystal structure of human mitochondrial PheRS complexed with tRNAPhe in the active open state","residue_from":"479","residue_to":"831","trg_seq_length":831}],"residue_from":"479","residue_to":"831"}],"id":"A","target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVDVTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIERSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG"}],"qsqe":0.0,"oligo_state":"monomer","oligo_based_on":"prediction","gmqe":0.184518549842702,"qmean_global":{"qmean4_norm_score":0.5111425935771579,"qmean4_z_score":-7.707984640009898,"qmean6_norm_score":0.4844473973178133,"qmean6_z_score":-7.256206033254834,"interaction_norm_score":-0.00960936040495339,"interaction_z_score":-3.2331600540072776,"cbeta_norm_score":0.0039501631160977595,"cbeta_z_score":-4.896315133220252,"packing_norm_score":-0.17778017113928282,"packing_z_score":-3.6510361315069786,"torsion_norm_score":0.21724662185615906,"torsion_z_score":-5.508570095230256,"ss_agreement_norm_score":0.35810670750505863,"ss_agreement_z_score":-2.5018260478763517,"acc_agreement_norm_score":0.49008498583569404,"acc_agreement_z_score":-1.9685870221624215,"avg_local_score":0.4495453085766738,"avg_local_score_error":0.05},"included_ligands":[],"excluded_ligands":[],"plip_ligands":{}};
+  if(modelData['04'].targets[0].model_chains[0].qmeanbrane)
+    document.getElementById('qmeanbraneLbl').style.display='inline';
+
+</script>
+
+        </div>
+        <div id="mdl_row_02">
+        
+          
+
+<div class="container-fluid" style="padding:0; ">
+  <div id="mdl_left_col_02" style="padding:5px; position: relative">
+    <div class="mLabel" style="position: absolute; 
+     top: -18px; 
+     left: 50%; 
+     transform: translate(-50%, 0%);
+     font-size: 1.3em; 
+     line-height: 1.3rem;
+     color: #555;
+     background: white; 
+     padding: 0px 6px;">Model 02</div>   
+
+     
+    
+    <div style="display: flex; justify-content: space-evenly; align-items: center;">
+      <div style="justify-self: center;">
+        <a style="justify-self: center;" href="#" onclick="if(selectedModels['02']){removeModel('02');}else{loadModel('02');}return false;"><img class="boxedImage" id="modelImage_02"
+        style="height:120px; width:120px;"
+        src="models/02/02.png"
+        title="Click to show / hide model 02 in 3D viewer"></a>
+      </div>
+
+      
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-evenly;">
+        <div style="display: flex; flex-direction: column; gap: 4px 0px; justify-content: center;">
+          
+            
+           
+
+          <div class="dropdown" style="display: flex;	justify-content: center; gap: 4px; flex-wrap: wrap">
+            
+
+            <span>
+              <button class="btn btn-default btn-sm" data-toggle="dropdown">
+                Display files <i class="glyphicon glyphicon-file" ></i>
+              </button>
+              <ul class="dropdown-menu pull-right">
+                <li title="Display coordinates in PDB format"><a href="models/02/model.pdb" target="_blank" tabindex="-1" role="menuitem">PDB Format</a></li>
+                <li title="Display coordinates in ModelCIF format"><a href="models/02/model.cif.gz" target="_blank" tabindex="-1" role="menuitem">ModelCIF format</a></li>
+                                
+                <li title="Display model report"><a href="report.html#model_02" target="_blank" tabindex="-1" role="menuitem">Model Report</a></li>
+                <li title="Display model metadata"><a href="models/02/model.json" target="_blank" tabindex="-1" role="menuitem">Metadata</a></li>
+                
+              </ul>
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 12px">
+      <dl class="dl-models" >
+        <dt>
+          Oligo-State 
+          <a class="smng-help" href="/docs/help#oligo-state"></a>
+        </dt>
+        <dd>
+          Homo-dimer<br>(matching prediction)
+        </dd>
+      </dl>
+      <dl class="dl-models">
+        <dt title="Global Model Quality Estimate">
+          GMQE <a class="smng-help" href="/docs/help#GMQE"></a>
+        </dt>
+        <dd>
+          0.16
+        </dd>
+      </dl>
+       
+      <dl class="dl-models">        
+        <dt>
+          QMEANDisCo Global: <a class="smng-help" href="/docs/help#qmean"></a>
+        </dt>
+        <dd>
+          <span id="avgLocalScore_02">0.52</span> <span class="qmError"> &plusmn; 0.05</span> 
+        </dd>
+      </dl>
+    </div>
+
+    <dl class="dl-models">
+      
+      <dt style="display:none">
+        Ligands <a class="smng-help" href="/docs/help#ligand_modelling"></a>
+      </dt>
+      <dd style="display:none">
+        
+        <script>
+        
+"use strict";
+var plip_bonds = plip_bonds || null;
+var plip_residues = plip_residues || null
+var all_ligands = all_ligands || null
+var extra_residues_selection = extra_residues_selection || []
+var extra_ranges_selection = extra_ranges_selection || []
+function loadPLIPBonds_model_02() {
+    if (plip_bonds == null) {
+        plip_bonds = new PLIP.Bonds();
+    }
+    if (plip_residues == null) {
+        plip_residues = new PLIP.Residues();
+    }
+    if (all_ligands == null) {
+        all_ligands = new PLIP.Ligands();
+    }
+    
+    
+    
+    
+    
+    
+    
+}
+ window.addEventListener("DOMContentLoaded", function() {
+    loadPLIPBonds_model_02();
+ });
+
+var html = ``;
+
+        </script>
+        
+        <span id="showLigandContacts_02" title="Show Ligand Contacts" class="glyphicon glyphicon-chevron-down ignore-toggle-event" style="opacity:.7; margin-left:4px; cursor:pointer;" onclick="$('#ligandContacts_02').toggle();"></span>
+
+        
+      </dd>
+    </dl>
+
+     
+    <div>
+      <small style="font-weight: bold">QMEANDisCo Local</small>
+      <div class="pull-right">
+        <span id="showQmeanLocal_02" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_local_02').toggle(); drawQMEAN('02', true);"></span>
+      </div>
+    </div>
+    <div id="quality_local_02" style="display: none">
+      <a href="#lq-chart-02" rel="lq-02" class="fancybox">
+        <div id="lq-chart-02-thumb"></div>
+      </a>
+    </div>
+    <div>
+      <small style="font-weight: bold">QMEAN Z-Scores</small>
+      <div class="pull-right">
+        <span id="showQmeanGlobal_02" class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#quality_global_02').toggle(); drawQMEAN('02', true);"></span>
+      </div>
+    </div>
+    <div class="row" id="quality_global_02" style="display:none">
+      <div class="col-sm-6">
+        <div style="max-width: 220px; margin: auto">
+          <table id="qmeanGlobalTbl02" style="font-size:.8em"></table>
+        </div>
+      </div>
+      <div class="col-sm-6 text-center">
+        <div style="max-width: 220px; margin: auto">
+          <a href="#qn-chart-02" class="fancybox">
+          <div id="qn-chart-02-thumb"></div></a>
+          <div id="qn-chart-02" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- End of Model details section -->
+
+    
+    <div style="margin-top:12px"><small style="font-weight: bold;">Template</small>
+      <div class="pull-right"><span class="glyphicon glyphicon-chevron-down" style="opacity:.7; cursor:pointer;" onclick="$('#templates_02_7857d4f72d3e88be3c1af77e15d72314263ff3ec').toggle();"></span></div>
+    </div>
+    <div style="display: flex; flex-direction: row;">
+      <div style="flex-grow: 3; overflow: auto;">
+        
+                  <a href="models/02/templates/8dqg.1.A.pdb.gz" target="_blank">8dqg.1.A</a>
+              </a>
+        AA_TRNA_LIGASE_II domain-containing protein<br><small>Crystal structure of pyrrolysyl-tRNA synthetase from Methanomethylophilus alvus engineered for acridone amino acid (RS1) bound to AMPPNP and acridone</small>
+      </div>
+      <div style="flex-grow: 3;">
+        <dl class="dl-models">
+          <dt>
+            Seq Identity
+          </dt>
+          <dd>
+            11.20%
+          </dd>
+          <dt>
+            Coverage
+          </dt>
+          <dd>
+            <div template_count="1">
+                
+                <div id="range_02_0_0"
+                 seqlength="831"
+                 resFrom="432"
+                 resTo="741"
+                 seqSim="0.25"
+                 title="Model-Template: AB 432-741"></div>
+              </div>
+          </dd>
+        </dl>
+      </div>
+
+    </div>
+
+
+    <div id="templates_02_7857d4f72d3e88be3c1af77e15d72314263ff3ec" style="overflow: auto; display:none;">
+      <table class="table noborder table-condensed" >
+        <tr>
+          <td width=200><small><b>Biounit Oligo State</b></small></td>
+          <td>Homo-dimer</td>
+        </tr>
+        <tr>
+          <td><small><b>QSQE</b></small></td>
+          <td>0.15</td>
+        </tr>
+        <tr>
+          <td>
+            <small><b>Method</b></small>
+          </td>
+          <td>X-ray, 1.49 &Aring;</td>
+        </tr>
+        <tr>
+          <td><small><b>Seq Similarity</b></small></td>
+          <td>0.25</td>
+        </tr>
+        <tr>
+          <td><small><b>Coverage</b></small></td>
+          <td>0.31</td>
+        </tr>
+        <tr>
+          <td><small><b>Range</b></small></td>
+          <td>432-741</td>
+        </tr>
+        
+      </table>
+
+      
+
+      
+      <div style="max-height:420px; overflow-y: auto;">
+        <table class="table noborder table-condensed">
+          <thead>
+            <tr>
+              <th><small>Ligand</small></th>
+              <th><small>Added to Model</small></th>
+              <th><small>Description</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td>
+                <div class="ligand_summary" title="PHOSPHOAMINOPHOSPHONIC ACID-ADENYLATE ESTER" ligand_name="ANP"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=1" target="_blank">ANP </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">PHOSPHOAMINOPHOSPHONIC ACID-ADENYLATE ESTER</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="PHOSPHOAMINOPHOSPHONIC ACID-ADENYLATE ESTER" ligand_name="ANP"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=8" target="_blank">ANP </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">PHOSPHOAMINOPHOSPHONIC ACID-ADENYLATE ESTER</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="GLYCEROL" ligand_name="GOL"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=6" target="_blank">GOL </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">GLYCEROL</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=3" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=4" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=5" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Not in contact with model.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=9" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="MAGNESIUM ION" ligand_name="MG"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=10" target="_blank">MG </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">MAGNESIUM ION</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="DI(HYDROXYETHYL)ETHER" ligand_name="PEG"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=7" target="_blank">PEG </a></div>
+              </td>
+              <td>&#10005; - Not biologically relevant.
+              </td>
+              <td style="word-break:break-all">DI(HYDROXYETHYL)ETHER</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="ligand_summary" title="(2~{S})-2-azanyl-3-(9-oxidanylidene-10~{H}-acridin-2-yl)propanoic acid" ligand_name="T7Q"><a href="https://swissmodel.expasy.org/templates/8dqg.1?l=2" target="_blank">T7Q </a></div>
+              </td>
+              <td>&#10005; - Binding site not conserved.
+              </td>
+              <td style="word-break:break-all">(2~{S})-2-azanyl-3-(9-oxidanylidene-10~{H}-acridin-2-yl)propanoic acid</td>
+            </tr>
+          </tbody>
+       </table>
+      </div>
+      
+
+    </div><!-- end templates_02_7857d4f72d3e88be3c1af77e15d72314263ff3ec -->
+    
+
+
+    <div style="font-weight:bold; "><small>Model-Template Alignment</small> <span id="showAlignment_02" class="glyphicon glyphicon-chevron-down pull-right" style="opacity:.7; cursor:pointer;"></span></div>
+  </div> <!-- end of templates_modelid_uniqueid -->
+
+</div>
+
+
+
+<div id="alignment_02_AB" style="display:none; margin-bottom:12px">
+<table cellpadding="0" cellspacing="0" class="alignTblContainer notranslate">
+    <tr>
+        <td valign="top">
+            <div class="hidden-print">
+                <a id="options_02_AB" class="poponthis glyphicon glyphicon-cog" style="color:#333;opacity:.7;margin-right:2px"></a> 
+            </div>
+        </td>
+        <td valign="top">
+            <table class="alignNameTbl" id="alignNameTbl02_AB" border="0" cellspacing="0" cellpadding="0"></table>
+        </td>
+        <td valign="top">
+            <table class="alignTbl" id="alignTbl02_AB" cols_cookie="mdl_cols" border="0" cellspacing="0" cellpadding="0" ></table>
+            <div id="alignTbl02_AB_features" style="z-index:-1; position: absolute;"></div>
+        </td>
+    </tr>
+</table><div id="offscreen_selection" style="position:absolute; top:-5000px; word-break: break-all;"></div>
+
+</div>
+
+
+<script>
+  modelData['02'] = {"model_id":"02","status":"COMPLETED","json_version":"0.1","sequence_similarity":0.2507080137729645,"sequence_identity":11.196910858154297,"coverage":0.3116726875305176,"major_issues":null,"built_with":"ProMod3 3.4.1","smtl_version":"2025-01-08","pdb_release":"2025-01-03","targets":[{"model_chains":[{"psipred":"CCCCHHHHHHHCCCCCCCCCCCHHHHHHHHHHCCCEEEEEEECCCCCCCEEEEEEEEEEECCCCCCCCEEEEEECCCCCEEEEEECCCCCCCCCEEEEECCCCCCCCCCEEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEECCCCCCCCCCHHCCCCCCCEEEEEECCCCCCHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCEEECCCCCCCCEEEEEEECCCCCCCCHHHHHHHHHHCCCCCCCCHHHHHHHHHHHHCCCCCCCCCCCCCCCEEEEECCCCCEEEECCCCEEECCCCCEEEECCCCCEEEECCCCCCCEEEECCCCEEEEEEEECCHHHHHHHHHHHCCCCHHHHHHCCCCCHHHHHHHHHHHHHHHHHHCCCEEECEEEEECCCCCCCCCCCCCEEECCCHHHHHCCCCCCHHHHHHHHHHCCCEEEECCCEEEEECCCCCCCCCC--CCHHHHHHHHHCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHHHHCCCCEECCCCCCCHHHHHHCCCCCCCCCCCEEEEECCCCCCCCCHHCCHHHHHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCCCCCCCCCCCCCHHHHHCCCCCCCCCEEEEEEECCCCCCCCCCCCCCCCHHHHHHHHHHHHHHCCCC-EEECCCCCCCCCCCCEEEEEECCEEEEEEEEECHHHHH-HCCCCCCEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEEEEECCCCCHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","dssp":"-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------CBCCCHHHHHHHHHHCCSCTTSSTTTCBSSTTHHHHHHCTTHHHHCCTTSSCTTTGGGTSSCCCTTTSSCHHHHHHHHHHHHHHHTTCEECCCCSEEEHHHHHTTTCCCTTGGGCCGGGGCCBSSSSEEECSSSHHHHHHHHHHHHTTCSSCCCEEEEEECCCCCCSCCCSSSCCCTTSSCCSCCCCSTTCCCSSCEEEEEEEESCCCCBCSSCBCSCCSHHHHHHHHHHHHHHHTCCCEEEECCCSSSCGGGCEEEEETTEEEEEEECSSCGGGGTTTCCSCEEEEEEETTHHHHHSSSCCSSSTTSCC","qmean":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.38,0.41,0.36,0.47,0.54,0.66,0.59,0.53,0.56,0.51,0.52,0.54,0.58,0.58,0.52,0.5,0.48,0.44,0.4,0.4,0.36,0.38,0.41,0.32,0.4,0.39,0.38,0.36,0.41,0.35,0.51,0.43,0.34,0.44,0.43,0.43,0.43,0.37,0.39,0.48,0.52,0.45,0.49,0.36,0.36,0.38,0.27,0.31,0.23,0.26,0.29,0.43,0.31,0.34,0.42,0.31,0.24,0.3,0.32,0.27,0.41,0.35,0.35,0.36,0.36,0.4,0.32,0.47,0.43,0.44,0.55,0.52,0.56,0.55,0.6,0.62,0.7,0.78,0.81,0.82,0.73,0.84,0.82,0.82,0.82,0.79,0.75,0.74,0.8,0.74,0.75,0.69,0.55,0.48,0.63,0.46,0.58,0.49,0.49,0.73,0.7,0.44,0.49,0.53,0.43,0.53,0.45,0.37,0.47,0.41,0.28,0.46,0.44,0.42,0.3,0.29,0.39,0.33,0.35,0.37,0.39,0.43,0.36,0.35,0.45,0.39,0.34,0.47,0.53,0.51,0.68,0.7,0.75,0.81,0.68,0.66,0.73,0.75,0.65,0.63,0.79,0.76,0.72,0.64,0.72,0.7,0.58,0.43,0.56,0.3,0.38,0.55,0.7,0.77,0.81,0.8,0.84,0.78,0.79,0.65,0.76,0.64,0.6,0.42,0.47,0.45,0.36,0.32,0.36,0.43,0.39,0.45,0.38,0.39,0.4,0.4,0.4,0.48,0.48,0.47,0.39,0.39,0.33,0.35,0.31,0.3,0.28,0.29,0.26,0.41,0.48,0.51,0.48,0.54,0.61,0.71,0.65,0.73,0.8,0.8,0.78,0.75,0.73,0.72,0.61,0.46,0.44,0.34,0.3,0.37,0.5,0.48,0.33,0.55,0.46,0.36,0.35,0.54,0.35,0.58,0.54,0.53,0.56,0.63,0.63,0.62,0.7,0.74,0.68,0.8,0.77,0.79,0.72,0.8,0.73,0.65,0.73,0.75,0.66,0.74,0.78,0.71,0.75,0.71,0.58,0.41,0.37,0.51,0.43,0.5,0.67,0.78,0.62,0.67,0.77,0.73,0.76,0.69,0.53,0.55,0.55,0.58,0.68,0.71,0.75,0.67,0.71,0.65,0.51,0.45,0.41,0.45,0.39,0.33,0.41,0.46,0.46,0.5,0.61,0.58,0.34,0.57,0.57,0.67,0.71,0.72,0.75,0.73,0.74,0.67,0.62,0.55,0.65,0.63,0.52,0.45,0.47,0.53,0.47,0.42,0.46,0.45,0.47,0.43,0.46,0.46,0.46,0.41,0.44,0.45,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"id":"A","templates":[{"id":"7857d4f72d3e88be3c1af77e15d72314263ff3ec","pdb_id":"8dqg","chain":"A","method":"X-RAY DIFFRACTION","short_method":"X-ray","coverage":0.3116726875305176,"resolution":1.4900000095367432,"description":"AA_TRNA_LIGASE_II domain-containing protein","assembly_id":1,"score":0.4296022653579712,"found_by":"HHblits","oligo_state":"homo-dimer","comment":"e_value=1.5e-36, p_value=9.1e-41, score=322.9, ss_score=19.2, prob=100, sw_version=3.2.0, gmqe_dist_const=0.6168921589851379, gmqe_reduced=0.22740384936332703, gmqe_cb_packing=-0.0036657163873314857, gmqe_torsion=0.19802603125572205, gmqe_ss_agreement=0.1458379030227661, gmqe_coverage=0.31046929955482483, gmqe_seq_id=11.240309715270996, gmqe_seq_sim=0.2506459951400757, gmqe_n_insertions=10, gmqe_n_deletions=3, gmqe_seqres_length=831, gmqe_seqres_coverage=0.31167268351383876, gmqe_profile_aln_score=322.9, gmqe_avg_entropy=2.029780387878418","offset":2,"afdb_struct_serve_idx":null,"oligo_state_bu":"homo-dimer","oligo_state_bu_full":"homo-dimer","is_whole_complex":"whole_complex","qualified_name":"8dqg.1.A","biounit_name":"8dqg.1","gmqe":0.15206122398376465,"sequence_identity":11.196910858154297,"sequence_similarity":0.2507080137729645,"alignment":{"target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQ--PADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVD-VTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIE-RSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG","template_sequence":"-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TVKYTDAQIQRLREYGNGTYE---QKVFEDLASRDAAFSKEMSVASTD-----NEKKIKGMIA----NPSRHGLTQLMNDIADALVAEGFIEVRTPIFISKDALARMTITE----DKPLFKQVFWIDEKRALRPMLAPNLYSVMRDLRDHTDGPVKIFEMGSCFRKESHS---------------------GMHLEEFTMLALGDMGPR----------GDATEVLKNYISVVMKAAGLPDYDLVQEESDVYKET--IDVEINGQEVCSA-AVGPHYLDAAHDVHEPCSGAGFGLERLLTI-REKYSTVKKGGA------------------------------------------------------------------------------------------"},"annotation":{"dssp":"XCCBCCCHHHHHHHHHHCCSCGGGCCBSSHHHHHHHHHHHHHHHHHHHHHHHHHHHHSCCCCHHHHHHHHHHHHHHHTTCEECCCCSEEEHHHHHHTTCCTTSHHHHTCCBSSSSEEECSSSHHHHHHHHHHHHTTCSSCEEEEEEEEEECCCCXCTTCCSEEEEEEEEEESCSSCHHHHHHHHHHHHHHHTTCCCCEEEEEEETTTEEEEEEEETTEEEEEEEECCHHHHHHTTCCSCEEEEEEEHHHHHHHHHTCSSTTSSSSCSSEETTEECC","psipred":"CCCCCCCHHHHHHHHHHCCCCCCCCCCCCHHHHHHHHHHHHHHCCCHHHHHHCCCCCCCCCCHHHHHHHHHHHHHHHCCCEEEECCCCCCHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHCCCCCCEEEEEECCEEECCCCCCCCCCEEEEEEEEEECCCCCHHHHHHHHHHHHHHHCCCCCEEEEECCCCCCCCEEEEEECCEEEEEEEECHHHHCCCCCCCCCEEEEEECHHHHHHHHHCCCCCCCCCCCEEEECCEECC","sspro":"CCEEECCCCCCCCCHHHHCCHHHCCCCCCCCCCCCCCCCCCCCCCCCCHHHHHHHHCCCCCHHHHHHHHHHHHHHCCHCCCCCCCCHHHCCCCCCHCCCHHCHHHHCCCCCCCCCCCCCHCCHHCCCEECCCCCCCCCCCCEEECCCCCCCCCCCCCCCCCCCEEEEEEECCCCCCHHEEECCCEEEEEECCCCCCCCCCHHHHHHHHHCEECCCHHEEEEHHHHHCCHEEEEEECCCCCCCCEEECCCECEEEECCCCCCCCCCCCCCCHHCCCC"},"title":"Crystal structure of pyrrolysyl-tRNA synthetase from Methanomethylophilus alvus engineered for acridone amino acid (RS1) bound to AMPPNP and acridone","residue_from":"432","residue_to":"741","trg_seq_length":831}],"residue_from":"432","residue_to":"741"},{"psipred":"CCCCHHHHHHHCCCCCCCCCCCHHHHHHHHHHCCCEEEEEEECCCCCCCEEEEEEEEEEECCCCCCCCEEEEEECCCCCEEEEEECCCCCCCCCEEEEECCCCCCCCCCEEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEECCCCCCCCCCHHCCCCCCCEEEEEECCCCCCHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCEEECCCCCCCCEEEEEEECCCCCCCCHHHHHHHHHHCCCCCCCCHHHHHHHHHHHHCCCCCCCCCCCCCCCEEEEECCCCCEEEECCCCEEECCCCCEEEECCCCCEEEECCCCCCCEEEECCCCEEEEEEEECCHHHHHHHHHHHCCCCHHHHHHCCCCCHHHHHHHHHHHHHHHHHHCCCEEECEEEEECCCCCCCCCCCCCEEECCCHHHHHCCCCCCHHHHHHHHHHCCCEEEECCCEEEEECCCCCCCCCC--CCHHHHHHHHHCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHHHHCCCCEECCCCCCCHHHHHHCCCCCCCCCCCEEEEECCCCCCCCCHHCCHHHHHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCCCCCCCCCCCCCHHHHHCCCCCCCCCEEEEEEECCCCCCCCCCCCCCCCHHHHHHHHHHHHHHCCCC-EEECCCCCCCCCCCCEEEEEECCEEEEEEEEECHHHHH-HCCCCCCEEEEEEECCCCCCCCCCCCCCCCCCCCCCEEEEEEECCCCCHHHHHHHHHHCCCCCEEEEEEEEEECCCCCCCCCEEEEEEEEEECCCCCCCHHHHHHHHHHHHHHHHHHCCCEECC","dssp":"-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------CBCCCHHHHHHHTTSCCCTTTTTSSCCBSSTTHHHHHCCCHHHHHSSSSCTTSTTHHHHSSSSSSSCSSCHHHHHHHHHHHHHHHTTCEECCCCSEEEHHHHHTTTCCCCTTSSCGGGGGCCBSSSSEEECSSSHHHHHHHHHHHHTTCSSCEEEEEEEECCCCCCCCCCSSCSSSCCCCCSSCCSSSCCCCCSSCEEEEEEEESCCGGGSCSTTTTTHHHHHHHHHHHHHHHHHTCCCEEEEEECTTSTTSEEEEEEETTEEEEECCCSCCTTSCCSSSCCCEEEEEEETTHHHHHSSSCCSSSTTSCC","qmean":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.37,0.44,0.35,0.45,0.46,0.61,0.52,0.51,0.51,0.44,0.48,0.51,0.55,0.54,0.52,0.5,0.48,0.47,0.42,0.46,0.33,0.38,0.47,0.4,0.44,0.42,0.4,0.36,0.39,0.37,0.52,0.43,0.34,0.44,0.45,0.45,0.43,0.4,0.46,0.49,0.55,0.47,0.47,0.36,0.4,0.38,0.24,0.32,0.25,0.23,0.26,0.25,0.33,0.3,0.38,0.27,0.24,0.26,0.29,0.25,0.26,0.27,0.26,0.24,0.27,0.28,0.35,0.49,0.49,0.45,0.55,0.52,0.59,0.59,0.6,0.64,0.72,0.81,0.81,0.83,0.73,0.84,0.81,0.82,0.82,0.8,0.76,0.77,0.78,0.74,0.75,0.72,0.58,0.49,0.63,0.49,0.56,0.5,0.49,0.66,0.67,0.42,0.45,0.5,0.32,0.46,0.37,0.32,0.42,0.39,0.32,0.37,0.3,0.34,0.33,0.3,0.36,0.33,0.28,0.36,0.39,0.41,0.35,0.36,0.46,0.37,0.35,0.46,0.52,0.52,0.67,0.69,0.72,0.77,0.66,0.62,0.72,0.75,0.66,0.62,0.79,0.73,0.65,0.61,0.71,0.55,0.55,0.43,0.54,0.27,0.38,0.67,0.71,0.77,0.77,0.8,0.84,0.79,0.77,0.63,0.75,0.64,0.56,0.4,0.43,0.41,0.35,0.27,0.34,0.43,0.46,0.42,0.36,0.37,0.4,0.47,0.45,0.41,0.39,0.38,0.47,0.47,0.4,0.42,0.36,0.32,0.37,0.38,0.36,0.42,0.45,0.44,0.44,0.48,0.58,0.67,0.65,0.73,0.79,0.78,0.77,0.76,0.7,0.61,0.55,0.5,0.42,0.38,0.38,0.39,0.34,0.25,0.22,0.35,0.36,0.29,0.28,0.32,0.28,0.44,0.48,0.48,0.56,0.61,0.6,0.66,0.73,0.74,0.7,0.8,0.77,0.78,0.73,0.8,0.73,0.66,0.7,0.75,0.64,0.69,0.7,0.66,0.62,0.43,0.3,0.31,0.27,0.35,0.24,0.3,0.42,0.38,0.4,0.54,0.63,0.69,0.75,0.71,0.55,0.59,0.63,0.65,0.71,0.71,0.77,0.63,0.55,0.48,0.5,0.48,0.44,0.46,0.44,0.47,0.38,0.39,0.39,0.31,0.21,0.22,0.35,0.44,0.49,0.62,0.66,0.72,0.75,0.74,0.73,0.67,0.62,0.55,0.64,0.61,0.52,0.43,0.47,0.51,0.47,0.39,0.43,0.43,0.43,0.4,0.43,0.4,0.47,0.4,0.44,0.44,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"id":"B","templates":[{"id":"7857d4f72d3e88be3c1af77e15d72314263ff3ec","pdb_id":"8dqg","chain":"B","method":"X-RAY DIFFRACTION","short_method":"X-ray","coverage":0.3116726875305176,"resolution":1.4900000095367432,"description":"AA_TRNA_LIGASE_II domain-containing protein","assembly_id":1,"score":0.4296022653579712,"found_by":"HHblits","oligo_state":"homo-dimer","comment":"e_value=1.5e-36, p_value=9.1e-41, score=322.9, ss_score=19.2, prob=100, sw_version=3.2.0, gmqe_dist_const=0.6168921589851379, gmqe_reduced=0.22740384936332703, gmqe_cb_packing=-0.0036657163873314857, gmqe_torsion=0.19802603125572205, gmqe_ss_agreement=0.1458379030227661, gmqe_coverage=0.31046929955482483, gmqe_seq_id=11.240309715270996, gmqe_seq_sim=0.2506459951400757, gmqe_n_insertions=10, gmqe_n_deletions=3, gmqe_seqres_length=831, gmqe_seqres_coverage=0.31167268351383876, gmqe_profile_aln_score=322.9, gmqe_avg_entropy=2.029780387878418","offset":2,"afdb_struct_serve_idx":null,"oligo_state_bu":"homo-dimer","oligo_state_bu_full":"homo-dimer","is_whole_complex":"whole_complex","qualified_name":"8dqg.1.B","biounit_name":"8dqg.1","gmqe":0.15206122398376465,"sequence_identity":11.196910858154297,"sequence_similarity":0.2507080137729645,"alignment":{"target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQ--PADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVD-VTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIE-RSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG","template_sequence":"-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TVKYTDAQIQRLREYGNGTYE---QKVFEDLASRDAAFSKEMSVASTD-----NEKKIKGMIA----NPSRHGLTQLMNDIADALVAEGFIEVRTPIFISKDALARMTITE----DKPLFKQVFWIDEKRALRPMLAPNLYSVMRDLRDHTDGPVKIFEMGSCFRKESHS---------------------GMHLEEFTMLALGDMGPR----------GDATEVLKNYISVVMKAAGLPDYDLVQEESDVYKET--IDVEINGQEVCSA-AVGPHYLDAAHDVHEPCSGAGFGLERLLTI-REKYSTVKKGGA------------------------------------------------------------------------------------------"},"annotation":{"dssp":"XCCBCCCHHHHHHHHHHCCSCGGGCCBSSHHHHHHHHHHHHHHHHHHHHHHHHHHHHSCCCCHHHHHHHHHHHHHHHTTCEECCCCSEEEHHHHHHTTCCTTSHHHHTCCBSSSSEEECSSSHHHHHHHHHHHHTTCSSCEEEEEEEEEECCCCXCTTCCSEEEEEEEEEESCSSCHHHHHHHHHHHHHHHTTCCCCEEEEEEETTTEEEEEEEETTEEEEEEEECCHHHHHHTTCCSCEEEEEEEHHHHHHHHHTCSSTTSSSSCSSEETTEECC","psipred":"CCCCCCCHHHHHHHHHHCCCCCCCCCCCCHHHHHHHHHHHHHHCCCHHHHHHCCCCCCCCCCHHHHHHHHHHHHHHHCCCEEEECCCCCCHHHHHHCCCCCCCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHCCCCCCEEEEEECCEEECCCCCCCCCCEEEEEEEEEECCCCCHHHHHHHHHHHHHHHCCCCCEEEEECCCCCCCCEEEEEECCEEEEEEEECHHHHCCCCCCCCCEEEEEECHHHHHHHHHCCCCCCCCCCCEEEECCEECC","sspro":"CCEEECCCCCCCCCHHHHCCHHHCCCCCCCCCCCCCCCCCCCCCCCCCHHHHHHHHCCCCCHHHHHHHHHHHHHHCCHCCCCCCCCHHHCCCCCCHCCCHHCHHHHCCCCCCCCCCCCCHCCHHCCCEECCCCCCCCCCCCEEECCCCCCCCCCCCCCCCCCCEEEEEEECCCCCCHHEEECCCEEEEEECCCCCCCCCCHHHHHHHHHCEECCCHHEEEEHHHHHCCHEEEEEECCCCCCCCEEECCCECEEEECCCCCCCCCCCCCCCHHCCCC"},"title":"Crystal structure of pyrrolysyl-tRNA synthetase from Methanomethylophilus alvus engineered for acridone amino acid (RS1) bound to AMPPNP and acridone"}],"residue_from":"432","residue_to":"741"}],"id":"AB","target_sequence":"MRLPYSWLREVVAVGASGWDVTPGELEQTLLRIGHEVEEVIPLGPVDGPVTVGRVADIEELTGYKKPIRACAVDIGDRQYREIICGATNFAVGDLVVVALPGATLPGGFTISARKAYGRNSDGMICSAAELNLGADHSGILVLPPGAAEPGADGAGVLGLDDVVFHLAITPDRGYCMSVRGLARELACAYDLDFVDPASNSRVPPLPIEGPAWPLTVQPETGVRRFALRPVIGIDPAAVSPWWLQRRLLLCGIRATCPAVDVTNYVMLELGHPMHAHDRNRISGTLGVRFARSGETAVTLDGIERKLDTADVLIVDDAATAAIGGVMGAASTEVRADSTDVLLEAAIWDPAAVSRTQRRLHLPSEAARRYERTVDPAISVAALDRCARLLADIAGGEVSPTLTDWRGDPPCDDWSPPPIRMGVDVPDRIAGVAYPQGTTARRLAQIGAVVTHDGDTLTVTPPSWRPDLRQPADLVEEVLRLEGLEVIPSVLPPAPAGRGLTAGQQRRRTIGRSLALSGYVEILPTPFLPAGVFDLWGLEADDSRRMTTRVLNPLEADRPQLATTLLPALLEALVRNVSRGLVDVALFAIAQVVQPTEQTRGVGLIPVDRRPTDDEIAMLDASLPRQPQHVAAVLAGLREPRGPWGPGRPVEAADAFEAVRIIARASRVDVTLRPAQYLPWHPGRCAQVFVGESSVGHAGQLHPAVIERSGLPKGTCAVELNLDAIPCSAPLPAPRVSPYPAVFQDVSLVVAADIPAQAVADAVRAGAGDLLEDIALFDVFTGPQIGEHRKSLTFALRFRAPDRTLTEDDASAARDAAVQSAAERVGAVLRG"}],"qsqe":0.14937497018573526,"oligo_state":"homo-dimer","oligo_based_on":"prediction","gmqe":0.16405612688987734,"qmean_global":{"qmean4_norm_score":0.5725038668812747,"qmean4_z_score":-5.461141624289208,"qmean6_norm_score":0.5556213405122348,"qmean6_z_score":-4.903861162999994,"interaction_norm_score":-0.009634372789878397,"interaction_z_score":-2.8050619161585475,"cbeta_norm_score":-0.00034423345253323847,"cbeta_z_score":-3.9076131524944957,"packing_norm_score":-0.2774558018120813,"packing_z_score":-1.582402933525913,"torsion_norm_score":0.12674755548205746,"torsion_z_score":-4.133062218423512,"ss_agreement_norm_score":0.3818084248251492,"ss_agreement_z_score":-2.3477019808985506,"acc_agreement_norm_score":0.6016129032258064,"acc_agreement_z_score":-1.0391989650765352,"avg_local_score":0.5162173837539366,"avg_local_score_error":0.053},"included_ligands":[],"excluded_ligands":[{"name":"ANP","description":"PHOSPHOAMINOPHOSPHONIC ACID-ADENYLATE ESTER","ligands":[{"exclusion_reason":"Binding site not conserved.","number":"1"},{"exclusion_reason":"Binding site not conserved.","number":"8"}]},{"name":"GOL","description":"GLYCEROL","ligands":[{"exclusion_reason":"Not biologically relevant.","number":"6"}]},{"name":"MG","description":"MAGNESIUM ION","ligands":[{"exclusion_reason":"Binding site not conserved.","number":"3"},{"exclusion_reason":"Binding site not conserved.","number":"4"},{"exclusion_reason":"Not in contact with model.","number":"5"},{"exclusion_reason":"Binding site not conserved.","number":"9"},{"exclusion_reason":"Binding site not conserved.","number":"10"}]},{"name":"PEG","description":"DI(HYDROXYETHYL)ETHER","ligands":[{"exclusion_reason":"Not biologically relevant.","number":"7"}]},{"name":"T7Q","description":"(2~{S})-2-azanyl-3-(9-oxidanylidene-10~{H}-acridin-2-yl)propanoic acid","ligands":[{"exclusion_reason":"Binding site not conserved.","number":"2"}]}],"plip_ligands":{}};
+  if(modelData['02'].targets[0].model_chains[0].qmeanbrane)
+    document.getElementById('qmeanbraneLbl').style.display='inline';
+
+</script>
+
+        </div>
+        
+    </div>
+  </div>
+
+  <div id="right-panel">
+    <div id="viewerWrapper" style="border: 1px solid #DDD; border-radius: 10px; padding:7px; margin-bottom:4px; height:300px; width:100%; position:relative; text-align:center">
+      <div style="position:absolute; right:10px; top:10px; z-index:100;">
+        <div id="pv_status" class="viewerStatus"></div>
+        <div id="ngl_status" class="viewerStatus"></div>
+      </div>
+
+      <div id="annotateDiv">
+        <textarea id="annotate" rows=5 class="form-control" placeholder='MOTIF=YAN TARGET=1 COLOR=rgb(0,100,100)
+MOTIF=[STNQ] COLOR=olive LABEL="Polar" LABEL_SCALE=1.9
+MOTIF=P COLOR=gold LABEL="prolines labelled gold"
+CHAIN=A START=34 END=38 COLOR=#440088 LABEL=default' spellcheck="false" style="white-space: pre;"></textarea> 
+        <span style="float: left; margin-left: 8px;">
+         <a class="smng-help" href="/docs/help#model-annotation"></a>
+        </span>
+        <button id="applyBtn" class="btn btn-sm" onclick="processAnnotations();" style="margin-right:8px;" disable="disabled">
+          Apply
+        </button>
+
+        <button class="btn btn-sm" onclick="$('#annotateDiv').hide();">
+          Close
+        </button>         
+      </div>
+
+      <div style="position:absolute; bottom:10px; right:10px; z-index: 10;">
+        <div class="dropup pull-left">
+          <button title="Annotate Models" id="annotateBtn" class="btn btn-sm btn-default" onclick="$('#annotateDiv').toggle(); if($('#annotateDiv:visible').length==1)processAnnotations();"><i class="glyphicon glyphicon-pencil"></i></button>
+          <a id="options_" class="poponthis btn btn-sm btn-default">
+            <i class="glyphicon glyphicon-cog"></i>
+          </a>
+          <button class="btn btn-sm btn-default" data-toggle="dropdown"><span style="margin-right:4px" id="repBtnLbl">Cartoon</span><b class="caret"></b></button>
+          <ul role="menu" class="dropdown-menu" style="min-width:10px">
+            <li><a href="#" onclick="changeRep('cartoon');return false;">Cartoon</a></li>
+            <li><a href="#" onclick="changeRep('tube');return false;">Tube</a></li>
+            <li><a href="#" onclick="changeRep('trace');return false;">Trace</a></li>
+            <li><a href="#" onclick="changeRep('lines');return false;">Lines</a></li>
+
+            <li class="notPV"><a href="#" onclick="changeRep('ballAndStick');return false;">Ball+Stick</a></li>
+            <li class="notPV"><a href="#" onclick="changeRep('licorice');return false;">Licorice</a></li>
+            <li class="notPV"><a href="#" onclick="changeRep('hyperball');return false;">Hyperball</a></li>
+            <li class="notPV"><a href="#" onclick="changeRep('rope');return false;">Rope</a></li>
+            <li class="notPV"><a href="#" onclick="changeRep('surface');return false;">Surface</a></li>
+            <li class="notPV"><a href="#" onclick="changeRep('spacefill');return false;">Spacefill</a></li>
+            <li role="separator" class="notNGL divider"></li>
+            <li class="notNGL"><a href="#" onclick="changeRep('outline');return false;">Outline</a></li>
+            <li class="notNGL"><a href="#" onclick="changeRep('fog');return false;">Fog</a></li>
+          </ul>
+        </div>
+        <div class="dropup pull-left notPV">
+  <button class="btn btn-sm btn-default" title="Take Snapshot of 3D Molecule" data-toggle="dropdown"><span class="glyphicon glyphicon-camera" style="margin-right:4px"></span><b class="caret"></b></button>
+    <ul role="menu" class="dropdown-menu" style="min-width:10px">
+      <h6 class="dropdown-header">Background</h6>
+      <li><label style="padding-left: 20px; padding-right: 20px; white-space: nowrap; font-weight: normal;" onclick="event.stopPropagation();"
+                 title="Export snapshot with a transparent background"><input type="checkbox"
+                 id="snapshot_bg_transparent_checkbox" checked="checked">&nbsp;Transparent</label></li>
+      <h6 class="dropdown-header">Resolution</h6>
+      <li><a href="#" onclick="takeSnapshot('.png', 1);return false;">Low</a></li>
+      <li><a href="#" onclick="takeSnapshot('.png', 2);return false;">Medium</a></li>
+      <li><a href="#" onclick="takeSnapshot('.png', 4);return false;">High</a></li>
+      <li><a href="#" onclick="takeSnapshot('.png', 10);return false;">Extreme</a></li>
+    </ul>
+</div>
+<button class="btn btn-sm btn-default notNGL" title="Take Snapshot of 3D Molecule" onclick="takeSnapshot('.png');return false;"><i class="glyphicon glyphicon-camera"></i></button>
+
+        <button class="btn btn-sm btn-default spinButton" title="Start rotation" onclick="spin(true);$('.spinButton').toggle();"><i class="glyphicon glyphicon-play"></i></button>
+        <button class="btn btn-sm btn-default spinButton" style="display:none" title="Stop rotation" onclick="spin(false);$('.spinButton').toggle();"><i class="glyphicon glyphicon-pause"></i></button>
+        <button class="btn btn-sm btn-default" title="Reset" onclick="resetStructure();"><i class="glyphicon glyphicon-refresh"></i></button>
+      </div>
+
+      <div id="pv"  style="display:none;width:100%;height:100%;position:relative;">
+        <div class="emptySelectionMessage">Click model image to view in 3D</div>
+      </div>
+      <div id="ngl" style="display:none;width:100%;height:100%;position:relative;">
+        <div class="emptySelectionMessage">Click model image to view in 3D</div>
+      </div>
+    </div><!-- end viewerWrapper -->
+  </div>
+</div>
+
+
+<!-- Modal -->
+<div id="delModelDiv" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3>Delete Model - "<span id="delModelDivLabel"></span>"</h3>
+      </div>
+      <div class="modal-body">
+       <p>Are you sure you want to delete this model?<br>(This really can't be undone!)</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+        <button class="btn btn-danger" id="confirmDeleteModelButton" >Delete Model</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    </div>
+    
+  </body>
+</html> 
+
+<script src="../web/js/jquery-3.7.0.min.js"></script>
+<script src="../web/js/jquery-ui.min.js"></script>
+<script src="../web/js/bootstrap-3.4.1.min.js"></script>
+<script src="../web/js/bio-pv.min.js"></script>
+<script src="../web/js/ngl.js"></script>
+<script src="../web/js/raphael-min.js"></script>
+<script src="../web/js/smng.min.js"></script>
+<script src="../web/js/jquery.fancybox.pack.js"></script> 
+
+
+
+
+<script src="models/01/coords.js"></script>
+<script src="models/03/coords.js"></script>
+<script src="models/04/coords.js"></script>
+<script src="models/02/coords.js"></script>
+<script>
+let localQMEANNormImage='../web/images/qmean_norm.png';
+$('a.smng-help').append('<icon class="glyphicon glyphicon-question-sign"></i>');
+    $(document).on('click','a.smng-help', function()
+    { 
+        window.open('https://swissmodel.expasy.org/'+$(this).attr('href'),
+            'Help',
+            'width=920,height=600,left=20,top=100,directories=no,menubar=yes,toolbar=yes,'
+                +'status=no,scrollbars=yes,resizable=no');
+        return false;
+    });
+</script>
+
+<script>
+var None = null;
+var tooltipWhiteList = $.fn.tooltip.Constructor.DEFAULTS.whiteList
+
+// To allow table elements
+tooltipWhiteList.table = [];
+tooltipWhiteList.tbody = [];
+tooltipWhiteList.tr = [];
+tooltipWhiteList.td = ['rowspan'];
+tooltipWhiteList.img = ['src','style']
+
+$(document).ready(
+    function()
+    {
+      $('span[id^=avgLocalScore]')
+        .each(function(){
+          $(this).css({'background-color':
+                         qmeanLocalColour(modelData[
+                          $(this).attr('id').substring(14)
+                         ].qmean_global.avg_local_score, .9),
+                    'padding':'0px 8px 0px 8px',
+                    'color':'white',
+                    'border-radius':'1em',               
+                    'display':'inline-block'});
+          });
+
+      $('div[id^=range_]').each(
+          function()
+          {
+            drawRange($(this).attr('id'),
+                $(this).attr('seqLength'),
+                $(this).attr('resFrom'),
+                $(this).attr('resTo'),
+                $(this).attr('seqSim'));
+          });
+
+      $("#model-range")
+        .popover({
+          html : true,
+          animation: false,
+          selector: 'rect[id^=mdl_bar]',
+          content: function()
+                {
+                    let id = $(this).attr("id").split('_')[2];
+                    let trg = parseInt($(this).attr("id").split('_')[3]);
+                    let model = modelData[id];
+                    let ligSummary = '';
+                    for(let i=0; i<model.included_ligands.length; i++)
+                      ligSummary+=model.included_ligands[i].count
+                                +' x '+model.included_ligands[i].name+'; ';
+                    if(ligSummary!='')
+                      ligSummary = '<tr><td>Ligands: '+ligSummary+'</td></tr>'
+
+                    let imgSrc = `models/${id}/${id}.png`;
+                    
+                    let tip = `<table><tr><td rowspan="6"><img src="${imgSrc}" style="margin-right:16px;border:1px solid ${selectedModels[id]?'#F66':'#EEE'};border-radius:10px;height:100px"></td><td>Model ${id}</td></tr>`
+                    +`<tr><td>Oligo-state: ${model.oligo_state.charAt(0).toUpperCase()}${model.oligo_state.substring(1)}</td></tr>`
+                    +`<tr><td>Range: ${model.targets[trg].model_chains[0].residue_from}-${model.targets[trg].model_chains[0].residue_to} (Chain${model.targets[trg].id.length>1?'s':''} ${model.targets[trg].id})</td></tr>`
+                    +`<tr><td>GMQE: ${model.gmqe.toFixed(2)}</td></tr>`;
+                    if(model.qmean_global)
+                      tip+=`<tr><td>QMEANDisCo: ${model.qmean_global.avg_local_score.toFixed(2)}</td></tr>`
+                    tip+=`${ligSummary}</td></tr>`
+
+                    return tip;
+                },
+          placement: 'right',
+          container: 'body',
+          trigger: 'hover',
+          delay: { "show":550, "hide": 300 }
+        })
+        .on('shown.bs.popover', function(e)
+        {
+            let pop = $('#'+$(e.target).attr('aria-describedby'));
+            pop.css({'left': $(e.target).offset().left+$(e.target).outerWidth()+4,  
+                            //$(this).data('posX')+15,
+                     'top':  $(e.target).offset().top
+                            - pop.outerHeight()/2
+                            + $(e.target).outerHeight()/2});
+            pop.find('.arrow').css({'top': '50%'})
+            
+            $(".popover").not(pop).hide();
+        })
+        .on('mousemove', function(e)
+        {
+          $(this).data('posX', e.pageX);
+        });
+
+      addToggleEvent();
+      showViewer("NGL");
+
+    
+
+      loadModel('01');
+      $('#showQmeanLocal_01').click();
+      if($('#mdl_row_01').offset().top > $(window).scrollTop()+$(window).height())
+        $('html,body').animate({'scrollTop':$('#mdl_row_01').offset().top }, 2000);
+
+      
+
+      $('.ligand_summary')
+      .popover(
+        {
+          trigger: 'hover',
+          delay: { 'show': 1000, 'hide': 100 },
+          html:true,
+          container:'body',
+          sanitize: false,
+          content: function()
+          {
+              let html='';
+              let ligs = $(this).attr('ligand_name').split('-');
+              for(let i=0; i<ligs.length; i++)
+                html+='<img style="display:inline-block;min-width:135px;min-height:135px;max-width:135px;max-height:135px" width="135" height="135" src="https://cdn.rcsb.or'+''//small obfuscation
+                  + `g/images/ccd/unlabeled/${ligs[i][0]}/${ligs[i]}.svg" `
+                  + `onerror="this.onerror=null; this.src='/static/images/ligand404.png'">`;
+              return html;
+          }
+        });
+
+      $('button[id^=issueButton_]')
+        .popover({ html:true, container: 'body'  });
+    });
+
+$(window).on('resize',
+  function(e){
+    clearTimeout(this.id);
+    this.id = setTimeout(function()
+    {
+      resize(e);
+    }, 250);
+  });
+
+$(document).on('scroll', 
+  function(e){
+    clearTimeout(this.id);
+    this.id = setTimeout(function()
+    {
+      resize(e);
+    }, 250);
+  });
+
+function resize(e)
+{
+  if($(window).width()<751)
+  {
+    $('#right-panel').css({position:'relative',left:'',top:'',width:''});
+    $('#viewerWrapper').height( $('#viewerWrapper').width() );
+    $('#left-panel').css({width:''})
+  }
+  else
+  {
+    let setFixed = false;
+    let setRelative = false;
+    if($('#right-panel').css('position')!='fixed')
+    {
+      if($(document).scrollTop()>$('#left-panel').position().top-8) 
+        setFixed = true;
+      else
+        setRelative = true;
+    }
+    else
+    {
+      if($(document).scrollTop()<$('#left-panel').position().top-8) 
+        setRelative = true;
+      else
+        setFixed = true;
+    }
+    if(setFixed)
+    {
+      $('#right-panel').css(
+          { position:'fixed', top:'8px', left: $('#left-panel').width() +32,
+            width: $('#main-content').innerWidth() -$('#left-panel').width() -48
+          });
+      $('#viewerWrapper').height(window.innerHeight -$('#viewerWrapper').position().top -50  );    
+    }
+    else if(setRelative)
+    {
+      $('#right-panel').css({position:'relative','left':'',top:'',width:''});
+      $('#viewerWrapper').height(
+        window.innerHeight
+        -$('#right-panel').position().top
+        +$(document).scrollTop() -32);
+    }
+  }
+
+  $('#annotate')
+    .height( $('#viewerWrapper').height()/4 )
+    .width( $('#viewerWrapper').width()-30 );
+
+  $('#pv').height( $('#viewerWrapper').height() );
+  if($('#pv:visible', currentWin.document).length>0)
+    pv_viewer.fitParent();
+  else if(ngl_stage)
+    ngl_stage.handleResize();
+
+
+  if(!e || e.type=='resize')
+  {
+    $('.alignTbl').alignment('resizeToParent'); 
+    drawModelCoverage();
+    $('div[id^="lq-chart"]:visible')
+      .each(function()
+      { 
+        drawQMEAN($(this).attr('id').split('-')[2], true); 
+      });
+  }
+}
+
+let resizeBarTouch;
+$("#left-panel").resizable({  handles: 'e', 'stop': function() { } }); 
+$('.ui-resizable-e')[0]
+  .addEventListener('touchstart', (e) => 
+  {
+    const onTouchMove = (e) => 
+    { 
+      e.preventDefault();
+      if(e.touches.length==1)
+      {
+        if(Math.abs(e.touches[0].pageX-resizeBarTouch.x))
+        {
+          $('#left-panel').width( $('#left-panel').width()+e.touches[0].pageX-resizeBarTouch.x );
+          resizeBarTouch.x = e.touches[0].pageX;
+        }
+        return;
+      }
+    }
+    const onTouchEnd = () => {
+      e.target.removeEventListener("touchmove", onTouchMove);
+      e.target.removeEventListener("touchend", onTouchEnd);
+      // handle touchend here
+      resizeBarTouch = null;
+      this.id = setTimeout(function()
+      {
+        resize();
+      }, 250);
+    }
+    e.target.addEventListener("touchmove", onTouchMove);
+    e.target.addEventListener("touchend", onTouchEnd);
+    // handle touchstart here
+    if(e.touches.length==1)
+      resizeBarTouch = { x: e.touches[0].pageX  };
+  });
+
+
+
+function jobFinished(status, model_id)
+{  
+  $('#autoModelIcon').hide();
+  $('.ligand_summary')
+    .popover(
+        {
+          trigger: 'hover',
+          delay: { 'show': 1000, 'hide': 100 },
+          html:true,
+          container:'body',
+          sanitize: false,
+          content: function()
+          {
+              let html='';
+              let ligs = $(this).attr('ligand_name').split('-');
+              for(let i=0; i<ligs.length; i++)
+                html+='<img style="display:inline-block;min-width:135px;min-height:135px;max-width:135px;max-height:135px" width="135" height="135" src="https://cdn.rcsb.or'+''//small obfuscation
+                  + `g/images/ccd/unlabeled/${ligs[i][0]}/${ligs[i]}.svg" `
+                  + `onerror="this.onerror=null; this.src='/static/images/ligand404.png'">`;
+              return html;
+          }
+        });
+
+  $('button[id^=issueButton_'+model_id+']')
+        .popover({ html:true, container: 'body' });
+
+  $('a[id^=options_'+model_id+']')
+      .popover(
+        { 
+            html : true,
+            content: $('#alignmentOptions'),
+            container: 'body'
+        })
+      .click(function()
+        {
+          $('#alignmentOptions').show()
+          $('#currentAlignmentIndex').val( $(this).attr('id').substring(8) );
+        })
+
+
+  if(status=='COMPLETED')
+  { 
+      addToggleEvent(model_id);
+      if(Object.keys(selectedModels).length==0)
+        loadModel(model_id);
+
+      if(modelData[model_id].qmean_global)
+        $('#avgLocalScore_'+model_id)
+            .css({'background-color':  qmeanLocalColour(
+                modelData[model_id].qmean_global.avg_local_score, .9),
+                  'padding':'0px 8px 0px 8px',
+                  'color':'white',
+                  'border-radius':'1em',
+                  'display':'inline-block'});
+      $('div[id^=range_'+model_id+']').each(
+          function()
+          {
+            drawRange($(this).attr('id'),
+                $(this).attr('seqLength'),
+                $(this).attr('resFrom'),
+                $(this).attr('resTo'),
+                $(this).attr('seqSim'));
+          });
+      drawModelCoverage();
+      // Load the PLIP data
+      eval("loadPLIPBonds_model_" + model_id + "()");
+  }
+  else
+  {
+    var allFailed = true;
+    $('#modelSummaryTable div[id^=mdl_left_col_]').each(
+        function()
+        {
+          if( $(this).text().indexOf('failed')==-1)
+          {
+            allFailed = false;
+            return;
+          }
+        });
+    
+    if(allFailed)
+    {
+      alert('All jobs failed!');
+    }
+  }
+}
+
+function addToggleEvent(model_id)
+{
+  var $elements;
+  if(model_id)
+    $elements = $('#mdl_row_'+model_id+' .glyphicon-chevron-down').not(".ignore-toggle-event");
+  else
+    $elements = $('.glyphicon-chevron-down').not(".ignore-toggle-event");
+
+  $elements.on('click', function() 
+      {
+        var curTarget = $(this).attr('id');
+        var model_id = null;
+        if(curTarget && curTarget.indexOf('showAlignment_')==0)
+          model_id = curTarget.substring(14);
+        
+        if(model_id)
+          $('div[id^=alignment_' + model_id + ']').toggle();
+
+        if( $(this).hasClass('glyphicon-chevron-down'))
+        {
+          $(this)
+            .removeClass('glyphicon-chevron-down')
+            .addClass('glyphicon-chevron-up');
+          
+          if(model_id)
+          {
+            loadAlignment(model_id);
+            $('.alignTbl').alignment('resizeToParent');
+          }
+        }
+        else
+        {
+          $(this)
+            .addClass('glyphicon-chevron-down')
+            .removeClass('glyphicon-chevron-up');
+        }
+   });
+}
+
+function drawRange(id, seqLength, from, to, value)
+{
+  let maxLength = seqLength;
+
+  $('div[id^='+id.split('_').slice(0,2).join('_')+']')
+    .each(function(i, obj)
+      {
+        maxLength = Math.max(maxLength, obj.getAttribute('seqLength'));
+      });
+  
+  let width=80 * (seqLength/maxLength);
+  let height=16;
+  let scale = width / seqLength;
+  let pat = new RegExp('[a-zA-Z]+','gi');
+
+  let coveragePaper = Raphael(id,width,height); 
+  
+  let r = coveragePaper.rect(1,1,width-2,height-1)
+  r.attr({'stroke-width':1,stroke:'#000',opacity:.3})
+  
+  r = coveragePaper.rect(scale*from,1,scale*(to-from),height-1)
+  r.attr({'stroke-width':1,
+              fill: "rgba(30, 90, 255,"+(value+.4)+")", 
+                  stroke: "#EEE",
+                  //opacity: .7,
+                  r : 2
+                  })
+}
+
+
+function confirmDeleteModel(id)
+{
+  $('#delModelDivLabel').text(id);
+  $('#delModelDiv')
+    .modal('show')
+    .off('shown.bs.modal')
+    .on('shown.bs.modal',
+    function()
+    {
+      $('#confirmDeleteModelButton')
+        .focus()
+        .off('click')
+        .on('click',function()
+          {
+            $.post("/interactive/BFTuTA/models/00/delete".replace('00',id),
+              { 
+                csrfmiddlewaretoken:'CcuMj5imLyvQVFBezHkedLN73SJlhjRpXygomQoIV7MIwlUEgxsaDob1RsFbe03U' 
+              },
+              function(d,s)
+              {          
+                if(s=='success' && d=='removed')
+                {
+                  delete modelData[id];
+                  if(Object.keys(modelData).length==0)
+                    $('#modelRangeContainer').hide();
+
+                  removeModel(id);
+                  $('#mdl_row_'+id).remove();
+                  $('#model_badge').text( $('div [id^=mdl_row]').length );
+                  drawModelCoverage();
+                }
+              });
+            $('#delModelDiv').modal('hide');  
+          });
+    
+    });
+}
+
+
+chainMapping.defaultColourScheme = 'qmean_local';
+function loadAlignment(id)
+{
+  if( $('.alignTbl[id^=alignTbl'+id+'] tr').length==0)
+  {
+    for(let i=0; i<modelData[id]['targets'].length; i++)
+    {
+      let chn_ids = [];
+      let tpls = [];
+      let ksa = {}; //key seq annotation
+      for(let j=0; j<modelData[id]['targets'][i]['model_chains'].length; j++)
+      {
+        let mdlChn = modelData[id]['targets'][i]['model_chains'][j];
+        ksa[mdlChn.id] = {}
+        chn_ids.push(mdlChn.id)
+        
+        if(j==0)
+          tpls = tpls.concat(mdlChn['templates']);
+
+        if('dssp' in mdlChn)
+          ksa[mdlChn.id]['dssp']  = mdlChn['dssp'];
+        if('psipred' in mdlChn)
+          ksa[mdlChn.id]['psipred'] = mdlChn['psipred'];
+        if('qmeanbrane' in mdlChn)
+          ksa[mdlChn.id]['qmeanbrane'] = mdlChn['qmeanbrane'];
+        if('qmean' in mdlChn)
+          ksa[mdlChn.id]['qmean'] = mdlChn['qmean'];
+      }
+      for(let x=0; x<tpls.length; x++)
+      {
+        if(!tpls[x].qualified_name)
+          continue;
+        tpls[x]['struc_id'] = 'model_'+id
+        tpls[x]['selected'] = true
+        tpls[x]['qname'] = tpls[x].qualified_name
+        tpls[x]['trg_seq'] = tpls[x]['alignment']['target_sequence'];
+        tpls[x]['tpl_seq'] = tpls[x]['alignment']['template_sequence'];
+        delete tpls[x].id;
+        delete tpls[x].qualified_name;
+        delete tpls[x].alignment;
+      }
+      let data = {
+            'templateData':{
+                 'type':'model-template',
+                 'struc_id':'model_'+id,
+                 'templates':tpls   
+              }, 
+             'keyseq_chain_name':chn_ids,
+             'keyseq_annotation':ksa,
+             'cols':50
+            };
+
+      let chaingroups = chn_ids;
+
+      $('#alignTbl'+id+(modelData[id]['targets'][i]['id']?
+                        '_'+modelData[id]['targets'][i]['id']:''))
+       .alignment(data)
+       .alignment('toggleIdenticalSeqs',{'chaingroups':[chaingroups]});
+    }
+    if(chainMapping.defaultColourScheme=='features')
+      processAnnotations();
+  }
+}
+
+let membraneData = {};
+function showMdlMembrane(id, show)
+{
+  if(modelData[id].membrane)
+  {
+    membraneData['model_'+id] = modelData[id].membrane;
+    if(!show)
+      showMembrane('model_'+id, false);
+    else if(show && selectedModels[id] && $('#membraneCB_'+id+':checked').length==1)
+      showMembrane('model_'+id, true);
+  }
+}
+
+let qmeanbraneActive = false;
+function toggleQMEANBrane(show)
+{
+  qmeanbraneActive=show;
+
+  for(let i=0; i<chainMapping.annotations.length; i++)
+    if(chainMapping.annotations[i].key=='qm')
+      chainMapping.annotations[i].active = !qmeanbraneActive;
+    else if(chainMapping.annotations[i].key=='qmb')
+      chainMapping.annotations[i].active = qmeanbraneActive;
+
+  if(qmeanbraneActive)
+    $('.qmError').hide();
+  else
+    $('.qmError').show();
+
+  for(let id in modelData)
+    if(modelData[id].status=='COMPLETED')
+      drawQMEAN(id, true); 
+  
+  $('#qmean_localButton').prop('checked','checked');
+  $('.alignTbl')
+    .alignment('colourAllAlignments', {'col': 'qmean_local'});
+}
+
+var pv_viewer = pv.Viewer(document.getElementById('pv'), {
+  background: [1,1,1],
+  width: $('#viewerWrapper').width(),
+  height: $('#viewerWrapper').height(),
+  antialias: true,
+  quality: 'high',
+  outline: true,
+  fog: true,
+});
+
+function showViewer(viewer)
+{
+  jQuery.cookie('defaultViewer', viewer, { expires: 365, path: '/' });
+  $('#pv_status,#ngl_status').text('');
+  if(viewer=="PV")
+  {
+    $("#ngl,.notPV").hide();
+    $("#pv,.notNGL").show();
+    showPV();
+  }
+  else if(viewer=="NGL")
+  {
+    $("#pv,.notNGL").hide();
+    $("#ngl,.notPV").show();
+    showNGL();
+  }
+  resize();
+}
+
+function showPV()
+{
+  if(pv_viewer._initialized)
+    pv_viewer.requestRedraw();
+  $.each(selectedModels,function(id) {
+      loadModelPV( id );
+    });
+  PLIP.AbstractViewer = PLIP.AbstractViewerPV;
+}
+
+function showNGL(orientationMatrix)
+{
+  if(ngl_stage==null)
+  {
+    ngl_stage = getNGL();
+  }
+  ngl_stage.eachComponent(function(c)
+  { // This could be the case if user switched NGL-PV-NGL
+    // and changed model selection while on PV
+    //if(c.name.startsWith('model_'+id))
+      ngl_stage.removeComponent(c);
+  });
+  $.each(selectedModels,function(id)
+   {
+     loadModelNGL( id, orientationMatrix );
+   });
+    
+  ngl_stage.handleResize();
+  // Disable ctrl+shift-drag that breaks PLIP bonds
+  ngl_stage.mouseControls.remove( "drag-ctrl+shift+right" );
+  ngl_stage.mouseControls.remove( "drag-ctrl+shift+left" );
+  PLIP.AbstractViewer = PLIP.AbstractViewerNGL;
+}
+
+const selectedModels = {};
+function loadModel(id)
+{   
+  if(selectedModels[id])
+    return;
+  
+  $('.emptySelectionMessage').hide();
+
+  selectedModels[id]=true;
+  
+  updateModelRangeColours();
+
+  loadAlignment(id);
+
+  if($('#pv:visible',currentWin.document).length>0)
+    loadModelPV(id);
+  
+  if($('#ngl:visible',currentWin.document).length>0)
+    loadModelNGL(id);
+}
+
+function loadModelPV(id)
+{
+  
+  let pv_structure = pv.io.pdb(eval('model_'+id));
+  
+        {
+          if(pv_structure && selectedModels[id])
+          {
+            let ss = $.cookie('secStruct');
+            if(ss==null)
+              ss='dssp';
+
+            if(ss!='none')
+              for(let i=0; i<modelData[id]['targets'].length; i++)
+              {
+                let target = modelData[id]['targets'][i];
+                for(let c=0; c<target.model_chains.length; c++)
+                {         
+                  let trg_offset = target.model_chains[c].templates[0]['trg_offset'];
+                  if(!trg_offset)
+                    trg_offset = 1;
+                  let anno_string = target.model_chains[c][ss+'_string']?
+                              target.model_chains[c][ss+'_string']
+                             :target.model_chains[c][ss];
+
+                  if(anno_string)
+                  {
+
+                    let chain = pv_structure.select({chain: target.model_chains[c]['id']});
+                    chain.eachResidue(
+                      function(r)
+                      { 
+                        r.full().setSS(anno_string[r.num()-trg_offset])
+                      });
+                  }
+                }
+              }
+
+            let strucId = 'model_'+id;
+
+            if(modelData[id].targets[0].model_chains[0].templates[0].method=='AlphaFold v2')
+              fetchBFactorsPV(strucId, pv_structure, 'qm');
+
+            pv_viewer.lines(strucId+'.ligands_lines',pv_structure.select({'chain':'_'}));
+            pv_viewer.hide(strucId+'.ligands_lines');
+            pv_viewer.ballsAndSticks(strucId+'.ligands',pv_structure.select({'chain':'_'}));
+            switch($.cookie('defaultRepr'))
+            {
+              case "trace":pv_viewer.trace(strucId, pv_structure); break;
+              case "lines":pv_viewer.lines(strucId, pv_structure); break;
+              case "tube":pv_viewer.tube(strucId, pv_structure); break;
+              default: pv_viewer.cartoon(strucId, pv_structure);
+            }
+            showMdlMembrane(id, true);
+            pv_viewer.fitTo(pv_structure);
+            pv_viewer.options('animateTime', 1500);
+            $('.alignTbl').first().alignment('viewerInitialised'); 
+          }
+          pv_viewer.fitParent();
+          refreshBondsAndLigandHighlights();
+          if(chainMapping.defaultColourScheme=='features')
+            processAnnotations(id);
+        }
+  
+}
+
+function loadModelNGL(id, orientationMatrix)
+{ 
+  
+  let strucBlob = new Blob( [ eval('model_'+id) ], { type: 'text/plain'} );
+  ngl_stage.loadFile( strucBlob, { ext: "pdb" } )
+  
+     .then( function(struc)
+    {
+      let ss = $.cookie('secStruct');
+      if(ss==null)
+        ss='dssp';
+      let clearStruc = (ss=='none');
+
+      for(let i=0; i<modelData[id]['targets'].length; i++)
+      {
+        let target = modelData[id]['targets'][i];
+        let chns = Object.keys(target['model_chains'])
+        for(let c=0; c<chns.length; c++)
+        {   
+          let trg_offset = target['model_chains'][c]['templates'][0]['trg_offset'];
+          if(!trg_offset)
+            trg_offset = 1;
+          
+          let anno_string = target['model_chains'][c][ss+'_string']?
+                              target['model_chains'][c][ss+'_string']
+                             :target['model_chains'][c][ss];
+          if(!anno_string)
+            clearStruc = true;
+
+          for(comp in ngl_stage.compList)
+          { 
+            ngl_stage.compList[comp]
+               .structure
+               .eachResidue(function(a)
+                    {
+                      if(clearStruc)
+                        a.sstruc = '';
+                      else if(anno_string && a.chainname == target['model_chains'][c]['id'])
+                      {
+                        if(anno_string[a.resno-trg_offset])
+                          a.sstruc = anno_string[a.resno-trg_offset].toLowerCase();
+                        else
+                          a.sstruc = '';
+                      }  
+                    });
+            break;
+          }
+        } 
+      }
+
+      if(modelData[id].membrane && $('#membraneCB_'+id+':checked').length==1)
+      {
+        // NGL looks down z axis, needs extra rotation 
+        ngl_stage.viewerControls.orient(modelData[id].membrane.viewTransform);
+      }
+
+      if(modelData[id].targets[0].model_chains[0].templates[0].method=='AlphaFold v2')
+        fetchBFactorsNGL('model_'+id, struc.structure, 'qm');
+      
+      setupNGLRepresentations(struc, 'model_'+id, true, ['line'], orientationMatrix); 
+      showMdlMembrane(id, true);
+      if(chainMapping.defaultColourScheme=='features')
+        processAnnotations(id);
+  });
+}
+
+function removeModel(id)
+{
+  // Remove PLIP bonds
+  if (plip_bonds != null) {
+    $('#mdl_row_' + id + ' li.plip-interaction-list-item input:checked').each(function(index, el) {
+      $(el).prop("checked", false).trigger("change");
+    });
+  }
+  if (plip_residues != null && plip_residues.hasStruc('model_' + id)) {
+    visible_residues = plip_residues.getVisibleResidues('model_' + id)
+    if (visible_residues) {
+      visible_residues.forEach(function(residue) {
+			residue.hide(false);
+		});
+    }
+  }
+  
+  delete selectedModels[id];
+  updateModelRangeColours();
+  if(Object.keys(selectedModels).length==0)
+  {
+    $('.emptySelectionMessage').show();
+  }
+
+  pv_viewer.rm('model_'+id+'*');
+  pv_viewer.autoZoom();
+  pv_viewer.requestRedraw();
+
+  if($('#ngl:visible',currentWin.document).length>0)
+  { 
+    ngl_stage.eachComponent(function(c)
+      {
+        if(c.name.startsWith('model_'+id))
+          ngl_stage.removeComponent(c);
+      });
+    ngl_stage.autoView(1000);
+  }
+}
+
+function drawQMEAN(id, resizing)
+{
+  if(typeof resizing==='undefined')
+    resizing = false;
+
+  let strucId = 'model_'+id;
+  if(!chainMapping.structures[strucId])
+    loadAlignment(id);
+
+  if(!modelData[id].mappedResCount)
+  {
+    modelData[id].mappedResCount = 0
+    for(chn in chainMapping.structures[strucId])
+      for(res in chainMapping.structures[strucId][chn])
+        if(chainMapping.structures[strucId][chn][res].resno)
+          modelData[id].mappedResCount++;
+  }
+
+  if(modelData[id]['qmean_global'])
+    drawQMEANGlobal(modelData[id].qmean_global, modelData[id].mappedResCount, id, false, resizing);
+  
+  drawQMEANLocal(strucId, (qmeanbraneActive?null:modelData[id].qmean_global.avg_local_score), id, true, resizing, qmeanbraneActive, 120);
+
+  $('a[rel=lq-'+id+'],a[href="#qn-chart-'+id+'"]')
+    .fancybox(
+      {
+        padding:30, 
+        'cyclic':true,
+        'hideOnContentClick':true,
+        beforeShow:function(a,b)
+        {
+          var id = $(this.content[0]).first().attr('id');
+          if(id.indexOf('lq-chart')>-1)
+            $('#'+id).closest('.fancybox-outer').after(
+               '<a style="color:#666;float:right;" onclick="svgToPNG(\''+id+'\',\'Local_quality_estimate.png\');">&#128247; Save as PNG</a>'
+               );
+          else if(id.indexOf('qn-chart')>-1)
+            $('#'+id).closest('.fancybox-outer').after(
+               '<a style="color:#666;float:right;" onclick="svgToPNG(\''+id+'\',\'Quality_comparison.png\');">&#128247; Save as PNG</a>'
+               );
+        }
+      });
+}
+
+function drawModelCoverage()
+{
+  let targets = {};
+  let maxTrgLength = 0;
+  $('div[template_count]')
+    .each(function()
+      {        
+        let counterSeen = [];
+        $(this).find('div[id^=range_]')
+            .each(
+            function()
+            {
+              let ids = $(this).attr('id').substring(6).split('_'); // model_id, targetName, counter
+              if(counterSeen.indexOf(ids[1])>-1)
+                return;
+
+              counterSeen.push(ids[1]);
+
+              let rows;
+              if(targets[ids[1]])
+              {
+                rows = targets[ids[1]];
+              }
+              else
+              {
+                rows = [];
+                targets[ids[1]] = rows;
+              }
+
+              rows.push([parseInt($(this).attr('resFrom')),
+                         parseInt($(this).attr('resTo')),
+                         ids[0],
+                         parseFloat($(this).attr('seqSim')),
+                         parseInt($(this).attr('seqlength'))]);
+
+              maxTrgLength = Math.max(maxTrgLength,
+                    rows[rows.length-1][4] );
+            });
+      });
+
+  if(maxTrgLength==0)
+    return;
+
+
+  $('#modelRangeContainer').show();
+
+  $('#model-range').empty();
+  let totalHeight = 16;
+
+  for(target in targets)
+  {
+    let rows = targets[target];
+    let modRangeDiv = $('#model-range').append(`<div id="model-range-${target}"></div>`);
+    let targetLength = rows[0][4];
+    let w=$('#model-range').innerWidth(), barHeight=12, space=0;
+
+    // w should be proportional to longest target
+    w = (targetLength/maxTrgLength)*w;
+    
+    let scale = (targetLength)/w;
+    let h=(rows.length+1)*(barHeight+1+space)+15;
+    totalHeight += h;
+    let p = Raphael(`model-range-${target}`,w,h);
+    let ticks = "";
+    
+    let tickSize = targetLength<400?10:50;
+    for(let x=tickSize; x<targetLength; x+=tickSize)
+      ticks+="M"+(x/scale)+" 15 L"+(x/scale)+" "+h;
+
+    p.path(ticks).attr({'stroke-width':.6,stroke:"rgba(80,80,80,.6)"});
+
+    let r = p.rect(0,15,w,barHeight);
+    r.attr({'stroke-width':1,
+      'stroke':'449',
+      'fill':"rgb(20,140,10)",
+      'title':'Target sequence; Length: '+targetLength});
+    p.text(1, 8, "1").attr({font: "12px Fontin-Sans, Arial", fill: "#000", "text-anchor": "start"});
+    p.text(w-1, 8, targetLength).attr({font: "12px Fontin-Sans, Arial", fill: "#000", "text-anchor": "end"});
+
+    for(let r=0; r<rows.length; r++)
+    {
+      let rect = p.rect( (rows[r][0]-1)/scale,
+                  (r+1)*(barHeight+space)+15,
+                  (rows[r][1]-rows[r][0]+1)/scale,
+                  barHeight);
+
+      let model = modelData[rows[r][2]];
+      let ligSummary = '';
+      for(let i=0; i<model.included_ligands.length; i++)
+        ligSummary+=model.included_ligands[i].count
+                  +'x'+model.included_ligands[i].name+'; ';
+      if(ligSummary!='')
+        ligSummary = '\nLigands: '+ligSummary
+      rect.attr({
+              'stroke-width':1,
+              'stroke':"#008",
+              'fill':"rgba(31,31,210,"+rows[r][3]+")",
+              'cursor':'pointer'})
+
+      rect.node.id = `mdl_bar_${rows[r][2]}_${target}`
+      rect.mousedown(function() 
+              {   
+                let id = this.node.id.split('_')[2];
+                if(selectedModels[id])
+                {
+                  $(".popover img").css({'border':'1px solid #EEE'});
+                  removeModel(id);
+                }
+                else
+                {
+                  $(".popover img").css({'border':'1px solid #F66'});
+                  loadModel(id);
+                }
+              });
+
+      if(rows.length>1 && $(window).width()>800)
+        rect.mouseover(function(evt)
+            {
+              let id = this.node.id.split('_')[2];
+              mouseOverModel(id);
+            });
+    }
+  }
+  
+  updateModelRangeColours();
+}
+
+
+function updateModelRangeColours()
+{
+  $('rect[id^=mdl_bar_]').each(
+      function()
+      {
+        var id = $(this).attr('id').split('_')[2];
+        if(selectedModels[id])
+        {
+          $('#modelImage_'+id).css('border','2px solid #F66');
+          $('#mdl_row_'+id).css({
+            'border':'1px solid #CCC',
+            'box-shadow': '0 0 5px rgba(180, 180, 180, 1)',
+            '-webkit-box-shadow': '0 0 5px rgba(180, 180, 180, 1)',
+            '-moz-box-shadow': '0 0 5px rgba(180, 180, 180, 1)' });
+
+          $(this).attr({'stroke-width':2,'stroke':'#F00'});
+        }
+        else
+        {
+          $('#modelImage_'+id).css('border','2px solid #EEE');
+          $('#mdl_row_'+id).css({'border':'1px solid #DDD',
+                'box-shadow': 'none',
+                '-webkit-box-shadow': 'none',
+                '-moz-box-shadow': 'none'
+              });
+          $(this).attr({'stroke-width':.8,'stroke':'#00A'});
+        }
+      });
+}
+
+function mouseOverModel(mdlid)
+{
+  // Check if 3D viewer is being rotated
+  if(
+      (ngl_stage && ngl_stage.mouseObserver.pressed) || 
+      (pv_viewer._mouseHandler._lastMouseDownTime
+        && (pv_viewer._mouseHandler._lastMouseDownTime==null || 
+            pv_viewer._mouseHandler._lastMouseUpTime<pv_viewer._mouseHandler._lastMouseDownTime))
+    )
+    return;
+
+  $('rect[id^=mdl_bar_]').each(
+      function()
+      {
+        var id = $(this).attr('id').split('_')[2];
+        if(selectedModels[id])
+        {
+            // 
+        } 
+        else if(id==mdlid)
+        {
+          $(this).attr({'stroke-width':2,'stroke':'#009'});
+        }
+        else if(id!=mdlid)
+          $(this).attr({'stroke-width':.8,'stroke':'#00A'});
+
+      });
+}
+
+function sortModels(column)
+{
+  let asc = false;
+  let val_a = -1, val_b = 1;
+  if(!asc)
+      val_a = 1, val_b = -1;
+
+  let mdls = [];
+  for(let mdl in modelData)
+    mdls.push(mdl);
+
+  if(column=='qmeanDisCo')
+    mdls.sort(
+      function(a,b)
+      {
+        if(!modelData[a].qmean_global)
+          if(!modelData[b].qmean_global)
+            return 0;
+          else
+            return 1;
+
+        return modelData[a].qmean_global.avg_local_score < modelData[b].qmean_global.avg_local_score;
+      });
+  else  
+    mdls.sort(
+      function(a,b)
+      {
+          return (modelData[a][column] < modelData[b][column]) 
+            ? val_a : (modelData[a][column] > modelData[b][column]) 
+            ? val_b : 0;
+      });
+
+  let mdlRows = [];
+  for(let i=0; i<mdls.length; i++)
+    mdlRows.push( $('#mdl_row_'+mdls[i]) );
+
+  $('#modelSummaryTable')
+    .append(mdlRows);
+
+  drawModelCoverage();
+}
+
+
+
+$(document).ready(
+  function()
+  {
+    let checkThese = '';
+    let localData = localStorage.getItem('model');
+    if(localData)
+    {
+      let models = JSON.parse(localData);
+      for(let i=0; i<models.length; i++)
+      {
+        checkThese+=(i==0?'':',')+'#cmp_'+models[i].model_id;
+        addClink(models[i].model_id, models.length);
+      }
+      if(checkThese.length>0)
+        $(checkThese)
+          .prop('checked', 'checked')
+    }
+    $('.compareCheck').not(checkThese).prop('checked','');
+});
+
+function addClink(modelId, selectedCount)
+{
+  $('#cmp_'+modelId)
+    .parent()
+    .after("<a id='clink_"+modelId+"' href='/comparison/' class='compareLink' target='_blank'>"
+          +selectedCount+" selected <i class='glyphicon glyphicon-new-window'/></a>");
+}
+
+function updateSelectionCount(selectedCount)
+{
+  $('.compareLink')
+     .html(selectedCount+" selected <i class='glyphicon glyphicon-new-window'/>");
+}
+
+
+
+async function toggleCompareItem(evt)
+{       
+  let model_id = evt.target.id.substring(4);
+  if(!evt.target.checked)
+  {
+    $('#clink_'+model_id).remove();
+    let locStore = localStorage.getItem('model');
+    if(!locStore)
+      return;
+
+    locData = JSON.parse(locStore);
+    for(let i=0; i<locData.length; i++)
+      if(locData[i].model_id===model_id)
+      {
+        locData.splice(i,1);
+        break;
+      }
+    updateSelectionCount(locData.length);
+    localStorage.setItem('model', JSON.stringify(locData));
+  }
+  else
+  { 
+    let source = model_id.split('_')[0];
+    let isoform = evt.target.hasAttribute('isoform')?'-'+evt.target.getAttribute('isoform'):'';
+    let postData = { 
+            model_id: model_id,
+            source: source,
+            csrfmiddlewaretoken: 'CcuMj5imLyvQVFBezHkedLN73SJlhjRpXygomQoIV7MIwlUEgxsaDob1RsFbe03U'              
+          };
+
+    
+
+    $.ajax({
+      type: 'POST',
+      url:"/comparison/add/",
+      data: postData,
+      success: function(data) {
+          let locStore = localStorage.getItem('model');
+          if(locStore==null)
+            locData = [];
+          else
+          {
+            locData = JSON.parse(locStore);
+            for(let i=0; i<locData.length; i++)
+              if(locData[i].model_id===model_id)
+                return;
+          }
+          locData.push(data)
+          localStorage.setItem('model', JSON.stringify(locData));
+          addClink(model_id, locData.length);
+          updateSelectionCount(locData.length);
+      },
+      error: function(response)
+      {
+        $(evt.target)
+          .prop({checked: false, disabled: true})
+          .after('Could not add this model!');
+      }
+    });
+  }    
+}
+
+$(window).on('storage', comparison_updated);
+function comparison_updated(ev)
+{
+  if (ev.originalEvent.key!='model')
+    return;
+  let checkThese = '';
+  let selectionCount = 0;
+  if(ev.originalEvent.newValue)
+  {
+    checkThese = JSON.parse(ev.originalEvent.newValue)
+                    .map((m)=>'#cmp_'+m.model_id);
+    selectionCount = checkThese.length;
+    checkThese = checkThese.join(',');
+    if(selectionCount)
+      $(checkThese).prop('checked','checked');
+  }
+  $('.compareCheck').not(checkThese).prop('checked','');
+  $('.compareLink').not(checkThese.replace(/#cmp/g,'#clink')).remove();
+  updateSelectionCount(selectionCount);
+}
+
+$(document).on('change', 'input.compareCheck', (e) => toggleCompareItem(e) );
+
+</script>
+
+

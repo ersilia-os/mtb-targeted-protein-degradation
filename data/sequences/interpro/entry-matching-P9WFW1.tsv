@@ -1,0 +1,19 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00672	catalytic core domain of cysteinyl tRNA synthetase	cdd	domain	IPR032678			p9wfw1	469	8..306
+G3DSA:1.20.120.1910	Cysteine-tRNA ligase, C-terminal anti-codon recognition domain	cathgene3d	homologous_superfamily				p9wfw1	469	305..462
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wfw1	469	1..304
+IPR009080	Aminoacyl-tRNA synthetase, class Ia, anticodon-binding	interpro	homologous_superfamily		SSF47323	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfw1	469	321..462
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wfw1	469	1..304
+IPR015273	Cysteinyl-tRNA synthetase, class Ia, DALR	interpro	domain		SM00840,PF09190	GO:0000166,GO:0004817,GO:0005524,GO:0006423,GO:0005737	p9wfw1	469	342..403
+IPR015803	Cysteine-tRNA ligase	interpro	family		MF_00041,TIGR00435	GO:0004817,GO:0005524,GO:0006423	p9wfw1	469	7..464
+IPR024909	Cysteinyl-tRNA synthetase/mycothiol ligase	interpro	family		PTHR10890,PR00983		p9wfw1	469	6..464
+IPR032678	tRNA synthetases class I, catalytic domain	interpro	domain		cd00672,PF01406		p9wfw1	469	8..314
+MF_00041	Cysteine--tRNA ligase [cysS]	hamap	family	IPR015803			p9wfw1	469	7..464
+PF01406	tRNA synthetases class I (C) catalytic domain	pfam	family	IPR032678			p9wfw1	469	20..314
+PF09190	DALR domain	pfam	domain	IPR015273			p9wfw1	469	342..394
+PR00983	TRNASYNTHCYS	prints	family	IPR024909			p9wfw1	469	30..41,66..75,193..211,224..245
+PTHR10890	CYSTEINYL-TRNA SYNTHETASE	panther	family	IPR024909			p9wfw1	469	6..464
+SM00840	DALR_2	smart	domain	IPR015273			p9wfw1	469	342..403
+SSF47323	Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases	ssf	homologous_superfamily	IPR009080			p9wfw1	469	321..462
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wfw1	469	11..314
+TIGR00435	cysteine--tRNA ligase	ncbifam	family	IPR015803			p9wfw1	469	7..461

@@ -1,0 +1,31 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00771	ThrRS_core	cdd	domain	IPR033728			p9wft5	692	269..580
+cd00860	ThrRS_anticodon	cdd	domain	IPR047246			p9wft5	692	580..664
+G3DSA:3.30.54.20		cathgene3d	homologous_superfamily				p9wft5	692	143..213
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wft5	692	251..573
+G3DSA:3.30.980.10	Threonyl-trna Synthetase; Chain A, domain 2	cathgene3d	homologous_superfamily				p9wft5	692	81..142,214..249
+G3DSA:3.40.50.800	Anticodon-binding domain	cathgene3d	homologous_superfamily	IPR036621			p9wft5	692	574..684
+IPR002314	Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)	interpro	domain		PF00587	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wft5	692	364..570
+IPR002320	Threonine-tRNA ligase, class IIa	interpro	family		MF_00184,TIGR00418,PR01047	GO:0004829,GO:0005524,GO:0006435,GO:0005737	p9wft5	692	79..675
+IPR004095	TGS	interpro	domain		PS51880,PF02824		p9wft5	692	1..74
+IPR004154	Anticodon-binding	interpro	domain		PF03129		p9wft5	692	582..671
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wft5	692	256..575
+IPR012947	Threonyl/alanyl tRNA synthetase, SAD	interpro	domain		SM00863,PF07973	GO:0004812,GO:0005524,GO:0043039	p9wft5	692	189..245
+IPR018163	Threonyl/alanyl tRNA synthetase, class II-like, putative editing domain superfamily	interpro	homologous_superfamily		SSF55186	GO:0000166	p9wft5	692	78..266
+IPR033728	Threonine-tRNA ligase catalytic core domain	interpro	domain		cd00771		p9wft5	692	269..580
+IPR036621	Anticodon-binding domain superfamily	interpro	homologous_superfamily		G3DSA:3.40.50.800		p9wft5	692	574..684
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wft5	692	251..573
+IPR047246	Threonine-tRNA ligase, class IIa, anticodon-binding domain	interpro	domain		cd00860		p9wft5	692	580..664
+MF_00184	Threonine--tRNA ligase [thrS]	hamap	family	IPR002320			p9wft5	692	79..675
+PF00587	tRNA synthetase class II core domain (G, H, P, S and T)	pfam	domain	IPR002314			p9wft5	692	364..570
+PF03129	Anticodon binding domain	pfam	domain	IPR004154			p9wft5	692	582..671
+PF07973	Threonyl and Alanyl tRNA synthetase second additional domain	pfam	domain	IPR012947			p9wft5	692	204..245
+PR01047	TRNASYNTHTHR	prints	family	IPR002320			p9wft5	692	369..397,402..425,505..533,548..561,575..587
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wft5	692	256..575
+PS51880	TGS domain profile	profile	domain	IPR004095			p9wft5	692	1..74
+PTHR11451	Threonine-tRNA ligase	panther	family				p9wft5	692	65..671
+SM00863	Threonyl and Alanyl tRNA synthetase second additional domain	smart	domain	IPR012947			p9wft5	692	189..245
+SSF52954	Class II aaRS ABD-related	ssf	homologous_superfamily				p9wft5	692	570..678
+SSF55186	ThrRS/AlaRS common domain	ssf	homologous_superfamily	IPR018163			p9wft5	692	78..266
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wft5	692	269..566
+TIGR00418	threonine--tRNA ligase	ncbifam	family	IPR002320			p9wft5	692	85..669

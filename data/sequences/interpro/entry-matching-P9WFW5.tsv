@@ -1,0 +1,27 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00671	catalytic core domain of arginyl-tRNA synthetases	cdd	domain	IPR035684			p9wfw5	550	122..380
+cd07956	Anticodon-binding domain of arginyl tRNA synthetases	cdd	domain				p9wfw5	550	390..550
+G3DSA:1.10.730.10	Isoleucyl-tRNA Synthetase; Domain 1	cathgene3d	homologous_superfamily				p9wfw5	550	424..550
+G3DSA:3.30.1360.70	Arginyl tRNA synthetase N-terminal domain	cathgene3d	homologous_superfamily	IPR036695			p9wfw5	550	3..109
+G3DSA:3.40.50.620	HUPs	cathgene3d	homologous_superfamily	IPR014729			p9wfw5	550	121..423
+IPR001278	Arginine-tRNA ligase	interpro	family		MF_00123,TIGR00456,PTHR11956,PR01038	GO:0004814,GO:0005524,GO:0006420	p9wfw5	550	8..550
+IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	interpro	conserved_site		PS00178	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfw5	550	132..141
+IPR005148	Arginyl tRNA synthetase N-terminal domain	interpro	domain		SM01016,PF03485	GO:0000166,GO:0004814,GO:0005524,GO:0006420,GO:0005737	p9wfw5	550	4..93
+IPR008909	DALR anticodon binding	interpro	domain		SM00836,PF05746	GO:0004814,GO:0005524,GO:0006420	p9wfw5	550	429..550
+IPR009080	Aminoacyl-tRNA synthetase, class Ia, anticodon-binding	interpro	homologous_superfamily		SSF47323	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wfw5	550	423..550
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	interpro	homologous_superfamily		G3DSA:3.40.50.620		p9wfw5	550	121..423
+IPR035684	Arginyl-tRNA synthetase, catalytic core domain	interpro	domain		cd00671,PF00750		p9wfw5	550	120..390
+IPR036695	Arginyl tRNA synthetase N-terminal domain superfamily	interpro	homologous_superfamily		SSF55190,G3DSA:3.30.1360.70	GO:0000166,GO:0004814,GO:0005524,GO:0006420,GO:0005737	p9wfw5	550	3..113
+MF_00123	Arginine--tRNA ligase [argS]	hamap	family	IPR001278			p9wfw5	550	8..550
+PF00750	tRNA synthetases class I (R)	pfam	family	IPR035684			p9wfw5	550	120..390
+PF03485	Arginyl tRNA synthetase N terminal domain	pfam	domain	IPR005148			p9wfw5	550	12..93
+PF05746	DALR anticodon binding domain	pfam	domain	IPR008909			p9wfw5	550	429..550
+PR01038	TRNASYNTHARG	prints	family	IPR001278			p9wfw5	550	122..137,137..153,161..174,298..319
+PS00178	Aminoacyl-transfer RNA synthetases class-I signature	prosite	conserved_site	IPR001412			p9wfw5	550	132..141
+PTHR11956	ARGINYL-TRNA SYNTHETASE	panther	family	IPR001278			p9wfw5	550	29..550
+SM00836	DALR anticodon binding domain	smart	domain	IPR008909			p9wfw5	550	429..550
+SM01016	Arginyl tRNA synthetase N terminal dom	smart	domain	IPR005148			p9wfw5	550	4..93
+SSF47323	Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases	ssf	homologous_superfamily	IPR009080			p9wfw5	550	423..550
+SSF52374	Nucleotidylyl transferase	ssf	homologous_superfamily				p9wfw5	550	116..438
+SSF55190	Arginyl-tRNA synthetase (ArgRS), N-terminal 'additional' domain	ssf	homologous_superfamily	IPR036695			p9wfw5	550	5..113
+TIGR00456	arginine--tRNA ligase	ncbifam	family	IPR001278			p9wfw5	550	14..550

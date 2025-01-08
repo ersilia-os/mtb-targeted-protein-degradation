@@ -1,0 +1,22 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00773	HisRS-like_core	cdd	domain	IPR041715			p9wfv5	423	20..316
+cd00859	HisRS_anticodon	cdd	domain	IPR033656			p9wfv5	423	328..418
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wfv5	423	6..323
+G3DSA:3.40.50.800	Anticodon-binding domain	cathgene3d	homologous_superfamily	IPR036621			p9wfv5	423	326..422
+IPR004154	Anticodon-binding	interpro	domain		PF03129		p9wfv5	423	330..418
+IPR004516	Histidine-tRNA ligase/ATP phosphoribosyltransferase regulatory subunit	interpro	family		PTHR43707,PIRSF001549	GO:0005737	p9wfv5	423	3..421
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wfv5	423	35..335
+IPR015807	Histidine-tRNA ligase	interpro	family		MF_00127,TIGR00442	GO:0004821,GO:0005524,GO:0006427	p9wfv5	423	5..420
+IPR033656	Histidyl-anticodon-binding	interpro	domain		cd00859		p9wfv5	423	328..418
+IPR036621	Anticodon-binding domain superfamily	interpro	homologous_superfamily		G3DSA:3.40.50.800		p9wfv5	423	326..422
+IPR041715	Class II Histidinyl-tRNA synthetase (HisRS)-like catalytic core domain	interpro	domain		cd00773,PF13393		p9wfv5	423	12..316
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wfv5	423	6..323
+MF_00127	Histidine--tRNA ligase [hisS]	hamap	family	IPR015807			p9wfv5	423	5..420
+PF03129	Anticodon binding domain	pfam	domain	IPR004154			p9wfv5	423	330..418
+PF13393	Histidyl-tRNA synthetase	pfam	domain	IPR041715			p9wfv5	423	12..310
+PIRSF001549	Histidyl-tRNA synthetase	pirsf	family	IPR004516			p9wfv5	423	3..421
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wfv5	423	35..335
+PTHR43707	HISTIDYL-TRNA SYNTHETASE	panther	family	IPR004516			p9wfv5	423	5..412
+SSF52954	Class II aaRS ABD-related	ssf	homologous_superfamily				p9wfv5	423	327..421
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wfv5	423	8..316
+TIGR00442	histidine--tRNA ligase	ncbifam	family	IPR015807			p9wfv5	423	9..409

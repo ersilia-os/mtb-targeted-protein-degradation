@@ -1,0 +1,30 @@
+Accession	Name	Source Database	Type	Integrated Into	Integrated Signatures	GO Terms	Protein Accession	Protein Length	Matches
+cd00779	ProRS_core_prok	cdd	domain	IPR033730			p9wft9	582	19..217
+cd00861	ProRS_anticodon_short	cdd	domain	IPR044140			p9wft9	582	485..566
+G3DSA:3.30.930.10	Bira Bifunctional Protein; Domain 2	cathgene3d	homologous_superfamily	IPR045864			p9wft9	582	1..251,405..472
+G3DSA:3.40.50.800	Anticodon-binding domain	cathgene3d	homologous_superfamily	IPR036621			p9wft9	582	473..580
+G3DSA:3.90.960.10	YbaK/aminoacyl-tRNA synthetase-associated domain	cathgene3d	homologous_superfamily	IPR036754			p9wft9	582	252..403
+IPR002314	Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)	interpro	domain		PF00587	GO:0000166,GO:0004812,GO:0005524,GO:0006418	p9wft9	582	96..471
+IPR002316	Proline-tRNA ligase, class IIa	interpro	family		PR01046	GO:0004827,GO:0005524,GO:0006433,GO:0005737	p9wft9	582	70..88,106..117,136..144,146..157
+IPR004154	Anticodon-binding	interpro	domain		PF03129		p9wft9	582	490..565
+IPR004500	Prolyl-tRNA synthetase, class IIa, bacterial-type	interpro	family		TIGR00409	GO:0004827,GO:0005524,GO:0006433,GO:0005737	p9wft9	582	4..566
+IPR006195	Aminoacyl-tRNA synthetase, class II	interpro	domain		PS50862		p9wft9	582	35..480
+IPR007214	YbaK/aminoacyl-tRNA synthetase-associated domain	interpro	domain		PF04073	GO:0002161	p9wft9	582	280..387
+IPR023717	Prolyl-tRNA synthetase, class IIa, type 1	interpro	family		PIRSF001535,MF_01569	GO:0004827,GO:0005524,GO:0006433,GO:0005737	p9wft9	582	3..581
+IPR033730	Prokaryote proline-tRNA ligase core domain	interpro	domain		cd00779		p9wft9	582	19..217
+IPR036621	Anticodon-binding domain superfamily	interpro	homologous_superfamily		G3DSA:3.40.50.800		p9wft9	582	473..580
+IPR036754	YbaK/aminoacyl-tRNA synthetase-associated domain superfamily	interpro	homologous_superfamily		SSF55826,G3DSA:3.90.960.10	GO:0002161	p9wft9	582	221..403
+IPR044140	Proline--tRNA ligase, anticodon binding domain	interpro	domain		cd00861		p9wft9	582	485..566
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	interpro	homologous_superfamily		G3DSA:3.30.930.10,SSF55681		p9wft9	582	1..489
+IPR050062	Proline-tRNA synthetase	interpro	family		PTHR42753		p9wft9	582	3..566
+MF_01569	Proline--tRNA ligase [proS]	hamap	family	IPR023717			p9wft9	582	3..581
+PF00587	tRNA synthetase class II core domain (G, H, P, S and T)	pfam	domain	IPR002314			p9wft9	582	96..279,388..471
+PF03129	Anticodon binding domain	pfam	domain	IPR004154			p9wft9	582	490..565
+PF04073	Aminoacyl-tRNA editing domain	pfam	family	IPR007214			p9wft9	582	280..387
+PR01046	TRNASYNTHPRO	prints	family	IPR002316			p9wft9	582	70..88,106..117,136..144,146..157
+PS50862	Aminoacyl-transfer RNA synthetases class-II family profile	profile	domain	IPR006195			p9wft9	582	35..480
+PTHR42753	Proline-tRNA synthetase	panther	family	IPR050062			p9wft9	582	3..566
+SSF52954	Class II aaRS ABD-related	ssf	homologous_superfamily				p9wft9	582	476..564
+SSF55681	Class II aaRS and biotin synthetases	ssf	homologous_superfamily	IPR045864			p9wft9	582	12..239,419..489
+SSF55826	YbaK/ProRS associated domain	ssf	homologous_superfamily	IPR036754			p9wft9	582	221..392
+TIGR00409	proline--tRNA ligase	ncbifam	family	IPR004500			p9wft9	582	4..566
