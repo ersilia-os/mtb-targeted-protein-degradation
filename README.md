@@ -14,6 +14,12 @@ In this project, the main objective is to prioritise a set of purchasable or eas
 2. Large-scale virtual screening for compounds with strong predicted binding scores across multiple tRNA synthetase binding sites.
 3. Final shortlisting using additional criteria, such as the ligand's amenability to being extended with a linker to dCymM without disrupting the binding pose.
 
+## Domain-specific requirements
+
+* [Open source PyMol](https://github.com/schrodinger/pymol-open-source) for protein visualization.
+* [PDB2PQR](https://pdb2pqr.readthedocs.io/en/latest/) for protonation at pH 7.0.
+* [PyRosetta](https://www.pyrosetta.org/) for protein structure relaxation. PyRosetta can be installed with the [PyRosetta Installer](https://www.pyrosetta.org/downloads).
+
 ## Real-time reporting
 
 This repository is work in progress. Below, we explain the progress made chronologically.
@@ -33,15 +39,17 @@ We have used the following servers or resources to obtain structural data for th
 * [AlphaFill](https://alphafill.eu/): The AlphaFill resource was used to obtain AF2 structures along with ligands. We used the `/scripts/01_download_alphafill.py` script to programmatically download the structures and store them in [this subfolder](/data/structures/alphafill_database/).
 * [Swiss-Model](https://swissmodel.expasy.org/): The Swiss-Model server was used to obtain homology models for each sequence. They can be found in [this folder](/data/structures/swissmodel). Note that full coverage is not guaranteed, and that we required a minimum of 80%. A variable number of models per query were returned.
 
-The multiple struture files were organized in the [processed data subfolder](processed_data/structures) and stored both in `.cif` and `.pdb` formats. This was done with the `/scripts/02_organize_structures.py` script. This scripts ensures that only one chain is saved for each file, and that sequences are not chunked. Note that we ommitted the PDBe files in this automated processing. 
+The multiple struture files were organized in the [processed data subfolder](processed/structures) and stored both in `.cif` and `.pdb` formats. This was done with the `/scripts/02_organize_structures.py` script. This scripts ensures that only one chain is saved for each file, and that sequences are not chunked. Note that we ommitted the PDBe files in this automated processing.
+
+Then, we prepared these structures for docking with protein protonation with PDB2PQR and relaxation with PyRosetta using the `scripts/03_relax_structures.py` script. This procedure is computationally intensive. 
 
 #### Sequence data
 
-We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro).
+We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/05_sequence_annotateion.py` script.
 
 #### Ligands data
 
-In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/04_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
+In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/06_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
 
 #### Aggregated data
 

@@ -1,0 +1,497 @@
+uniprot_ac,interpro_ac,name,source_database,type,integrated_into,integrated_signatures,go_terms,protein_length,matches
+P9WFS9,cd00817,catalytic core domain of valyl-tRNA synthetases,cdd,domain,,,,886,44..578
+P9WFS9,cd07962,Anticodon-binding domain of valyl tRNA synthetases,cdd,domain,IPR033705,,,886,580..708
+P9WFS9,G3DSA:1.10.287.380,"Valyl-tRNA synthetase, C-terminal domain",cathgene3d,homologous_superfamily,IPR037118,,,886,814..885
+P9WFS9,G3DSA:1.10.730.10,Isoleucyl-tRNA Synthetase; Domain 1,cathgene3d,homologous_superfamily,,,,886,538..755
+P9WFS9,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,886,"14..225,309..537"
+P9WFS9,G3DSA:3.90.740.10,"Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain",cathgene3d,homologous_superfamily,IPR009008,,,886,244..308
+P9WFS9,IPR001412,"Aminoacyl-tRNA synthetase, class I, conserved site",interpro,conserved_site,,PS00178,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",886,53..64
+P9WFS9,IPR002300,"Aminoacyl-tRNA synthetase, class Ia",interpro,domain,,PF00133,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",886,"25..436,446..579"
+P9WFS9,IPR002303,Valine-tRNA ligase,interpro,family,,"MF_02004,TIGR00422,PTHR11946,PR00986","GO:0000166,GO:0004832,GO:0005524,GO:0006438",886,11..886
+P9WFS9,IPR009008,"Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain",interpro,homologous_superfamily,,"SSF50677,G3DSA:3.90.740.10","GO:0002161,GO:0006418",886,201..346
+P9WFS9,IPR009080,"Aminoacyl-tRNA synthetase, class Ia, anticodon-binding",interpro,homologous_superfamily,,SSF47323,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",886,592..835
+P9WFS9,IPR010978,"Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm",interpro,homologous_superfamily,,SSF46589,GO:0000166,886,821..885
+P9WFS9,IPR013155,"Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding",interpro,domain,,PF08264,"GO:0004812,GO:0006418",886,621..760
+P9WFS9,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,886,"14..225,309..537"
+P9WFS9,IPR019499,"Valyl-tRNA synthetase, tRNA-binding arm",interpro,domain,,PF10458,"GO:0000166,GO:0004832,GO:0005524,GO:0006438,GO:0005737",886,821..886
+P9WFS9,IPR033705,"Valyl tRNA synthetase, anticodon-binding domain",interpro,domain,,cd07962,,886,580..708
+P9WFS9,IPR037118,"Valyl-tRNA synthetase, tRNA-binding arm superfamily",interpro,homologous_superfamily,,G3DSA:1.10.287.380,,886,814..885
+P9WFS9,MF_02004,Valine--tRNA ligase [valS],hamap,family,IPR002303,,,886,12..886
+P9WFS9,PF00133,"tRNA synthetases class I (I, L, M and V)",pfam,domain,IPR002300,,,886,"25..436,446..579"
+P9WFS9,PF08264,Anticodon-binding domain of tRNA ligase,pfam,domain,IPR013155,,,886,621..760
+P9WFS9,PF10458,Valyl tRNA synthetase tRNA binding arm,pfam,domain,IPR019499,,,886,821..886
+P9WFS9,PR00986,TRNASYNTHVAL,prints,family,IPR002303,,,886,"46..57,241..258,357..370,449..470,480..498"
+P9WFS9,PS00178,Aminoacyl-transfer RNA synthetases class-I signature,prosite,conserved_site,IPR001412,,,886,53..64
+P9WFS9,PTHR11946,VALYL-TRNA SYNTHETASES,panther,family,IPR002303,,,886,11..878
+P9WFS9,SSF46589,tRNA-binding arm,ssf,homologous_superfamily,IPR010978,,,886,821..885
+P9WFS9,SSF47323,Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases,ssf,homologous_superfamily,IPR009080,,,886,592..835
+P9WFS9,SSF50677,ValRS/IleRS/LeuRS editing domain,ssf,homologous_superfamily,IPR009008,,,886,201..346
+P9WFS9,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,886,"13..202,352..590"
+P9WFS9,TIGR00422,valine--tRNA ligase,ncbifam,family,IPR002303,,,886,13..864
+P9WFT1,cd00165,S4,cdd,domain,,,,424,358..401
+P9WFT1,cd00805,catalytic core domain of tyrosinyl-tRNA synthetase,cdd,domain,IPR002307,,,424,33..307
+P9WFT1,G3DSA:1.10.240.10,Tyrosyl-Transfer RNA Synthetase,cathgene3d,homologous_superfamily,,,,424,224..328
+P9WFT1,G3DSA:3.10.290.10,RNA-binding S4 domain,cathgene3d,homologous_superfamily,IPR036986,,,424,329..424
+P9WFT1,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,424,2..223
+P9WFT1,IPR001412,"Aminoacyl-tRNA synthetase, class I, conserved site",interpro,conserved_site,,PS00178,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",424,41..51
+P9WFT1,IPR002305,"Aminoacyl-tRNA synthetase, class Ic",interpro,family,,PF00579,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",424,30..325
+P9WFT1,IPR002307,Tyrosine-tRNA ligase,interpro,family,,"cd00805,TIGR00234,PR01040","GO:0000166,GO:0004831,GO:0005524,GO:0006437",424,5..419
+P9WFT1,IPR002942,RNA-binding S4 domain,interpro,domain,,"PF01479,SM00363",GO:0003723,424,357..418
+P9WFT1,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,424,2..223
+P9WFT1,IPR024088,"Tyrosine-tRNA ligase, bacterial-type",interpro,family,,PTHR11766,GO:0004831,424,5..417
+P9WFT1,IPR024107,"Tyrosine-tRNA ligase, bacterial-type, type 1",interpro,family,,MF_02006,GO:0004831,424,3..422
+P9WFT1,IPR036986,RNA-binding S4 domain superfamily,interpro,homologous_superfamily,,G3DSA:3.10.290.10,GO:0003723,424,329..424
+P9WFT1,IPR054608,"Tyrosine--tRNA ligase SYY-like, C-terminal domain",interpro,domain,,PF22421,,424,354..415
+P9WFT1,MF_02006,Tyrosine--tRNA ligase [tyrS],hamap,family,IPR024107,,,424,3..422
+P9WFT1,PF00579,tRNA synthetases class I (W and Y),pfam,family,IPR002305,,,424,30..325
+P9WFT1,PF22421,Tyrosine--tRNA ligase SYY-like C-terminal domain,pfam,domain,IPR054608,,,424,354..415
+P9WFT1,PR01040,TRNASYNTHTYR,prints,family,IPR002307,,,424,"45..67,163..178,184..206,217..229"
+P9WFT1,PS00178,Aminoacyl-transfer RNA synthetases class-I signature,prosite,conserved_site,IPR001412,,,424,41..51
+P9WFT1,PS50889,S4 RNA-binding domain profile,profile,domain,,,,424,358..413
+P9WFT1,PTHR11766,TYROSYL-TRNA SYNTHETASE,panther,family,IPR024088,,,424,5..417
+P9WFT1,SM00363,S4 RNA-binding domain,smart,domain,IPR002942,,,424,357..418
+P9WFT1,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,424,5..325
+P9WFT1,SSF55174,Alpha-L RNA-binding motif,ssf,homologous_superfamily,,,,424,328..420
+P9WFT1,TIGR00234,tyrosine--tRNA ligase,ncbifam,family,IPR002307,,,424,5..419
+P9WFT3,cd00806,catalytic core domain of tryptophanyl-tRNA synthetase,cdd,domain,IPR002306,,,336,9..288
+P9WFT3,G3DSA:1.10.240.10,Tyrosyl-Transfer RNA Synthetase,cathgene3d,homologous_superfamily,,,,336,194..304
+P9WFT3,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,336,"10..193,305..333"
+P9WFT3,IPR001412,"Aminoacyl-tRNA synthetase, class I, conserved site",interpro,conserved_site,,PS00178,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",336,16..26
+P9WFT3,IPR002305,"Aminoacyl-tRNA synthetase, class Ic",interpro,family,,PF00579,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",336,7..289
+P9WFT3,IPR002306,Tryptophan-tRNA ligase,interpro,family,,"cd00806,PR01039,TIGR00233","GO:0000166,GO:0004830,GO:0005524,GO:0006436",336,8..334
+P9WFT3,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,336,10..333
+P9WFT3,IPR024109,"Tryptophan-tRNA ligase, bacterial-type",interpro,family,,MF_00140_B,GO:0004830,336,7..335
+P9WFT3,IPR050203,Tryptophan--tRNA ligase,interpro,family,,PTHR43766,,336,7..335
+P9WFT3,MF_00140_B,Tryptophan--tRNA ligase [trpS],hamap,family,IPR024109,,,336,7..335
+P9WFT3,PF00579,tRNA synthetases class I (W and Y),pfam,family,IPR002305,,,336,7..289
+P9WFT3,PR01039,TRNASYNTHTRP,prints,family,IPR002306,,,336,"21..37,71..90,148..169,201..211"
+P9WFT3,PS00178,Aminoacyl-transfer RNA synthetases class-I signature,prosite,conserved_site,IPR001412,,,336,16..26
+P9WFT3,PTHR43766,Tryptophan--tRNA ligase,panther,family,IPR050203,,,336,7..335
+P9WFT3,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,336,9..334
+P9WFT3,TIGR00233,tryptophan--tRNA ligase,ncbifam,family,IPR002306,,,336,8..334
+P9WFT5,cd00771,ThrRS_core,cdd,domain,IPR033728,,,692,269..580
+P9WFT5,cd00860,ThrRS_anticodon,cdd,domain,IPR047246,,,692,580..664
+P9WFT5,G3DSA:3.30.54.20,,cathgene3d,homologous_superfamily,,,,692,143..213
+P9WFT5,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,692,251..573
+P9WFT5,G3DSA:3.30.980.10,"Threonyl-trna Synthetase; Chain A, domain 2",cathgene3d,homologous_superfamily,,,,692,"81..142,214..249"
+P9WFT5,G3DSA:3.40.50.800,Anticodon-binding domain,cathgene3d,homologous_superfamily,IPR036621,,,692,574..684
+P9WFT5,IPR002314,"Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)",interpro,domain,,PF00587,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",692,364..570
+P9WFT5,IPR002320,"Threonine-tRNA ligase, class IIa",interpro,family,,"MF_00184,TIGR00418,PR01047","GO:0004829,GO:0005524,GO:0006435,GO:0005737",692,79..675
+P9WFT5,IPR004095,TGS,interpro,domain,,"PS51880,PF02824",,692,1..74
+P9WFT5,IPR004154,Anticodon-binding,interpro,domain,,PF03129,,692,582..671
+P9WFT5,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,692,256..575
+P9WFT5,IPR012947,"Threonyl/alanyl tRNA synthetase, SAD",interpro,domain,,"SM00863,PF07973","GO:0004812,GO:0005524,GO:0043039",692,189..245
+P9WFT5,IPR018163,"Threonyl/alanyl tRNA synthetase, class II-like, putative editing domain superfamily",interpro,homologous_superfamily,,SSF55186,GO:0000166,692,78..266
+P9WFT5,IPR033728,Threonine-tRNA ligase catalytic core domain,interpro,domain,,cd00771,,692,269..580
+P9WFT5,IPR036621,Anticodon-binding domain superfamily,interpro,homologous_superfamily,,G3DSA:3.40.50.800,,692,574..684
+P9WFT5,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,692,251..573
+P9WFT5,IPR047246,"Threonine-tRNA ligase, class IIa, anticodon-binding domain",interpro,domain,,cd00860,,692,580..664
+P9WFT5,MF_00184,Threonine--tRNA ligase [thrS],hamap,family,IPR002320,,,692,79..675
+P9WFT5,PF00587,"tRNA synthetase class II core domain (G, H, P, S and T)",pfam,domain,IPR002314,,,692,364..570
+P9WFT5,PF03129,Anticodon binding domain,pfam,domain,IPR004154,,,692,582..671
+P9WFT5,PF07973,Threonyl and Alanyl tRNA synthetase second additional domain,pfam,domain,IPR012947,,,692,204..245
+P9WFT5,PR01047,TRNASYNTHTHR,prints,family,IPR002320,,,692,"369..397,402..425,505..533,548..561,575..587"
+P9WFT5,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,692,256..575
+P9WFT5,PS51880,TGS domain profile,profile,domain,IPR004095,,,692,1..74
+P9WFT5,PTHR11451,Threonine-tRNA ligase,panther,family,,,,692,65..671
+P9WFT5,SM00863,Threonyl and Alanyl tRNA synthetase second additional domain,smart,domain,IPR012947,,,692,189..245
+P9WFT5,SSF52954,Class II aaRS ABD-related,ssf,homologous_superfamily,,,,692,570..678
+P9WFT5,SSF55186,ThrRS/AlaRS common domain,ssf,homologous_superfamily,IPR018163,,,692,78..266
+P9WFT5,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,692,269..566
+P9WFT5,TIGR00418,threonine--tRNA ligase,ncbifam,family,IPR002320,,,692,85..669
+P9WFT7,cd00770,SerRS_core,cdd,domain,IPR033729,,,419,124..409
+P9WFT7,G3DSA:1.10.287.40,"Serine-tRNA synthetase, tRNA binding domain",cathgene3d,homologous_superfamily,IPR042103,,,419,1..102
+P9WFT7,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,419,105..418
+P9WFT7,IPR002314,"Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)",interpro,domain,,PF00587,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",419,217..393
+P9WFT7,IPR002317,"Serine-tRNA ligase, type1",interpro,family,,"MF_00176,TIGR00414,PIRSF001529,PTHR11778,PR00981","GO:0000166,GO:0004828,GO:0005524,GO:0006434",419,1..417
+P9WFT7,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,419,135..403
+P9WFT7,IPR010978,"Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm",interpro,homologous_superfamily,,SSF46589,GO:0000166,419,1..111
+P9WFT7,IPR015866,"Serine-tRNA synthetase, type1, N-terminal",interpro,domain,,PF02403,,419,1..105
+P9WFT7,IPR033729,Serine-tRNA ligase catalytic core domain,interpro,domain,,cd00770,,419,124..409
+P9WFT7,IPR042103,"Serine-tRNA synthetase, type1, N-terminal domain superfamily",interpro,homologous_superfamily,,G3DSA:1.10.287.40,,419,1..102
+P9WFT7,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,419,105..418
+P9WFT7,MF_00176,Serine--tRNA ligase [serS],hamap,family,IPR002317,,,419,1..415
+P9WFT7,PF00587,"tRNA synthetase class II core domain (G, H, P, S and T)",pfam,domain,IPR002314,,,419,217..393
+P9WFT7,PF02403,Seryl-tRNA synthetase N-terminal domain,pfam,domain,IPR015866,,,419,1..105
+P9WFT7,PIRSF001529,Serine-tRNA ligase,pirsf,family,IPR002317,,,419,1..417
+P9WFT7,PR00981,TRNASYNTHSER,prints,family,IPR002317,,,419,"259..271,271..284,311..324,328..344,346..362"
+P9WFT7,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,419,135..403
+P9WFT7,PTHR11778,SERYL-TRNA SYNTHETASE,panther,family,IPR002317,,,419,1..415
+P9WFT7,SSF46589,tRNA-binding arm,ssf,homologous_superfamily,IPR010978,,,419,1..111
+P9WFT7,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,419,124..418
+P9WFT7,TIGR00414,serine--tRNA ligase,ncbifam,family,IPR002317,,,419,1..409
+P9WFT9,cd00779,ProRS_core_prok,cdd,domain,IPR033730,,,582,19..217
+P9WFT9,cd00861,ProRS_anticodon_short,cdd,domain,IPR044140,,,582,485..566
+P9WFT9,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,582,"1..251,405..472"
+P9WFT9,G3DSA:3.40.50.800,Anticodon-binding domain,cathgene3d,homologous_superfamily,IPR036621,,,582,473..580
+P9WFT9,G3DSA:3.90.960.10,YbaK/aminoacyl-tRNA synthetase-associated domain,cathgene3d,homologous_superfamily,IPR036754,,,582,252..403
+P9WFT9,IPR002314,"Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)",interpro,domain,,PF00587,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",582,96..471
+P9WFT9,IPR002316,"Proline-tRNA ligase, class IIa",interpro,family,,PR01046,"GO:0004827,GO:0005524,GO:0006433,GO:0005737",582,"70..88,106..117,136..144,146..157"
+P9WFT9,IPR004154,Anticodon-binding,interpro,domain,,PF03129,,582,490..565
+P9WFT9,IPR004500,"Prolyl-tRNA synthetase, class IIa, bacterial-type",interpro,family,,TIGR00409,"GO:0004827,GO:0005524,GO:0006433,GO:0005737",582,4..566
+P9WFT9,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,582,35..480
+P9WFT9,IPR007214,YbaK/aminoacyl-tRNA synthetase-associated domain,interpro,domain,,PF04073,GO:0002161,582,280..387
+P9WFT9,IPR023717,"Prolyl-tRNA synthetase, class IIa, type 1",interpro,family,,"PIRSF001535,MF_01569","GO:0004827,GO:0005524,GO:0006433,GO:0005737",582,3..581
+P9WFT9,IPR033730,Prokaryote proline-tRNA ligase core domain,interpro,domain,,cd00779,,582,19..217
+P9WFT9,IPR036621,Anticodon-binding domain superfamily,interpro,homologous_superfamily,,G3DSA:3.40.50.800,,582,473..580
+P9WFT9,IPR036754,YbaK/aminoacyl-tRNA synthetase-associated domain superfamily,interpro,homologous_superfamily,,"SSF55826,G3DSA:3.90.960.10",GO:0002161,582,221..403
+P9WFT9,IPR044140,"Proline--tRNA ligase, anticodon binding domain",interpro,domain,,cd00861,,582,485..566
+P9WFT9,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,582,1..489
+P9WFT9,IPR050062,Proline-tRNA synthetase,interpro,family,,PTHR42753,,582,3..566
+P9WFT9,MF_01569,Proline--tRNA ligase [proS],hamap,family,IPR023717,,,582,3..581
+P9WFT9,PF00587,"tRNA synthetase class II core domain (G, H, P, S and T)",pfam,domain,IPR002314,,,582,"96..279,388..471"
+P9WFT9,PF03129,Anticodon binding domain,pfam,domain,IPR004154,,,582,490..565
+P9WFT9,PF04073,Aminoacyl-tRNA editing domain,pfam,family,IPR007214,,,582,280..387
+P9WFT9,PR01046,TRNASYNTHPRO,prints,family,IPR002316,,,582,"70..88,106..117,136..144,146..157"
+P9WFT9,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,582,35..480
+P9WFT9,PTHR42753,Proline-tRNA synthetase,panther,family,IPR050062,,,582,3..566
+P9WFT9,SSF52954,Class II aaRS ABD-related,ssf,homologous_superfamily,,,,582,476..564
+P9WFT9,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,582,"12..239,419..489"
+P9WFT9,SSF55826,YbaK/ProRS associated domain,ssf,homologous_superfamily,IPR036754,,,582,221..392
+P9WFT9,TIGR00409,proline--tRNA ligase,ncbifam,family,IPR004500,,,582,4..566
+P9WFU1,cd00769,PheRS_beta_core,cdd,domain,IPR041616,,,831,504..725
+P9WFU1,cd02796,tRNA_bind_bactPheRS,cdd,domain,IPR033714,,,831,50..153
+P9WFU1,G3DSA:2.40.50.140,Nucleic acid-binding proteins,cathgene3d,homologous_superfamily,IPR012340,,,831,44..161
+P9WFU1,G3DSA:3.30.56.10,,cathgene3d,homologous_superfamily,,,,831,"7..43,162..187,416..489"
+P9WFU1,G3DSA:3.30.70.380,Ferrodoxin-fold anticodon-binding domain,cathgene3d,homologous_superfamily,IPR036690,,,831,739..831
+P9WFU1,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,831,499..726
+P9WFU1,G3DSA:3.50.40.10,"Phenylalanyl-trna Synthetase, Chain B, domain 3",cathgene3d,homologous_superfamily,IPR020825,,,831,211..407
+P9WFU1,IPR002547,tRNA-binding domain,interpro,domain,,"PS50886,PF01588",GO:0000049,831,44..155
+P9WFU1,IPR004532,"Phenylalanine-tRNA ligase, class IIc, beta subunit, bacterial type",interpro,family,,"MF_00283,TIGR00472","GO:0000287,GO:0004826,GO:0005524,GO:0006432",831,1..830
+P9WFU1,IPR005121,Ferrodoxin-fold anticodon-binding domain,interpro,domain,,"PS51447,SM00896,PF03147",,831,737..830
+P9WFU1,IPR005146,B3/B4 tRNA-binding domain,interpro,domain,,"SM00873,PF03483","GO:0003723,GO:0004826",831,222..395
+P9WFU1,IPR005147,"tRNA synthetase, B5-domain",interpro,domain,,"SM00874,PS51483,PF03484","GO:0000287,GO:0003723,GO:0005524,GO:0006432",831,414..489
+P9WFU1,IPR009061,Putative DNA-binding domain superfamily,interpro,homologous_superfamily,,SSF46955,,831,416..488
+P9WFU1,IPR012340,"Nucleic acid-binding, OB-fold",interpro,homologous_superfamily,,"G3DSA:2.40.50.140,SSF50249",,831,44..197
+P9WFU1,IPR020825,"Phenylalanyl-tRNA synthetase-like, B3/B4",interpro,homologous_superfamily,,G3DSA:3.50.40.10,,831,211..407
+P9WFU1,IPR033714,"Phenylalanly tRNA synthetase, tRNA-binding-domain",interpro,domain,,cd02796,GO:0000049,831,50..153
+P9WFU1,IPR036690,Ferrodoxin-fold anticodon-binding domain superfamily,interpro,homologous_superfamily,,"G3DSA:3.30.70.380,SSF54991",,831,735..831
+P9WFU1,IPR041616,"Phenylalanyl tRNA synthetase beta chain, core domain",interpro,domain,,"PF17759,cd00769",,831,487..725
+P9WFU1,IPR045060,"Phenylalanine-tRNA ligase, class IIc, beta subunit",interpro,family,,PTHR10947,"GO:0004826,GO:0006432",831,158..723
+P9WFU1,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,831,480..726
+P9WFU1,MF_00283,Phenylalanine--tRNA ligase beta subunit [pheT],hamap,family,IPR004532,,,831,1..824
+P9WFU1,PF01588,Putative tRNA binding domain,pfam,domain,IPR002547,,,831,50..152
+P9WFU1,PF03147,Ferredoxin-fold anticodon binding domain,pfam,domain,IPR005121,,,831,737..830
+P9WFU1,PF03483,B3/4 domain,pfam,domain,IPR005146,,,831,223..395
+P9WFU1,PF03484,tRNA synthetase B5 domain,pfam,domain,IPR005147,,,831,420..483
+P9WFU1,PF17759,Phenylalanyl tRNA synthetase beta chain CLM domain,pfam,domain,IPR041616,,,831,487..722
+P9WFU1,PS50886,tRNA-binding domain profile,profile,domain,IPR002547,,,831,44..155
+P9WFU1,PS51447,Ferredoxin-fold anticodon binding (FDX-ACB) domain profile,profile,domain,IPR005121,,,831,737..830
+P9WFU1,PS51483,B5 domain profile,profile,domain,IPR005147,,,831,414..489
+P9WFU1,PTHR10947,PHENYLALANYL-TRNA SYNTHETASE BETA CHAIN AND LEUCINE-RICH REPEAT-CONTAINING PROTEIN 47,panther,family,IPR045060,,,831,158..723
+P9WFU1,SM00873,B3/4 domain,smart,domain,IPR005146,,,831,222..395
+P9WFU1,SM00874,tRNA synthetase B5 domain,smart,domain,IPR005147,,,831,416..484
+P9WFU1,SM00896,Ferredoxin-fold anticodon binding domain,smart,domain,IPR005121,,,831,737..830
+P9WFU1,SSF46955,Putative DNA-binding domain,ssf,homologous_superfamily,IPR009061,,,831,416..488
+P9WFU1,SSF50249,Nucleic acid-binding proteins,ssf,homologous_superfamily,IPR012340,,,831,49..197
+P9WFU1,SSF54991,Anticodon-binding domain of PheRS,ssf,homologous_superfamily,IPR036690,,,831,735..830
+P9WFU1,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,831,"480..596,626..725"
+P9WFU1,SSF56037,PheT/TilS domain,ssf,homologous_superfamily,,,,831,213..404
+P9WFU1,TIGR00472,phenylalanine--tRNA ligase subunit beta,ncbifam,family,IPR004532,,,831,1..830
+P9WFU3,cd00496,PheRS_alpha_core,cdd,domain,,,,341,110..332
+P9WFU3,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,341,10..338
+P9WFU3,IPR002319,Phenylalanyl-tRNA synthetase,interpro,domain,,PF01409,"GO:0000049,GO:0004812,GO:0005524,GO:0043039",341,95..334
+P9WFU3,IPR004188,"Phenylalanine-tRNA ligase, class II, N-terminal",interpro,domain,,PF02912,"GO:0000166,GO:0004826,GO:0005524,GO:0006432,GO:0005737",341,23..90
+P9WFU3,IPR004529,"Phenylalanyl-tRNA synthetase, class IIc, alpha subunit",interpro,family,,TIGR00468,"GO:0000166,GO:0004826,GO:0005524,GO:0006432,GO:0005737",341,49..333
+P9WFU3,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,341,115..336
+P9WFU3,IPR010978,"Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm",interpro,homologous_superfamily,,SSF46589,GO:0000166,341,17..101
+P9WFU3,IPR022911,"Phenylalanine-tRNA ligase alpha chain 1, bacterial",interpro,family,,MF_00281,GO:0004826,341,11..337
+P9WFU3,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,341,10..338
+P9WFU3,MF_00281,Phenylalanine--tRNA ligase alpha subunit [pheS],hamap,family,IPR022911,,,341,11..337
+P9WFU3,PF01409,tRNA synthetases class II core domain (F),pfam,domain,IPR002319,,,341,95..334
+P9WFU3,PF02912,"Aminoacyl tRNA synthetase class II, N-terminal domain",pfam,domain,IPR004188,,,341,23..90
+P9WFU3,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,341,115..336
+P9WFU3,PTHR11538,Phenylalanyl-tRNA synthetase/O-phosphoseryl-tRNA(Cys) synthetase,panther,family,,,,341,131..337
+P9WFU3,SSF46589,tRNA-binding arm,ssf,homologous_superfamily,IPR010978,,,341,17..101
+P9WFU3,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,341,95..333
+P9WFU3,TIGR00468,phenylalanine--tRNA ligase subunit alpha,ncbifam,family,IPR004529,,,341,49..333
+P9WFU5,cd00814,catalytic core domain of methioninyl-tRNA synthetases,cdd,domain,IPR033911,,,519,3..338
+P9WFU5,cd07957,Anticodon-binding domain of methionyl tRNA synthetases,cdd,domain,IPR041872,,,519,347..478
+P9WFU5,G3DSA:1.10.730.10,Isoleucyl-tRNA Synthetase; Domain 1,cathgene3d,homologous_superfamily,,,,519,339..519
+P9WFU5,G3DSA:2.170.220.10,,cathgene3d,homologous_superfamily,,,,519,115..227
+P9WFU5,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,519,"4..114,228..335"
+P9WFU5,IPR001412,"Aminoacyl-tRNA synthetase, class I, conserved site",interpro,conserved_site,,PS00178,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",519,13..22
+P9WFU5,IPR009080,"Aminoacyl-tRNA synthetase, class Ia, anticodon-binding",interpro,homologous_superfamily,,SSF47323,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",519,355..514
+P9WFU5,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,519,4..335
+P9WFU5,IPR014758,Methionyl-tRNA synthetase,interpro,family,,TIGR00398,"GO:0000166,GO:0004825,GO:0005524,GO:0006431",519,4..483
+P9WFU5,IPR015413,Methionyl/Leucyl tRNA synthetase,interpro,domain,,PF09334,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",519,"4..137,149..362"
+P9WFU5,IPR023457,"Methionine-tRNA synthetase, type 2",interpro,family,,"PTHR43326,MF_01228",GO:0004825,519,1..511
+P9WFU5,IPR033911,Methioninyl-tRNA synthetase core domain,interpro,domain,,"cd00814,PR01041","GO:0004825,GO:0006431",519,"3..338,350..361"
+P9WFU5,IPR041872,"Methionyl-tRNA synthetase, anticodon-binding domain",interpro,domain,,"cd07957,PF19303",,519,347..508
+P9WFU5,MF_01228,Methionine--tRNA ligase [metG],hamap,family,IPR023457,,,519,1..511
+P9WFU5,PF09334,tRNA synthetases class I (M),pfam,family,IPR015413,,,519,"4..137,149..362"
+P9WFU5,PF19303,Anticodon binding domain of methionyl tRNA ligase,pfam,domain,IPR041872,,,519,374..508
+P9WFU5,PR01041,TRNASYNTHMET,prints,family,IPR033911,,,519,"6..19,38..52,86..97,225..236,258..273,350..361"
+P9WFU5,PS00178,Aminoacyl-transfer RNA synthetases class-I signature,prosite,conserved_site,IPR001412,,,519,13..22
+P9WFU5,PTHR43326,METHIONYL-TRNA SYNTHETASE,panther,family,IPR023457,,,519,2..487
+P9WFU5,SSF47323,Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases,ssf,homologous_superfamily,IPR009080,,,519,355..514
+P9WFU5,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,519,2..353
+P9WFU5,TIGR00398,methionine--tRNA ligase,ncbifam,family,IPR014758,,,519,4..483
+P9WFU9,cd04322,LysRS_N,cdd,domain,IPR044136,,,505,61..168
+P9WFU9,G3DSA:2.40.50.140,Nucleic acid-binding proteins,cathgene3d,homologous_superfamily,IPR012340,,,505,10..151
+P9WFU9,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,505,152..503
+P9WFU9,IPR002313,"Lysine-tRNA ligase, class II",interpro,family,,"MF_00252,TIGR00499","GO:0004824,GO:0005524,GO:0006430",505,12..503
+P9WFU9,IPR004364,"Aminoacyl-tRNA synthetase, class II (D/K/N)",interpro,domain,,PF00152,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",505,156..499
+P9WFU9,IPR004365,"OB-fold nucleic acid binding domain, AA-tRNA synthetase-type",interpro,domain,,PF01336,GO:0003676,505,64..140
+P9WFU9,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,505,179..502
+P9WFU9,IPR012340,"Nucleic acid-binding, OB-fold",interpro,homologous_superfamily,,"G3DSA:2.40.50.140,SSF50249",,505,9..151
+P9WFU9,IPR018149,"Lysyl-tRNA synthetase, class II, C-terminal",interpro,domain,,"cd00775,PR00982","GO:0000166,GO:0004824,GO:0005524,GO:0006430,GO:0005737",505,"193..203,209..225,238..251,256..273,386..402"
+P9WFU9,IPR044136,"Lysine-tRNA ligase, class II, N-terminal",interpro,domain,,cd04322,GO:0000166,505,61..168
+P9WFU9,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,505,152..503
+P9WFU9,MF_00252,Lysine--tRNA ligase [lysS],hamap,family,IPR002313,,,505,16..503
+P9WFU9,PF00152,"tRNA synthetases class II (D, K and N)",pfam,domain,IPR004364,,,505,156..499
+P9WFU9,PF01336,OB-fold nucleic acid binding domain,pfam,domain,IPR004365,,,505,64..140
+P9WFU9,PR00982,TRNASYNTHLYS,prints,family,IPR018149,,,505,"193..203,209..225,238..251,256..273,386..402"
+P9WFU9,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,505,179..502
+P9WFU9,PTHR42918,Lysine--tRNA ligase,panther,family,,,,505,8..504
+P9WFU9,SSF50249,Nucleic acid-binding proteins,ssf,homologous_superfamily,IPR012340,,,505,9..149
+P9WFU9,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,505,156..501
+P9WFU9,TIGR00499,lysine--tRNA ligase,ncbifam,family,IPR002313,,,505,12..503
+P9WFV1,cd07958,Anticodon-binding domain of bacterial and eukaryotic mitochondrial leucyl tRNA synthetases,cdd,domain,,,,969,778..886
+P9WFV1,G3DSA:1.10.730.10,Isoleucyl-tRNA Synthetase; Domain 1,cathgene3d,homologous_superfamily,,,,969,719..969
+P9WFV1,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,969,"68..193,226..317,649..708"
+P9WFV1,G3DSA:3.90.740.10,"Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain",cathgene3d,homologous_superfamily,IPR009008,,,969,318..513
+P9WFV1,IPR001412,"Aminoacyl-tRNA synthetase, class I, conserved site",interpro,conserved_site,,PS00178,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",969,80..90
+P9WFV1,IPR002302,Leucine-tRNA ligase,interpro,family,,"PTHR43740,MF_00049_B,TIGR00396,PR00985","GO:0000166,GO:0004823,GO:0005524,GO:0006429",969,17..969
+P9WFV1,IPR009008,"Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain",interpro,homologous_superfamily,,"SSF50677,G3DSA:3.90.740.10","GO:0002161,GO:0006418",969,318..513
+P9WFV1,IPR009080,"Aminoacyl-tRNA synthetase, class Ia, anticodon-binding",interpro,homologous_superfamily,,SSF47323,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",969,782..969
+P9WFV1,IPR013155,"Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding",interpro,domain,,PF08264,"GO:0004812,GO:0006418",969,818..933
+P9WFV1,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,969,"68..193,226..317,649..708"
+P9WFV1,IPR015413,Methionyl/Leucyl tRNA synthetase,interpro,domain,,PF09334,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",969,75..182
+P9WFV1,IPR025709,"Leucyl-tRNA synthetase, editing domain",interpro,domain,,PF13603,"GO:0002161,GO:0006418",969,305..503
+P9WFV1,MF_00049_B,Leucine--tRNA ligase [leuS],hamap,family,IPR002302,,,969,29..969
+P9WFV1,PF08264,Anticodon-binding domain of tRNA ligase,pfam,domain,IPR013155,,,969,818..933
+P9WFV1,PF09334,tRNA synthetases class I (M),pfam,family,IPR015413,,,969,75..182
+P9WFV1,PF13603,"Leucyl-tRNA synthetase, editing domain",pfam,domain,IPR025709,,,969,305..503
+P9WFV1,PR00985,TRNASYNTHLEU,prints,family,IPR002302,,,969,"164..181,237..253,270..283,299..318,600..618,652..674,685..695"
+P9WFV1,PS00178,Aminoacyl-transfer RNA synthetases class-I signature,prosite,conserved_site,IPR001412,,,969,80..90
+P9WFV1,PTHR43740,LEUCYL-TRNA SYNTHETASE,panther,family,IPR002302,,,969,17..968
+P9WFV1,SSF47323,Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases,ssf,homologous_superfamily,IPR009080,,,969,782..969
+P9WFV1,SSF50677,ValRS/IleRS/LeuRS editing domain,ssf,homologous_superfamily,IPR009008,,,969,329..513
+P9WFV1,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,969,"35..184,232..310,516..787"
+P9WFV1,TIGR00396,bacterial-type leucine--tRNA ligase,ncbifam,family,IPR002302,,,969,231..969
+P9WFV3,cd00818,catalytic core domain of isoleucyl-tRNA synthetases,cdd,domain,,,,1041,420..657
+P9WFV3,cd07961,"Anticodon-binding domain of archaeal, bacterial, and eukaryotic cytoplasmic isoleucyl tRNA synthetases",cdd,domain,IPR033709,,,1041,659..825
+P9WFV3,G3DSA:1.10.730.10,Isoleucyl-tRNA Synthetase; Domain 1,cathgene3d,homologous_superfamily,,,,1041,661..832
+P9WFV3,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,1041,"11..213,395..653"
+P9WFV3,G3DSA:3.90.740.10,"Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain",cathgene3d,homologous_superfamily,IPR009008,,,1041,214..394
+P9WFV3,IPR001412,"Aminoacyl-tRNA synthetase, class I, conserved site",interpro,conserved_site,,PS00178,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",1041,53..64
+P9WFV3,IPR002300,"Aminoacyl-tRNA synthetase, class Ia",interpro,domain,,PF00133,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",1041,23..653
+P9WFV3,IPR002301,Isoleucine-tRNA ligase,interpro,family,,"PR00984,TIGR00392","GO:0000166,GO:0004822,GO:0005524,GO:0006428",1041,15..849
+P9WFV3,IPR009008,"Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain",interpro,homologous_superfamily,,"SSF50677,G3DSA:3.90.740.10","GO:0002161,GO:0006418",1041,209..394
+P9WFV3,IPR009080,"Aminoacyl-tRNA synthetase, class Ia, anticodon-binding",interpro,homologous_superfamily,,SSF47323,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",1041,674..898
+P9WFV3,IPR013155,"Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding",interpro,domain,,PF08264,"GO:0004812,GO:0006418",1041,701..841
+P9WFV3,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,1041,"11..213,395..653"
+P9WFV3,IPR023586,"Isoleucine-tRNA ligase, type 2",interpro,family,,"PTHR42780,MF_02003",GO:0004822,1041,7..1037
+P9WFV3,IPR033709,"Isoleucyl tRNA synthetase type 2, anticodon-binding domain",interpro,domain,,cd07961,GO:0000049,1041,659..825
+P9WFV3,MF_02003,Isoleucine--tRNA ligase [ileS],hamap,family,IPR023586,,,1041,7..1037
+P9WFV3,PF00133,"tRNA synthetases class I (I, L, M and V)",pfam,domain,IPR002300,,,1041,23..653
+P9WFV3,PF08264,Anticodon-binding domain of tRNA ligase,pfam,domain,IPR013155,,,1041,701..841
+P9WFV3,PF19302,Domain of unknown function (DUF5915),pfam,domain,,,,1041,857..1026
+P9WFV3,PR00984,TRNASYNTHILE,prints,family,IPR002301,,,1041,"46..57,235..258,409..424,538..551,578..587"
+P9WFV3,PS00178,Aminoacyl-transfer RNA synthetases class-I signature,prosite,conserved_site,IPR001412,,,1041,53..64
+P9WFV3,PTHR42780,SOLEUCYL-TRNA SYNTHETASE,panther,family,IPR023586,,,1041,14..1020
+P9WFV3,SSF47323,Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases,ssf,homologous_superfamily,IPR009080,,,1041,674..898
+P9WFV3,SSF50677,ValRS/IleRS/LeuRS editing domain,ssf,homologous_superfamily,IPR009008,,,1041,209..391
+P9WFV3,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,1041,"14..203,411..651"
+P9WFV3,TIGR00392,isoleucine--tRNA ligase,ncbifam,family,IPR002301,,,1041,15..849
+P9WFV5,cd00773,HisRS-like_core,cdd,domain,IPR041715,,,423,20..316
+P9WFV5,cd00859,HisRS_anticodon,cdd,domain,IPR033656,,,423,328..418
+P9WFV5,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,423,6..323
+P9WFV5,G3DSA:3.40.50.800,Anticodon-binding domain,cathgene3d,homologous_superfamily,IPR036621,,,423,326..422
+P9WFV5,IPR004154,Anticodon-binding,interpro,domain,,PF03129,,423,330..418
+P9WFV5,IPR004516,Histidine-tRNA ligase/ATP phosphoribosyltransferase regulatory subunit,interpro,family,,"PTHR43707,PIRSF001549",GO:0005737,423,3..421
+P9WFV5,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,423,35..335
+P9WFV5,IPR015807,Histidine-tRNA ligase,interpro,family,,"MF_00127,TIGR00442","GO:0004821,GO:0005524,GO:0006427",423,5..420
+P9WFV5,IPR033656,Histidyl-anticodon-binding,interpro,domain,,cd00859,,423,328..418
+P9WFV5,IPR036621,Anticodon-binding domain superfamily,interpro,homologous_superfamily,,G3DSA:3.40.50.800,,423,326..422
+P9WFV5,IPR041715,Class II Histidinyl-tRNA synthetase (HisRS)-like catalytic core domain,interpro,domain,,"cd00773,PF13393",,423,12..316
+P9WFV5,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,423,6..323
+P9WFV5,MF_00127,Histidine--tRNA ligase [hisS],hamap,family,IPR015807,,,423,5..420
+P9WFV5,PF03129,Anticodon binding domain,pfam,domain,IPR004154,,,423,330..418
+P9WFV5,PF13393,Histidyl-tRNA synthetase,pfam,domain,IPR041715,,,423,12..310
+P9WFV5,PIRSF001549,Histidyl-tRNA synthetase,pirsf,family,IPR004516,,,423,3..421
+P9WFV5,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,423,35..335
+P9WFV5,PTHR43707,HISTIDYL-TRNA SYNTHETASE,panther,family,IPR004516,,,423,5..412
+P9WFV5,SSF52954,Class II aaRS ABD-related,ssf,homologous_superfamily,,,,423,327..421
+P9WFV5,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,423,8..316
+P9WFV5,TIGR00442,histidine--tRNA ligase,ncbifam,family,IPR015807,,,423,9..409
+P9WFV7,cd00774,GlyRS-like_core,cdd,domain,IPR033731,,,463,12..337
+P9WFV7,cd00858,GlyRS_anticodon,cdd,domain,,,,463,341..461
+P9WFV7,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,463,"9..89,130..366"
+P9WFV7,G3DSA:3.40.50.800,Anticodon-binding domain,cathgene3d,homologous_superfamily,IPR036621,,,463,367..463
+P9WFV7,IPR002314,"Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)",interpro,domain,,PF00587,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",463,160..331
+P9WFV7,IPR002315,Glycyl-tRNA synthetase,interpro,family,,TIGR00389,"GO:0000166,GO:0004820,GO:0005524,GO:0006426,GO:0005737",463,10..239
+P9WFV7,IPR004154,Anticodon-binding,interpro,domain,,PF03129,,463,369..457
+P9WFV7,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,463,10..367
+P9WFV7,IPR022961,"Glycine-tRNA ligase, bacterial",interpro,family,,MF_00253_B,GO:0004820,463,6..461
+P9WFV7,IPR027031,Glycyl-tRNA synthetase/DNA polymerase subunit gamma-2,interpro,family,,PTHR10745,,463,226..314
+P9WFV7,IPR033731,Glycyl-tRNA synthetase-like core domain,interpro,domain,,cd00774,,463,12..337
+P9WFV7,IPR036621,Anticodon-binding domain superfamily,interpro,homologous_superfamily,,G3DSA:3.40.50.800,,463,367..463
+P9WFV7,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,463,9..372
+P9WFV7,MF_00253_B,Glycine--tRNA ligase [glyQS],hamap,family,IPR022961,,,463,6..461
+P9WFV7,PF00587,"tRNA synthetase class II core domain (G, H, P, S and T)",pfam,domain,IPR002314,,,463,160..331
+P9WFV7,PF03129,Anticodon binding domain,pfam,domain,IPR004154,,,463,369..457
+P9WFV7,PR01043,TRNASYNTHGLY,prints,family,,,,463,"28..42,140..152,161..178,193..210,210..220,320..332,406..425"
+P9WFV7,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,463,10..367
+P9WFV7,PTHR10745,GLYCYL-TRNA SYNTHETASE/DNA POLYMERASE SUBUNIT GAMMA-2,panther,family,IPR027031,,,463,226..314
+P9WFV7,SSF52954,Class II aaRS ABD-related,ssf,homologous_superfamily,,,,463,356..461
+P9WFV7,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,463,10..372
+P9WFV7,TIGR00389,"glycine--tRNA ligase, homodimeric type",ncbifam,family,IPR002315,,,463,10..239
+P9WFV9,cd00808,catalytic core domain of discriminating glutamyl-tRNA synthetase,cdd,domain,IPR033910,,,490,6..334
+P9WFV9,G3DSA:1.10.10.350,,cathgene3d,homologous_superfamily,IPR020751,,,490,388..490
+P9WFV9,G3DSA:1.10.1160.10,Glutamyl-trna Synthetase; Domain 2,cathgene3d,homologous_superfamily,IPR020061,,,490,252..334
+P9WFV9,G3DSA:1.10.8.70,"Glutamate-tRNA synthetase, class I, anticodon-binding domain 1",cathgene3d,homologous_superfamily,IPR020752,,,490,336..387
+P9WFV9,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,490,"7..75,196..248"
+P9WFV9,G3DSA:3.90.800.10,Glutamyl-tRNA Synthetase; Domain 3,cathgene3d,homologous_superfamily,,,,490,76..195
+P9WFV9,IPR000924,Glutamyl/glutaminyl-tRNA synthetase,interpro,family,,PR00987,"GO:0000166,GO:0004812,GO:0005524,GO:0043039",490,"10..22,24..35,39..52,194..204,210..218"
+P9WFV9,IPR004527,"Glutamate-tRNA ligase, bacterial/mitochondrial",interpro,family,,"MF_00022,TIGR00464","GO:0000166,GO:0004818,GO:0005524,GO:0006424",490,6..484
+P9WFV9,IPR008925,"Aminoacyl-tRNA synthetase, class I, anticodon-binding superfamily",interpro,homologous_superfamily,,SSF48163,GO:0000049,490,320..483
+P9WFV9,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,490,7..248
+P9WFV9,IPR020058,"Glutamyl/glutaminyl-tRNA synthetase, class Ib, catalytic domain",interpro,domain,,PF00749,"GO:0004812,GO:0005524,GO:0043039",490,7..323
+P9WFV9,IPR020061,"Glutamine-tRNA ligase, alpha-bundle domain superfamily",interpro,homologous_superfamily,,G3DSA:1.10.1160.10,GO:0005524,490,252..334
+P9WFV9,IPR020751,"Aminoacyl-tRNA synthetase, class I, anticodon-binding domain, subdomain 2",interpro,homologous_superfamily,,G3DSA:1.10.10.350,,490,388..490
+P9WFV9,IPR020752,"Glutamate-tRNA synthetase, class I, anticodon-binding domain, subdomain 1",interpro,homologous_superfamily,,G3DSA:1.10.8.70,GO:0000049,490,336..387
+P9WFV9,IPR033910,Glutamyl-tRNA synthetase,interpro,domain,,cd00808,"GO:0008270,GO:0006424",490,6..334
+P9WFV9,IPR045462,"Aminoacyl-tRNA synthetase, class I, anticodon-binding",interpro,domain,,PF19269,,490,351..483
+P9WFV9,IPR049940,Glutamyl-Q tRNA(Asp) synthetase/Glutamate--tRNA ligase,interpro,family,,PTHR43311,,490,4..485
+P9WFV9,MF_00022,Glutamate--tRNA ligase [gltX],hamap,family,IPR004527,,,490,6..484
+P9WFV9,PF00749,"tRNA synthetases class I (E and Q), catalytic domain",pfam,domain,IPR020058,,,490,7..323
+P9WFV9,PF19269,Anticodon binding domain,pfam,domain,IPR045462,,,490,351..483
+P9WFV9,PR00987,TRNASYNTHGLU,prints,family,IPR000924,,,490,"10..22,24..35,39..52,194..204,210..218"
+P9WFV9,PTHR43311,GLUTAMATE--TRNA LIGASE,panther,family,IPR049940,,,490,4..485
+P9WFV9,SSF48163,An anticodon-binding domain of class I aminoacyl-tRNA synthetases,ssf,homologous_superfamily,IPR008925,,,490,320..483
+P9WFV9,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,490,7..319
+P9WFV9,TIGR00464,glutamate--tRNA ligase,ncbifam,family,IPR004527,,,490,6..482
+P9WFW1,cd00672,catalytic core domain of cysteinyl tRNA synthetase,cdd,domain,IPR032678,,,469,8..306
+P9WFW1,G3DSA:1.20.120.1910,"Cysteine-tRNA ligase, C-terminal anti-codon recognition domain",cathgene3d,homologous_superfamily,,,,469,305..462
+P9WFW1,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,469,1..304
+P9WFW1,IPR009080,"Aminoacyl-tRNA synthetase, class Ia, anticodon-binding",interpro,homologous_superfamily,,SSF47323,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",469,321..462
+P9WFW1,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,469,1..304
+P9WFW1,IPR015273,"Cysteinyl-tRNA synthetase, class Ia, DALR",interpro,domain,,"SM00840,PF09190","GO:0000166,GO:0004817,GO:0005524,GO:0006423,GO:0005737",469,342..403
+P9WFW1,IPR015803,Cysteine-tRNA ligase,interpro,family,,"MF_00041,TIGR00435","GO:0004817,GO:0005524,GO:0006423",469,7..464
+P9WFW1,IPR024909,Cysteinyl-tRNA synthetase/mycothiol ligase,interpro,family,,"PTHR10890,PR00983",,469,6..464
+P9WFW1,IPR032678,"tRNA synthetases class I, catalytic domain",interpro,domain,,"cd00672,PF01406",,469,8..314
+P9WFW1,MF_00041,Cysteine--tRNA ligase [cysS],hamap,family,IPR015803,,,469,7..464
+P9WFW1,PF01406,tRNA synthetases class I (C) catalytic domain,pfam,family,IPR032678,,,469,20..314
+P9WFW1,PF09190,DALR domain,pfam,domain,IPR015273,,,469,342..394
+P9WFW1,PR00983,TRNASYNTHCYS,prints,family,IPR024909,,,469,"30..41,66..75,193..211,224..245"
+P9WFW1,PTHR10890,CYSTEINYL-TRNA SYNTHETASE,panther,family,IPR024909,,,469,6..464
+P9WFW1,SM00840,DALR_2,smart,domain,IPR015273,,,469,342..403
+P9WFW1,SSF47323,Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases,ssf,homologous_superfamily,IPR009080,,,469,321..462
+P9WFW1,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,469,11..314
+P9WFW1,TIGR00435,cysteine--tRNA ligase,ncbifam,family,IPR015803,,,469,7..461
+P9WFW3,cd00777,AspRS_core,cdd,domain,IPR047090,,,594,140..561
+P9WFW3,cd04317,EcAspRS_like_N,cdd,domain,IPR047089,,,594,3..135
+P9WFW3,G3DSA:2.40.50.140,Nucleic acid-binding proteins,cathgene3d,homologous_superfamily,IPR012340,,,594,1..109
+P9WFW3,G3DSA:3.30.1360.30,GAD-like domain,cathgene3d,homologous_superfamily,IPR004115,,,594,273..412
+P9WFW3,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,594,"116..272,413..582"
+P9WFW3,IPR002312,"Aspartyl/Asparaginyl-tRNA synthetase, class IIb",interpro,family,,PR01042,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",594,"192..204,209..222,477..493,521..535"
+P9WFW3,IPR004115,GAD-like domain superfamily,interpro,homologous_superfamily,,"G3DSA:3.30.1360.30,SSF55261","GO:0004812,GO:0005524,GO:0005737",594,273..412
+P9WFW3,IPR004364,"Aminoacyl-tRNA synthetase, class II (D/K/N)",interpro,domain,,PF00152,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",594,120..560
+P9WFW3,IPR004365,"OB-fold nucleic acid binding domain, AA-tRNA synthetase-type",interpro,domain,,PF01336,GO:0003676,594,19..104
+P9WFW3,IPR004524,"Aspartate-tRNA ligase, type 1",interpro,family,,"MF_00044,TIGR00459","GO:0005524,GO:0016874",594,2..587
+P9WFW3,IPR006195,"Aminoacyl-tRNA synthetase, class II",interpro,domain,,PS50862,,594,140..558
+P9WFW3,IPR012340,"Nucleic acid-binding, OB-fold",interpro,homologous_superfamily,,"G3DSA:2.40.50.140,SSF50249",,594,1..109
+P9WFW3,IPR029351,GAD domain,interpro,domain,,PF02938,,594,313..393
+P9WFW3,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,594,115..586
+P9WFW3,IPR047089,"Aspartate-tRNA ligase, type 1, anticodon recognition domain",interpro,domain,,cd04317,,594,3..135
+P9WFW3,IPR047090,"Aspartate-tRNA ligase, type 1, core domain",interpro,domain,,cd00777,,594,140..561
+P9WFW3,MF_00044,Aspartate--tRNA(Asp/Asn) ligase [aspS],hamap,family,IPR004524,,,594,2..587
+P9WFW3,PF00152,"tRNA synthetases class II (D, K and N)",pfam,domain,IPR004364,,,594,"120..312,394..560"
+P9WFW3,PF01336,OB-fold nucleic acid binding domain,pfam,domain,IPR004365,,,594,19..104
+P9WFW3,PF02938,GAD domain,pfam,domain,IPR029351,,,594,313..393
+P9WFW3,PR01042,TRNASYNTHASP,prints,family,IPR002312,,,594,"192..204,209..222,477..493,521..535"
+P9WFW3,PS50862,Aminoacyl-transfer RNA synthetases class-II family profile,profile,domain,IPR006195,,,594,140..558
+P9WFW3,PTHR22594,Aspartate/asparagine--tRNA ligase,panther,family,,,,594,4..560
+P9WFW3,SSF50249,Nucleic acid-binding proteins,ssf,homologous_superfamily,IPR012340,,,594,3..107
+P9WFW3,SSF55261,GAD domain-like,ssf,homologous_superfamily,IPR004115,,,594,290..412
+P9WFW3,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,594,"115..293,417..586"
+P9WFW3,TIGR00459,aspartate--tRNA ligase,ncbifam,family,IPR004524,,,594,3..585
+P9WFW5,cd00671,catalytic core domain of arginyl-tRNA synthetases,cdd,domain,IPR035684,,,550,122..380
+P9WFW5,cd07956,Anticodon-binding domain of arginyl tRNA synthetases,cdd,domain,,,,550,390..550
+P9WFW5,G3DSA:1.10.730.10,Isoleucyl-tRNA Synthetase; Domain 1,cathgene3d,homologous_superfamily,,,,550,424..550
+P9WFW5,G3DSA:3.30.1360.70,Arginyl tRNA synthetase N-terminal domain,cathgene3d,homologous_superfamily,IPR036695,,,550,3..109
+P9WFW5,G3DSA:3.40.50.620,HUPs,cathgene3d,homologous_superfamily,IPR014729,,,550,121..423
+P9WFW5,IPR001278,Arginine-tRNA ligase,interpro,family,,"MF_00123,TIGR00456,PTHR11956,PR01038","GO:0004814,GO:0005524,GO:0006420",550,8..550
+P9WFW5,IPR001412,"Aminoacyl-tRNA synthetase, class I, conserved site",interpro,conserved_site,,PS00178,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",550,132..141
+P9WFW5,IPR005148,Arginyl tRNA synthetase N-terminal domain,interpro,domain,,"SM01016,PF03485","GO:0000166,GO:0004814,GO:0005524,GO:0006420,GO:0005737",550,4..93
+P9WFW5,IPR008909,DALR anticodon binding,interpro,domain,,"SM00836,PF05746","GO:0004814,GO:0005524,GO:0006420",550,429..550
+P9WFW5,IPR009080,"Aminoacyl-tRNA synthetase, class Ia, anticodon-binding",interpro,homologous_superfamily,,SSF47323,"GO:0000166,GO:0004812,GO:0005524,GO:0006418",550,423..550
+P9WFW5,IPR014729,Rossmann-like alpha/beta/alpha sandwich fold,interpro,homologous_superfamily,,G3DSA:3.40.50.620,,550,121..423
+P9WFW5,IPR035684,"Arginyl-tRNA synthetase, catalytic core domain",interpro,domain,,"cd00671,PF00750",,550,120..390
+P9WFW5,IPR036695,Arginyl tRNA synthetase N-terminal domain superfamily,interpro,homologous_superfamily,,"SSF55190,G3DSA:3.30.1360.70","GO:0000166,GO:0004814,GO:0005524,GO:0006420,GO:0005737",550,3..113
+P9WFW5,MF_00123,Arginine--tRNA ligase [argS],hamap,family,IPR001278,,,550,8..550
+P9WFW5,PF00750,tRNA synthetases class I (R),pfam,family,IPR035684,,,550,120..390
+P9WFW5,PF03485,Arginyl tRNA synthetase N terminal domain,pfam,domain,IPR005148,,,550,12..93
+P9WFW5,PF05746,DALR anticodon binding domain,pfam,domain,IPR008909,,,550,429..550
+P9WFW5,PR01038,TRNASYNTHARG,prints,family,IPR001278,,,550,"122..137,137..153,161..174,298..319"
+P9WFW5,PS00178,Aminoacyl-transfer RNA synthetases class-I signature,prosite,conserved_site,IPR001412,,,550,132..141
+P9WFW5,PTHR11956,ARGINYL-TRNA SYNTHETASE,panther,family,IPR001278,,,550,29..550
+P9WFW5,SM00836,DALR anticodon binding domain,smart,domain,IPR008909,,,550,429..550
+P9WFW5,SM01016,Arginyl tRNA synthetase N terminal dom,smart,domain,IPR005148,,,550,4..93
+P9WFW5,SSF47323,Anticodon-binding domain of a subclass of class I aminoacyl-tRNA synthetases,ssf,homologous_superfamily,IPR009080,,,550,423..550
+P9WFW5,SSF52374,Nucleotidylyl transferase,ssf,homologous_superfamily,,,,550,116..438
+P9WFW5,SSF55190,"Arginyl-tRNA synthetase (ArgRS), N-terminal 'additional' domain",ssf,homologous_superfamily,IPR036695,,,550,5..113
+P9WFW5,TIGR00456,arginine--tRNA ligase,ncbifam,family,IPR001278,,,550,14..550
+P9WFW7,cd00673,AlaRS_core,cdd,domain,,,,904,3..244
+P9WFW7,G3DSA:2.40.30.130,,cathgene3d,homologous_superfamily,,,,904,497..572
+P9WFW7,G3DSA:3.10.310.40,,cathgene3d,homologous_superfamily,,,,904,785..897
+P9WFW7,G3DSA:3.30.54.20,,cathgene3d,homologous_superfamily,,,,904,644..698
+P9WFW7,G3DSA:3.30.930.10,Bira Bifunctional Protein; Domain 2,cathgene3d,homologous_superfamily,IPR045864,,,904,1..245
+P9WFW7,G3DSA:3.30.980.10,"Threonyl-trna Synthetase; Chain A, domain 2",cathgene3d,homologous_superfamily,,,,904,"584..643,699..719"
+P9WFW7,G3DSA:6.10.250.550,,cathgene3d,homologous_superfamily,,,,904,721..781
+P9WFW7,IPR002318,"Alanine-tRNA ligase, class IIc",interpro,family,,"TIGR00344,PR00980","GO:0000166,GO:0005737",904,5..880
+P9WFW7,IPR003156,DHHA1 domain,interpro,domain,,PF02272,GO:0003676,904,754..896
+P9WFW7,IPR009000,"Translation protein, beta-barrel domain superfamily",interpro,homologous_superfamily,,SSF50447,,904,461..572
+P9WFW7,IPR012947,"Threonyl/alanyl tRNA synthetase, SAD",interpro,domain,,"SM00863,PF07973","GO:0004812,GO:0005524,GO:0043039",904,673..717
+P9WFW7,IPR018162,"Alanine-tRNA ligase, class IIc, anti-codon-binding domain superfamily",interpro,homologous_superfamily,,SSF101353,"GO:0000166,GO:0004813,GO:0005524,GO:0006419,GO:0005737",904,249..443
+P9WFW7,IPR018163,"Threonyl/alanyl tRNA synthetase, class II-like, putative editing domain superfamily",interpro,homologous_superfamily,,SSF55186,GO:0000166,904,577..723
+P9WFW7,IPR018164,"Alanyl-tRNA synthetase, class IIc, N-terminal",interpro,domain,,PF01411,"GO:0000166,GO:0004813,GO:0005524,GO:0006419",904,5..574
+P9WFW7,IPR018165,"Alanyl-tRNA synthetase, class IIc, core domain",interpro,domain,,PS50860,"GO:0003676,GO:0004813,GO:0005524,GO:0006419",904,1..730
+P9WFW7,IPR023033,"Alanine-tRNA ligase, eukaryota/bacteria",interpro,family,,MF_00036_B,GO:0004813,904,1..903
+P9WFW7,IPR045864,Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL),interpro,homologous_superfamily,,"G3DSA:3.30.930.10,SSF55681",,904,1..248
+P9WFW7,IPR050058,Alanine--tRNA ligase,interpro,family,,PTHR11777,,904,1..897
+P9WFW7,MF_00036_B,Alanine--tRNA ligase [alaS],hamap,family,IPR023033,,,904,1..903
+P9WFW7,PF01411,tRNA synthetases class II (A),pfam,family,IPR018164,,,904,5..574
+P9WFW7,PF02272,DHHA1 domain,pfam,family,IPR003156,,,904,754..896
+P9WFW7,PF07973,Threonyl and Alanyl tRNA synthetase second additional domain,pfam,domain,IPR012947,,,904,673..717
+P9WFW7,PR00980,TRNASYNTHALA,prints,family,IPR002318,,,904,"69..80,196..207,229..242,280..296,304..317"
+P9WFW7,PS50860,Alanyl-transfer RNA synthetases family profile,profile,domain,IPR018165,,,904,1..730
+P9WFW7,PTHR11777,Alanine--tRNA ligase,panther,family,IPR050058,,,904,1..897
+P9WFW7,SM00863,Threonyl and Alanyl tRNA synthetase second additional domain,smart,domain,IPR012947,,,904,673..717
+P9WFW7,SSF101353,Putative anticodon-binding domain of alanyl-tRNA synthetase (AlaRS),ssf,homologous_superfamily,IPR018162,,,904,249..443
+P9WFW7,SSF50447,Translation proteins,ssf,homologous_superfamily,IPR009000,,,904,461..572
+P9WFW7,SSF55186,ThrRS/AlaRS common domain,ssf,homologous_superfamily,IPR018163,,,904,577..723
+P9WFW7,SSF55681,Class II aaRS and biotin synthetases,ssf,homologous_superfamily,IPR045864,,,904,2..248
+P9WFW7,TIGR00344,alanine--tRNA ligase,ncbifam,family,IPR002318,,,904,5..880
+P9WN61,G3DSA:1.10.10.410,,cathgene3d,homologous_superfamily,IPR023168,,,509,446..505
+P9WN61,IPR003789,Aspartyl/glutamyl-tRNA amidotransferase subunit B-like,interpro,homologous_superfamily,,SSF89095,GO:0016884,509,359..504
+P9WN61,IPR004413,Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase subunit B,interpro,family,,"MF_00121,TIGR00133",GO:0016884,509,24..507
+P9WN61,IPR006075,"Aspartyl/Glutamyl-tRNA(Gln) amidotransferase, subunit B/E, catalytic",interpro,domain,,PF02934,GO:0016874,509,28..321
+P9WN61,IPR014746,"Glutamine synthetase/guanido kinase, catalytic domain",interpro,homologous_superfamily,,SSF55931,GO:0003824,509,27..328
+P9WN61,IPR017958,"Glutamyl-tRNA(Gln) amidotransferase, subunit B, conserved site",interpro,conserved_site,,PS01234,GO:0016884,509,173..187
+P9WN61,IPR017959,"Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, subunit B /E",interpro,family,,PTHR11659,GO:0016884,509,23..505
+P9WN61,IPR018027,Asn/Gln amidotransferase,interpro,domain,,"SM00845,PF02637",GO:0016884,509,359..506
+P9WN61,IPR023168,"Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, C-terminal, domain 2",interpro,homologous_superfamily,,G3DSA:1.10.10.410,,509,446..505
+P9WN61,MF_00121,Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase subunit B [gatB],hamap,family,IPR004413,,,509,24..507
+P9WN61,PF02637,GatB domain,pfam,domain,IPR018027,,,509,360..504
+P9WN61,PF02934,GatB/GatE catalytic domain,pfam,domain,IPR006075,,,509,28..321
+P9WN61,PS01234,Glutamyl-tRNA(Gln) amidotransferase subunit B signature,prosite,conserved_site,IPR017958,,,509,173..187
+P9WN61,PTHR11659,GLUTAMYL-TRNA GLN AMIDOTRANSFERASE SUBUNIT B MITOCHONDRIAL AND PROKARYOTIC PET112-RELATED,panther,family,IPR017959,,,509,23..505
+P9WN61,SM00845,GatB domain,smart,domain,IPR018027,,,509,359..506
+P9WN61,SSF55931,Glutamine synthetase/guanido kinase,ssf,homologous_superfamily,IPR014746,,,509,27..328
+P9WN61,SSF89095,GatB/YqeY motif,ssf,homologous_superfamily,IPR003789,,,509,359..504
+P9WN61,TIGR00133,Asp-tRNA(Asn)/Glu-tRNA(Gln) amidotransferase subunit GatB,ncbifam,family,IPR004413,,,509,25..504
+P9WQA1,G3DSA:3.90.1300.10,Amidase signature (AS) domain,cathgene3d,homologous_superfamily,IPR036928,,,494,3..488
+P9WQA1,IPR000120,Amidase,interpro,family,,PTHR11895,GO:0003824,494,3..485
+P9WQA1,IPR004412,Glutamyl-tRNA(Gln) amidotransferase A subunit,interpro,family,,"MF_00120,TIGR00132","GO:0050567,GO:0006412,GO:0030956",494,12..488
+P9WQA1,IPR020556,"Amidase, conserved site",interpro,conserved_site,,PS00571,,494,154..185
+P9WQA1,IPR023631,Amidase signature domain,interpro,domain,,PF01425,,494,25..476
+P9WQA1,IPR036928,Amidase signature (AS) superfamily,interpro,homologous_superfamily,,"G3DSA:3.90.1300.10,SSF75304",,494,1..488
+P9WQA1,MF_00120,Glutamyl-tRNA(Gln) amidotransferase subunit A [gatA],hamap,family,IPR004412,,,494,12..488
+P9WQA1,PF01425,Amidase,pfam,family,IPR023631,,,494,25..476
+P9WQA1,PS00571,Amidases signature,prosite,conserved_site,IPR020556,,,494,154..185
+P9WQA1,PTHR11895,TRANSAMIDASE,panther,family,IPR000120,,,494,3..485
+P9WQA1,SSF75304,Amidase signature (AS) enzymes,ssf,homologous_superfamily,IPR036928,,,494,1..487
+P9WQA1,TIGR00132,Asp-tRNA(Asn)/Glu-tRNA(Gln) amidotransferase subunit GatA,ncbifam,family,IPR004412,,,494,14..486
