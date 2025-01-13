@@ -162,6 +162,9 @@ def align_all_structures(uniprot_ac):
     print("Reference file is {}".format(reference_file))
     data = {}
     for file_name in file_names:
+        if file_name.startswith("alphafill"):
+            print("Skipping AlphaFill structure since it is identical to AlphaFold2...")
+            continue
         mobile_file = os.path.join(input_dir, file_name)
         reference_file = os.path.join(input_dir, reference_file)
         print("Aligning {} to the reference...".format(file_name))
@@ -183,4 +186,13 @@ if __name__ == "__main__":
         for k,v in data.items():
             R.append([uniprot_ac, k, v])
     df = pd.DataFrame(R, columns=["uniprot_ac", "file_name", "rmsd"])
+    to_remove = df[df["rmsd"] > 10]["file_name"].tolist()
+    df = df[df["rmsd"] <= 10]
     df.to_csv(os.path.join(root, "..", "processed", "alignment_rmsd_data.csv"), index=False)
+    for fn in to_remove:
+        uniprot_ac = fn.split("_")[1]
+        os.remove(os.path.join(root, "..", "processed", "structures", uniprot_ac, fn))
+        os.remove(os.path.join(root, "..", "processed", "aligned_structures", uniprot_ac, fn))
+        da = pd.read_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"))
+        da = da[da["file_name"] != fn]
+        da.to_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"), index=False)
