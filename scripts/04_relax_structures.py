@@ -73,19 +73,22 @@ def relax_structure(input_file, output_file):
     print(f"Saving best structure to {output_file}")
     best_pose.dump_pdb(output_file)
 
-df = pd.read_csv(os.path.join(processed_dir, "trna_synthetases_data.csv"))
+df = pd.read_csv(os.path.join(processed_dir, "alignment_rmsd_data.csv"))
 file_names = df["file_name"].tolist()
 for file_name in file_names:
     print("----------------------------------------")
     print(f"Relaxing structure {file_name}...")
     uniprot_ac = file_name.split("_")[1]
-    input_file = os.path.join(processed_dir, "structures", uniprot_ac, file_name)
+    output_file = os.path.join(processed_dir, "relaxed_structures", uniprot_ac, file_name)
+    if os.path.exists(output_file):
+        print(f"Relaxed structure {file_name} already exists. Skipping...")
+        continue
+    input_file = os.path.join(processed_dir, "aligned_structures", uniprot_ac, file_name)
     tmp_file = os.path.join(root, "..", "tmp", file_name)
     calculate_protonation_states(input_file, tmp_file)
     print("Protonation states calculated.")
     if not os.path.exists(os.path.join(processed_dir, "relaxed_structures", uniprot_ac)):
         os.makedirs(os.path.join(processed_dir, "relaxed_structures", uniprot_ac))
-    output_file = os.path.join(processed_dir, "relaxed_structures", uniprot_ac, file_name)
     relax_structure(tmp_file, output_file)
     print("Removing temporary file {0}.".format(tmp_file))
     os.remove(tmp_file)

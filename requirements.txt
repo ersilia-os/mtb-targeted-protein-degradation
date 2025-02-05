@@ -1,0 +1,4 @@
+pandas==2.2.3
+requests==2.32.3
+biopython==1.84
+chembl-webresource-client==0.10.9
