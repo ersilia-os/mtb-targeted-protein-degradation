@@ -29,6 +29,12 @@ In addition, the following tools are required:
 * [PyRosetta](https://www.pyrosetta.org/) for protein structure relaxation. PyRosetta can be installed with the [PyRosetta Installer](https://www.pyrosetta.org/downloads).
 * [P2RANK](https://github.com/rdk/p2rank) for pocket detection. 
 
+To run P2RANK, Java is required:
+
+```bash
+conda install -c conda-forge openjdk
+```
+
 ## Progress reporting
 
 This repository is work in progress, as summarized in the following progress report meetings:
