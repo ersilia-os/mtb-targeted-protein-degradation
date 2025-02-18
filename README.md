@@ -27,6 +27,7 @@ In addition, the following tools are required:
 * [Open source PyMol](https://github.com/schrodinger/pymol-open-source) for protein visualization.
 * [PDB2PQR](https://pdb2pqr.readthedocs.io/en/latest/) for protonation at pH 7.0.
 * [PyRosetta](https://www.pyrosetta.org/) for protein structure relaxation. PyRosetta can be installed with the [PyRosetta Installer](https://www.pyrosetta.org/downloads).
+* [P2RANK](https://github.com/rdk/p2rank) for pocket detection. 
 
 ## Progress reporting
 
