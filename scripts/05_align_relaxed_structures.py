@@ -189,16 +189,18 @@ if __name__ == "__main__":
         print(f"All structures aligned for {uniprot_ac}.")
         for k,v in data.items():
             R.append([uniprot_ac, k, v])
-        break
     df = pd.DataFrame(R, columns=["uniprot_ac", "file_name", "rmsd"])
     to_remove = df[df["rmsd"] > 10]["file_name"].tolist()
     df = df[df["rmsd"] <= 10]
     df.to_csv(os.path.join(root, "..", "processed", "alignment_relaxed_rmsd_data.csv"), index=False)
+    # We don't remove structures here -all RMSDs 'should' be really low
+    # I manually checked, there's nothing > 10
     # for fn in to_remove:
     #     uniprot_ac = fn.split("_")[1]
     #     os.remove(os.path.join(root, "..", "processed", "structures", uniprot_ac, fn))
     #     os.remove(os.path.join(root, "..", "processed", "aligned_structures", uniprot_ac, fn))
+    #     os.remove(os.path.join(root, "..", "processed", "relaxed_structures", uniprot_ac, fn))
+    #     os.remove(os.path.join(root, "..", "processed", "relaxed_aligned_structures", uniprot_ac, fn))
     #     da = pd.read_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"))
     #     da = da[da["file_name"] != fn]
     #     da.to_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"), index=False)
-    #     break
