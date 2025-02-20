@@ -1,0 +1,14 @@
+uniprot_ac,file_name,rmsd
+P9WFS9,alphafold2_P9WFS9_model_0.pdb,2.03
+P9WFS9,alphafold3_P9WFS9_model_0.pdb,2.42
+P9WFS9,alphafold3_P9WFS9_model_1.pdb,2.24
+P9WFS9,alphafold3_P9WFS9_model_2.pdb,1.85
+P9WFS9,alphafold3_P9WFS9_model_3.pdb,5.26
+P9WFS9,alphafold3_P9WFS9_model_4.pdb,5.36
+P9WFS9,chai1_P9WFS9_model_0.pdb,2.79
+P9WFS9,chai1_P9WFS9_model_1.pdb,1.67
+P9WFS9,chai1_P9WFS9_model_2.pdb,2.31
+P9WFS9,chai1_P9WFS9_model_3.pdb,1.73
+P9WFS9,chai1_P9WFS9_model_4.pdb,2.01
+P9WFS9,swissmodel_P9WFS9_model_0.pdb,2.29
+P9WFS9,swissmodel_P9WFS9_model_1.pdb,1.94

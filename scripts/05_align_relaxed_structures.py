@@ -110,8 +110,10 @@ def align_structure(reference_file, mobile_file):
     subset_structure = parser.get_structure(mobile_name, subset_structure_file)
 
     # Select Cα atoms from the full structure (corresponding to the subset region)
+    chain_id_ref = list(full_structure[0])[0].get_id()
     ref_atoms = [
-        residue["CA"] for residue in full_structure[0]["A"]
+        # residue["CA"] for residue in full_structure[0]["A"]
+        residue["CA"] for residue in full_structure[0][chain_id_ref]  # Notice that now the reference is not AlphaFill -chain_id may not necessarily be "A"
         if start_residue <= residue.id[1] <= end_residue
     ]
 
