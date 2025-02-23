@@ -191,7 +191,7 @@ if __name__ == "__main__":
             R.append([uniprot_ac, k, v])
     df = pd.DataFrame(R, columns=["uniprot_ac", "file_name", "rmsd"])
     to_remove = df[df["rmsd"] > 10]["file_name"].tolist()
-    df = df[df["rmsd"] <= 10]
+    #df = df[df["rmsd"] <= 10]
     df.to_csv(os.path.join(root, "..", "processed", "alignment_relaxed_rmsd_data.csv"), index=False)
     # We don't remove structures here -all RMSDs 'should' be really low
     # I manually checked, there's nothing > 10
