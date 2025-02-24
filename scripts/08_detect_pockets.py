@@ -105,8 +105,11 @@ detected_pockets_dir = os.path.abspath(os.path.join(root, "..", "processed", "de
 # Load alignment RMSD data
 alignment_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "processed", "alignment_relaxed_rmsd_data.csv")))
 
+# Create report
+report = []
+
 # Iterate over Uniprot ACs
-for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"], alignment_df["file_name"]):
+for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"][:13], alignment_df["file_name"]):
 
     print("---------------  Detecting pockets in: " + uniprot_ac + ", " + file_name + "  -------------")
     
@@ -117,7 +120,7 @@ for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"], alignment_df["file_
     detect_pockets(os.path.join(aligned_dir, uniprot_ac, file_name), 
                    os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", "")))
 
-    # Get pocket centroids, scores and probabilities
+    # Get pocket centroids, scores, probabilities and residues involved
     pocket_centroids = extract_pocket_centers(os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), file_name + "_predictions.csv"))
     pocket_scores = extract_pocket_scores(os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), file_name + "_predictions.csv"))
     pocket_probabilities = extract_pocket_probabilities(os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), file_name + "_predictions.csv"))
@@ -127,12 +130,17 @@ for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"], alignment_df["file_
     K = 3  # TOP-K
     pockets_to_consider = set([i for i in sorted(pocket_centroids) if i < K or pocket_probabilities[i] >= P])
 
-    print(pocket_centroids, pocket_scores, pocket_probabilities, pockets_to_consider)
-
     # Create a single PDB file per detected pocket
     write_pocket_pdbs(pockets_to_consider, pocket_centroids, os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), "pockets"))
 
-    
+    # Save results
+    for ptc in sorted(pockets_to_consider):
+        report.append([uniprot_ac, file_name, os.path.join("/".join(aligned_dir.split("/")[-2:]), uniprot_ac, file_name), ptc, 
+            pocket_scores[ptc], pocket_probabilities[ptc], "_".join([str(cent) for cent in pocket_centroids[ptc]])])
 
+    # CAUTION: add pLDDT?
 
-    break
+    print("---------------  Pockets detected in: " + uniprot_ac + ", " + file_name + "   -------------")
+
+report = pd.DataFrame(report, columns=['Uniprot AC', 'File name', 'Full path', 'Pocket number', 'Pocket score', 'Pocket probability', 'Pocket centroid coordinate (x_y_z)'])
+report.to_csv(os.path.abspath(os.path.join(root, "..", "processed", "pocket_detection_data.csv")), index=False)
