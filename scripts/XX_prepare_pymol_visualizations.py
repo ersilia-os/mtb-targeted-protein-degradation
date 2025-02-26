@@ -7,9 +7,10 @@ cmd.feedback("disable", "all", "everything")  # Disables all output, comment thi
 def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets):
 
     # Define some colors
-    COLOR_REFERENCE = 'blue'
+    COLOR_REFERENCE = 'wheat'
     COLOR_ALIGNED = 'grey'
-    COLOR_POCKETS = 'orange'
+    COLOR_POCKET_RESIDUES = 'orange'
+    COLOR_POCKET_SPHERES = 'skyblue'
 
     # Initialize PyMOL
     cmd.reinitialize()
@@ -27,13 +28,13 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
     cmd.do("set sphere_scale, 2")
 
     # Load all structures
-    for st in reference + structures:
+    for st in [reference] + structures:
 
         # Load structure
         cmd.load(os.path.join(directory, f"{st}.pdb"), st)
 
         # Color reference structure differently
-        if st == reference[0]:  
+        if st == reference:  
             cmd.color(COLOR_REFERENCE, st)
             cmd.show("cartoon", st)
             cmd.show("surface", st)  
@@ -44,21 +45,35 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
 
 
     # Load all detected pockets:
-    for st in reference + structures:
+    for st in [reference] + structures:
 
-        # Get pockets
-        pockets_to_consider = alignment_df[(alignment_df['Uniprot AC'] == uni) & (alignment_df['File name'] == f"{st}.pdb")]['Pocket number'].tolist()
+        # Get a dict mapping pocket number to pocket residues
+        pocket_to_residues = alignment_df[(alignment_df['Uniprot AC'] == uni) & (alignment_df['File name'] == f"{st}.pdb")][['Pocket number', 'Pocket residues']]
+        pocket_to_residues = {i:j for i,j in zip(pocket_to_residues['Pocket number'], pocket_to_residues['Pocket residues'])}
 
         # Load pockets
-        for ptc in sorted(pockets_to_consider):
+        for ptc in sorted(pocket_to_residues):
 
             # Load pocket
             cmd.load(os.path.join(detected_pockets, uni, st, "pockets", f"pocket_{ptc}.pdb"), f"pocket_{ptc}_{st}")
 
             # Color reference structure differently
-            if st == reference[0]:  
-                cmd.color(COLOR_POCKETS, f"pocket_{ptc}_{st}")
+            if st == reference:  
+                cmd.color(COLOR_POCKET_SPHERES, f"pocket_{ptc}_{st}")
                 cmd.show("spheres", f"pocket_{ptc}_{st}")  
+
+                # Color pockets
+                pocket_residues = pocket_to_residues[ptc].split()
+
+                # Create a selection string for PyMOL
+                selection_str = " or ".join([f"resi {res.split('_')[1]} and chain {res.split('_')[0]}" for res in pocket_residues])
+
+                # Apply color to the residues in the reference structure
+                if selection_str:
+                    cmd.select(f"pocket_residues_{ptc}_{st}", selection_str)
+                    cmd.color(COLOR_POCKET_RESIDUES, f"pocket_residues_{ptc}_{st}")
+                    # cmd.show("sticks", f"pocket_residues_{ptc}_{st}")  # Show sticks representation
+
             else:
                 cmd.color(COLOR_ALIGNED, f"pocket_{ptc}_{st}")
                 # cmd.show("spheres", f"pocket_{ptc}_{st}")
@@ -91,7 +106,7 @@ for uni in uniprots:
     directory = os.path.join(aligned_relaxed_dir, uni)
 
     # Get reference
-    reference = [st.replace(".pdb", "") for st in sorted(os.listdir(directory)) if "alphafold2" in st]
+    reference = [st.replace(".pdb", "") for st in sorted(os.listdir(directory)) if "alphafold2" in st][0]
 
     # Get all the other structures, but not the reference
     structures = [st.replace(".pdb", "") for st in sorted(os.listdir(directory)) if "alphafold2" not in st]
