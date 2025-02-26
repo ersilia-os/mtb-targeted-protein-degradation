@@ -75,6 +75,19 @@ def extract_pocket_probabilities(csv_file):
 
     return {int(row["rank"]): row["probability"] for _, row in df.iterrows()}
 
+def extract_pocket_residues(csv_file):
+    """
+    Reads a P2Rank output CSV file and maps pocket number (rank) to its associated residue IDs.
+
+    :param csv_file: Path to the P2Rank output CSV file
+    :return: Dictionary mapping pocket number to a list of residue IDs
+    """
+    df = pd.read_csv(csv_file)
+    df.columns = df.columns.str.strip()
+
+    return {int(row["rank"]): row["residue_ids"].split() for _, row in df.iterrows()}
+
+
 
 def write_pocket_pdbs(pockets_to_consider, pocket_dict, output_dir):
     """
@@ -96,9 +109,63 @@ def write_pocket_pdbs(pockets_to_consider, pocket_dict, output_dir):
                 )
                 pdb_file.write("END\n")
 
+def get_protein_prediction_type(file_name):
+    """
+    Determines the protein structure prediction type based on the file name.
+
+    :param file_name: Name of the PDB file
+    :return: String indicating the prediction type ('alphafold2', 'alphafold3', 'chai1', 'swissmodel', or 'unknown')
+    """
+    file_name = file_name.lower()  # Convert to lowercase for case insensitivity
+
+    if "alphafold2" in file_name or "af2" in file_name:
+        return "alphafold2"
+    elif "alphafold3" in file_name or "af3" in file_name:
+        return "alphafold3"
+    elif "chai1" in file_name:  # Strictly check for "chai1"
+        return "chai1"
+    elif "swissmodel" in file_name:
+        return "swissmodel"
+    else:
+        return "unknown"  # If no match is found
+
+def extract_residue_confidence_mapping(pdb_file, prediction_type):
+    """
+    Extracts a mapping of residue numbers to confidence values from a PDB file.
+    
+    Assumes confidence values are stored in the B-factor column.
+
+    :param pdb_file: Path to the PDB file.
+    :param prediction_type: Prediction type ('alphafold2', 'alphafold3', 'chai1', 'swissmodel'). At this moment, we're not using this parameter.
+    :return: Dictionary mapping residue numbers (int) to confidence values (float).
+    
+    alphafold2: pLDDT per residue
+    alphafold3: pLDDT per atom (we consider the minimum per residue)
+    chai-1: equivalent to alphafold3
+    swissmodel: local confidence scores - https://swissmodel.expasy.org/docs/help#qmean
+
+    """
+
+    res_num_to_conf = {}
+
+    with open(pdb_file, "r") as file:
+        for line in file:
+            if line.startswith("ATOM"):  # Only process atomic coordinate lines
+                residue_number = int(line[22:26].strip())  # Extract residue ID
+                confidence_value = float(line[60:66].strip())  # Extract B-factor (confidence score)
+
+                # Store the highest confidence value per residue (in case of multiple atoms per residue)
+                if residue_number not in res_num_to_conf:
+                    res_num_to_conf[residue_number] = confidence_value
+                else:
+                    res_num_to_conf[residue_number] = min(res_num_to_conf[residue_number], confidence_value)
+
+    return res_num_to_conf  # { residue_number: confidence_value }
+
 
 # Define paths
 root = os.path.dirname(os.path.abspath(__file__))
+original_structures_dir = os.path.abspath(os.path.join(root, "..", "processed", "structures"))  # We need original structures to get the confidence values
 aligned_dir = os.path.abspath(os.path.join(root, "..", "processed", "aligned_relaxed_structures"))
 detected_pockets_dir = os.path.abspath(os.path.join(root, "..", "processed", "detected_pockets"))
 
@@ -124,6 +191,7 @@ for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"][:13], alignment_df["
     pocket_centroids = extract_pocket_centers(os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), file_name + "_predictions.csv"))
     pocket_scores = extract_pocket_scores(os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), file_name + "_predictions.csv"))
     pocket_probabilities = extract_pocket_probabilities(os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), file_name + "_predictions.csv"))
+    pocket_residues = extract_pocket_residues(os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), file_name + "_predictions.csv"))
 
     # Select only a limited number of pockets - check https://github.com/rdk/p2rank/issues/76
     P = 0.2  # probability
@@ -133,14 +201,19 @@ for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"][:13], alignment_df["
     # Create a single PDB file per detected pocket
     write_pocket_pdbs(pockets_to_consider, pocket_centroids, os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), "pockets"))
 
+    # Get protein structure prediction type
+    prediction_type = get_protein_prediction_type(file_name)
+
+    # Get pocket residue confidence scores - assumes bfactors are confidence scores
+    residues_confidence = extract_residue_confidence_mapping(os.path.join(original_structures_dir, uniprot_ac, file_name), prediction_type)
+
     # Save results
     for ptc in sorted(pockets_to_consider):
-        report.append([uniprot_ac, file_name, os.path.join("/".join(aligned_dir.split("/")[-2:]), uniprot_ac, file_name), ptc, 
-            pocket_scores[ptc], pocket_probabilities[ptc], "_".join([str(cent) for cent in pocket_centroids[ptc]])])
-
-    # CAUTION: add pLDDT?
+        report.append([uniprot_ac, file_name, prediction_type, os.path.join("/".join(aligned_dir.split("/")[-2:]), uniprot_ac, file_name), ptc, 
+            pocket_scores[ptc], pocket_probabilities[ptc], " ".join([str(cent) for cent in pocket_centroids[ptc]]), " ".join(pocket_residues[ptc]),
+            " ".join([str(residues_confidence[int(j.split("_")[1])]) for j in pocket_residues[ptc]])])
 
     print("---------------  Pockets detected in: " + uniprot_ac + ", " + file_name + "   -------------")
 
-report = pd.DataFrame(report, columns=['Uniprot AC', 'File name', 'Full path', 'Pocket number', 'Pocket score', 'Pocket probability', 'Pocket centroid coordinate (x_y_z)'])
+report = pd.DataFrame(report, columns=['Uniprot AC', 'File name', 'Prediction type', 'Full path', 'Pocket number', 'Pocket score', 'Pocket probability', 'Pocket centroid coordinate (x y z)', 'Pocket residues', 'B-factors'])
 report.to_csv(os.path.abspath(os.path.join(root, "..", "processed", "pocket_detection_data.csv")), index=False)
