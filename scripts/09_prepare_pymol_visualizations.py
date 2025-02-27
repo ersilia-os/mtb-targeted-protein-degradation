@@ -48,8 +48,8 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
     for st in [reference] + structures:
 
         # Get a dict mapping pocket number to pocket residues
-        pocket_to_residues = alignment_df[(alignment_df['Uniprot AC'] == uni) & (alignment_df['File name'] == f"{st}.pdb")][['Pocket number', 'Pocket residues']]
-        pocket_to_residues = {i:j for i,j in zip(pocket_to_residues['Pocket number'], pocket_to_residues['Pocket residues'])}
+        pocket_to_residues = alignment_df[(alignment_df['Uniprot AC'] == uni) & (alignment_df['File name'] == f"{st}.pdb")][['Pocket number', 'Pocket residues (chain_resn)']]
+        pocket_to_residues = {i:j for i,j in zip(pocket_to_residues['Pocket number'], pocket_to_residues['Pocket residues (chain_resn)'])}
 
         # Load pockets
         for ptc in sorted(pocket_to_residues):
@@ -66,13 +66,14 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
                 pocket_residues = pocket_to_residues[ptc].split()
 
                 # Create a selection string for PyMOL
-                selection_str = " or ".join([f"resi {res.split('_')[1]} and chain {res.split('_')[0]}" for res in pocket_residues])
+                selection_str = " or ".join([f"resi {res.split('_')[1]} and chain {res.split('_')[0]} and model {reference}" 
+                                 for res in pocket_residues])
 
                 # Apply color to the residues in the reference structure
-                if selection_str:
-                    cmd.select(f"pocket_residues_{ptc}_{st}", selection_str)
-                    cmd.color(COLOR_POCKET_RESIDUES, f"pocket_residues_{ptc}_{st}")
-                    # cmd.show("sticks", f"pocket_residues_{ptc}_{st}")  # Show sticks representation
+                cmd.select(f"pocket_residues_{ptc}_{st}", selection_str)
+                cmd.color(COLOR_POCKET_RESIDUES, f"pocket_residues_{ptc}_{st}")
+                # cmd.show("sticks", f"pocket_residues_{ptc}_{st}")  # Show sticks representation
+                cmd.delete(f"pocket_residues_{ptc}_{st}")
 
             else:
                 cmd.color(COLOR_ALIGNED, f"pocket_{ptc}_{st}")
@@ -117,7 +118,3 @@ for uni in uniprots:
     prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets)
 
     print(f" -------------- PyMOL session for {uni} created  ---------------  ")
-
-
-    break
-
