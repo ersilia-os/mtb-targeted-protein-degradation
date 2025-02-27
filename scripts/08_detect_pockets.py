@@ -176,7 +176,7 @@ alignment_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "processed",
 report = []
 
 # Iterate over Uniprot ACs
-for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"][:13], alignment_df["file_name"]):
+for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"], alignment_df["file_name"]):
 
     print("---------------  Detecting pockets in: " + uniprot_ac + ", " + file_name + "  -------------")
     
@@ -198,14 +198,31 @@ for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"][:13], alignment_df["
     K = 3  # TOP-K
     pockets_to_consider = set([i for i in sorted(pocket_centroids) if i < K or pocket_probabilities[i] >= P])
 
-    # Create a single PDB file per detected pocket
-    write_pocket_pdbs(pockets_to_consider, pocket_centroids, os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), "pockets"))
-
     # Get protein structure prediction type
     prediction_type = get_protein_prediction_type(file_name)
 
     # Get pocket residue confidence scores - assumes bfactors are confidence scores
     residues_confidence = extract_residue_confidence_mapping(os.path.join(original_structures_dir, uniprot_ac, file_name), prediction_type)
+
+    # Define minimum confidence value for a pocket to be considered
+    if prediction_type in ['alphafold2', 'alphafold3', 'chai1']:
+        MIN = 65
+    elif prediction_type in ['swissmodel']:
+        MIN = 0.65
+
+    # Keep only those pockets with a MIN confidence value above threshold
+    filtered_pockets = set()
+    for pocket in sorted(pockets_to_consider):
+        residues = [int(res.split("_")[1]) for res in pocket_residues[pocket]]
+        confidence = [residues_confidence[i] for i in residues]
+        if min(confidence) >= MIN:
+            filtered_pockets.add(pocket)
+
+    pockets_to_consider = filtered_pockets
+
+
+    # Create a single PDB file per detected pocket
+    write_pocket_pdbs(pockets_to_consider, pocket_centroids, os.path.join(detected_pockets_dir, uniprot_ac, file_name.replace(".pdb", ""), "pockets"))
 
     # Save results
     for ptc in sorted(pockets_to_consider):
@@ -215,5 +232,5 @@ for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"][:13], alignment_df["
 
     print("---------------  Pockets detected in: " + uniprot_ac + ", " + file_name + "   -------------")
 
-report = pd.DataFrame(report, columns=['Uniprot AC', 'File name', 'Prediction type', 'Full path', 'Pocket number', 'Pocket score', 'Pocket probability', 'Pocket centroid coordinate (x y z)', 'Pocket residues', 'B-factors'])
+report = pd.DataFrame(report, columns=['Uniprot AC', 'File name', 'Prediction type', 'Full path', 'Pocket number', 'Pocket score', 'Pocket probability', 'Pocket centroid coordinate (x y z)', 'Pocket residues (chain_resn)', 'B-factors'])
 report.to_csv(os.path.abspath(os.path.join(root, "..", "processed", "pocket_detection_data.csv")), index=False)
