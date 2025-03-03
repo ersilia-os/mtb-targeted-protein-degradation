@@ -4,13 +4,14 @@ import pandas as pd
 from pymol import cmd
 cmd.feedback("disable", "all", "everything")  # Disables all output, comment this if something doesn't go as expected
 
-def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets):
+def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets, interpro_data):
 
     # Define some colors
     COLOR_REFERENCE = 'wheat'
     COLOR_ALIGNED = 'grey'
     COLOR_POCKET_RESIDUES = 'orange'
     COLOR_POCKET_SPHERES = 'skyblue'
+    COLOR_SEQ = 'red'
 
     # Initialize PyMOL
     cmd.reinitialize()
@@ -80,6 +81,13 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
                 # cmd.show("spheres", f"pocket_{ptc}_{st}")
                 cmd.disable(f"pocket_{ptc}_{st}")
 
+    # Load sequence features from interpro
+    for interpro in interpro_data:
+
+        # Load structure
+        cmd.load(os.path.join(directory, f"{reference}.pdb"), interpro)
+
+
 
     # Save PyMOL session
     cmd.reset()
@@ -100,6 +108,7 @@ os.makedirs(pymol_sessions, exist_ok=True)
 alignment_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "processed", "pocket_detection_data.csv")))
 uniprots = sorted(set(alignment_df["Uniprot AC"]))
 
+
 # For each uniprot
 for uni in uniprots:
 
@@ -112,9 +121,18 @@ for uni in uniprots:
     # Get all the other structures, but not the reference
     structures = [st.replace(".pdb", "") for st in sorted(os.listdir(directory)) if "alphafold2" not in st]
 
+    # Get sequence data - dict mapping Interpro ID to residues
+    seqdata_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "data", "sequences", "interpro", f"entry-matching-{uni}.tsv")), sep="\t")
+    seqdata_df = seqdata_df[seqdata_df['Source Database'] == "interpro"]
+    interpro_data = {i: [k.split("..") for k in j.split(",")] for i,j in zip(seqdata_df["Accession"], seqdata_df["Matches"])}
+
+    print(interpro_data)
+
     print(f" -------------- Creating PyMOL session for {uni}  --------------  ")
 
     # Create pymol session
-    prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets)
+    prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets, interpro_data)
 
     print(f" -------------- PyMOL session for {uni} created  ---------------  ")
+
+    break
