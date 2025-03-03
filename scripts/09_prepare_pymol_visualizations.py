@@ -86,7 +86,16 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
 
         # Load structure
         cmd.load(os.path.join(directory, f"{reference}.pdb"), interpro)
+        cmd.hide("cartoon", interpro)
+        cmd.show("surface", interpro)
+        cmd.color("white", interpro)
 
+        # Color residues accordingly
+        red_residues = [str(res) for start, end in interpro_data[interpro] for res in range(int(start), int(end) + 1)]
+        selection = f"{interpro} and resi " + "+".join(red_residues)
+        cmd.select("selected_residues", selection)
+        cmd.color("red", "selected_residues")
+        cmd.disable(f"{interpro}")
 
 
     # Save PyMOL session
