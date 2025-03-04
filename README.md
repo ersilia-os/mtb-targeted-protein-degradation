@@ -65,6 +65,8 @@ The multiple struture files were organized in the [processed data subfolder](pro
 
 Then, we prepared these structures for docking with protein protonation with PDB2PQR and relaxation with PyRosetta using the `scripts/04_relax_structures.py` script. This procedure is computationally intensive. 
 
+Afterwards, structures are aligned again with the `scripts/05_align_relaxed_structures.py` script, using their unrelaxed counterparts as reference for all the alignments. At this stage, no structures were removed, even those with high RMSD against the unrelaxed structures. 
+
 #### Sequence data
 
 We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/05_sequence_annotation.py` script.
@@ -87,6 +89,12 @@ An aggregated file containing one row per processed structure is available [here
 | `coverage`             | Percentage sequence coverage                                                                           |
 | `sequence_structure`   | Sequence found in the PDB file                                                                         |
 | `full_sequence`        | Sequence found in UniProt                                                                              |
+
+#### Pocket detection
+
+After the complete structural and sequential characterization of tRNA synthetases, we detected pockets in AF2, AF3, Chai-1 and SwissModel predicted models. Following the [authors recommendations](https://github.com/rdk/p2rank/issues/76): for each structure, we considered detected pockets as those with a probability (K) > 0.2, but at least Top-3 (N) per structure. After that, we filtered those pockets having at least one residue with pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel), discarding about 25-30% of the pockets. Cut-offs are arbitrary; usual recommendations are 70 & 0.7, we’ve been slightly less restrictive.
+
+A summary file containing one row per detected pocket and 
 
 
 ## About the Ersilia Open Source Initiative
