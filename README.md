@@ -124,7 +124,7 @@ Each PyMOL session (one per protein) includes the following elements:
 | **Residues defining each pocket in AF2**         | Orange color, surface + cartoon representation                                              | ✅ Yes       |
 | **Aligned structures (all but AF2)**             | Gray color, cartoon representation                                                          | ❌ No        |
 | **Pockets detected in aligned structures**       | Gray-colored points                                                                         | ❌ No        |
-| **InterPro annotations**                         | Includes conserved sites, domains, families, and homologous superfamilies                   | ❌ No        | 
+| **InterPro annotations**                         | Includes conserved sites, domains, families, homologous superfamilies etc (red color, surface representation) | ❌ No        |
 
 
 ## About the Ersilia Open Source Initiative
