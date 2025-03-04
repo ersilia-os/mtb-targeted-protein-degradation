@@ -96,6 +96,7 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
         cmd.select("selected_residues", selection)
         cmd.color("red", "selected_residues")
         cmd.disable(f"{interpro}")
+        cmd.delete("selected_residues")
 
 
     # Save PyMOL session

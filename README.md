@@ -94,7 +94,37 @@ An aggregated file containing one row per processed structure is available [here
 
 After the complete structural and sequential characterization of tRNA synthetases, we detected pockets in AF2, AF3, Chai-1 and SwissModel predicted models. Following the [authors recommendations](https://github.com/rdk/p2rank/issues/76): for each structure, we considered detected pockets as those with a probability (K) > 0.2, but at least Top-3 (N) per structure. After that, we filtered those pockets having at least one residue with pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel), discarding about 25-30% of the pockets. Cut-offs are arbitrary; usual recommendations are 70 & 0.7, we’ve been slightly less restrictive.
 
-A summary file containing one row per detected pocket and 
+A summary file containing one row per detected pocket and structure is available [here](/processed/pocket_detection_data.csv). This file contains the following information:
+
+| **Field**                          | **Description**                                                    |
+|-------------------------------------|--------------------------------------------------------------------|
+| `Uniprot_AC`                       | Uniprot AC identifier file                                        |
+| `File name`                         | PDB file in which pockets have been detected                     |
+| `Prediction type`                   | The method used for protein structure prediction                 |
+| `Full path`                         | The full directory path where the PDB file is stored             |
+| `Pocket number`                     | The identified pocket number within the structure                 |
+| `Pocket score`                      | The score assigned to the detected pocket                        |
+| `Pocket probability`                | The probability value indicating confidence in pocket detection  |
+| `Pocket centroid coordinate (x y z)` | The (x, y, z) coordinates of the pocket’s centroid               |
+| `Pocket residues (chain_resn)`      | List of residues forming the pocket, with chain and residue number |
+| `B-factors`                         | Confidence measures: pLDDT (AF2, AF3, Chai) or QSQE (SM)           |
+
+#### Pymol visualization
+
+#### Pymol visualization  
+
+PyMOL session files (`.pse`) have been prepared to facilitate the visualization of detected pockets and their corresponding residues. These were generated using the `scripts/09_prepare_pymol_visualizations.py` script as step 09 in the pipeline.  
+
+Each PyMOL session (one per protein) includes the following elements:  
+
+| **Element**                                      | **Description**                                                                                  | **Displayed?** |
+|-------------------------------------------------|----------------------------------------------------------------------------------------------|--------------|
+| **Reference structure (AF2)**                    | Wheat color, surface + cartoon representation                                                | ✅ Yes       |
+| **Pockets detected in reference structure (AF2)** | Sky-blue spheres with arbitrary size (pocket detection provides a single 3D coordinate)      | ✅ Yes       |
+| **Residues defining each pocket in AF2**         | Orange color, surface + cartoon representation                                              | ✅ Yes       |
+| **Aligned structures (all but AF2)**             | Gray color, cartoon representation                                                          | ❌ No        |
+| **Pockets detected in aligned structures**       | Gray-colored points                                                                         | ❌ No        |
+| **InterPro annotations**                         | Includes conserved sites, domains, families, and homologous superfamilies                   | ❌ No        | 
 
 
 ## About the Ersilia Open Source Initiative
