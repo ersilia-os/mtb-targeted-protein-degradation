@@ -109,8 +109,6 @@ A summary file containing one row per detected pocket and structure is available
 | `Pocket residues (chain_resn)`      | List of residues forming the pocket, with chain and residue number |
 | `B-factors`                         | Confidence measures: pLDDT (AF2, AF3, Chai) or QSQE (SM)           |
 
-#### Pymol visualization
-
 #### Pymol visualization  
 
 PyMOL session files (`.pse`) have been prepared to facilitate the visualization of detected pockets and their corresponding residues. These were generated using the `scripts/09_prepare_pymol_visualizations.py` script as step 09 in the pipeline.  
