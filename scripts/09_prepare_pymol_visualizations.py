@@ -4,7 +4,7 @@ import pandas as pd
 from pymol import cmd
 cmd.feedback("disable", "all", "everything")  # Disables all output, comment this if something doesn't go as expected
 
-def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets, interpro_data):
+def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets, interpro_matches, interpro_names):
 
     # Define some colors
     COLOR_REFERENCE = 'wheat'
@@ -27,6 +27,7 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
     cmd.do("set spec_reflect, 0")
     cmd.do("set transparency, 0.1")  
     cmd.do("set sphere_scale, 2")
+    cmd.do("set internal_gui_width, 400")
 
     # Load all structures
     for st in [reference] + structures:
@@ -82,20 +83,23 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
                 cmd.disable(f"pocket_{ptc}_{st}")
 
     # Load sequence features from interpro
-    for interpro in interpro_data:
+    for interpro in interpro_matches:
+
+        # Prepare name to display in the pymol session
+        name = ''.join(i if i.isalnum() else "_" for i in interpro_names[interpro])
 
         # Load structure
-        cmd.load(os.path.join(directory, f"{reference}.pdb"), interpro)
-        cmd.hide("cartoon", interpro)
-        cmd.show("surface", interpro)
-        cmd.color("white", interpro)
+        cmd.load(os.path.join(directory, f"{reference}.pdb"), name)
+        cmd.hide("cartoon", name)
+        cmd.show("surface", name)
+        cmd.color("white", name)
 
         # Color residues accordingly
-        red_residues = [str(res) for start, end in interpro_data[interpro] for res in range(int(start), int(end) + 1)]
-        selection = f"{interpro} and resi " + "+".join(red_residues)
+        red_residues = [str(res) for start, end in interpro_matches[interpro] for res in range(int(start), int(end) + 1)]
+        selection = f"{name} and resi " + "+".join(red_residues)
         cmd.select("selected_residues", selection)
         cmd.color("red", "selected_residues")
-        cmd.disable(f"{interpro}")
+        cmd.disable(f"{name}")
         cmd.delete("selected_residues")
 
 
@@ -134,11 +138,12 @@ for uni in uniprots:
     # Get sequence data - dict mapping Interpro ID to residues
     seqdata_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "data", "sequences", "interpro", f"entry-matching-{uni}.tsv")), sep="\t")
     seqdata_df = seqdata_df[seqdata_df['Source Database'] == "interpro"]
-    interpro_data = {i: [k.split("..") for k in j.split(",")] for i,j in zip(seqdata_df["Accession"], seqdata_df["Matches"])}
+    interpro_matches = {i: [k.split("..") for k in j.split(",")] for i,j in zip(seqdata_df["Accession"], seqdata_df["Matches"])}
+    interpro_names = {i: j for i,j in zip(seqdata_df["Accession"], seqdata_df["Name"])}
 
     print(f" -------------- Creating PyMOL session for {uni}  --------------  ")
 
     # Create pymol session
-    prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets, interpro_data)
+    prepare_pymol_session(uni, directory, reference, structures, pymol_sessions, alignment_df, detected_pockets, interpro_matches, interpro_names)
 
     print(f" -------------- PyMOL session for {uni} created  ---------------  ")
