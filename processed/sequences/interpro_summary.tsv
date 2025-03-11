@@ -1,130 +1,130 @@
 Accession	Name	Type	Number of proteins	Average Coverage	Proteins	Protein Coverages	P9WFS9	P9WFT1	P9WFT3	P9WFT5	P9WFT7	P9WFT9	P9WFU1	P9WFU3	P9WFU5	P9WFU9	P9WFV1	P9WFV3	P9WFV5	P9WFV7	P9WFV9	P9WFW1	P9WFW3	P9WFW5	P9WFW7	P9WN61	P9WQA1
-IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	homologous_superfamily	10	0.66	P9WFT5,P9WFT7,P9WFT9,P9WFU1,P9WFU3,P9WFU9,P9WFV5,P9WFV7,P9WFW3,P9WFW7	0.465,0.747,0.838,0.296,0.962,0.695,0.749,0.784,0.793,0.273	0	0	0	1	1	1	1	1	0	1	0	0	1	1	0	0	1	0	1	0	0
-IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	homologous_superfamily	9	0.559	P9WFS9,P9WFT1,P9WFT3,P9WFU5,P9WFV1,P9WFV3,P9WFV9,P9WFW1,P9WFW5	0.495,0.521,0.961,0.638,0.284,0.442,0.492,0.646,0.549	1	1	1	0	0	0	0	0	1	0	1	1	0	0	1	1	0	1	0	0	0
-IPR006195	Aminoacyl-tRNA synthetase, class II	domain	8	0.667	P9WFT5,P9WFT7,P9WFT9,P9WFU3,P9WFU9,P9WFV5,P9WFV7,P9WFW3	0.461,0.64,0.765,0.648,0.64,0.709,0.771,0.704	0	0	0	1	1	1	0	1	0	1	0	0	1	1	0	0	1	0	0	0	0
-IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	conserved_site	7	0.017	P9WFS9,P9WFT1,P9WFT3,P9WFU5,P9WFV1,P9WFV3,P9WFW5	0.012,0.024,0.03,0.017,0.01,0.011,0.016	1	1	1	0	0	0	0	0	1	0	1	1	0	0	0	0	0	1	0	0	0
-IPR009080	Aminoacyl-tRNA synthetase, class Ia, anticodon-binding	homologous_superfamily	6	0.253	P9WFS9,P9WFU5,P9WFV1,P9WFV3,P9WFW1,P9WFW5	0.274,0.306,0.193,0.215,0.301,0.231	1	0	0	0	0	0	0	0	1	0	1	1	0	0	0	1	0	1	0	0	0
-IPR036621	Anticodon-binding domain superfamily	homologous_superfamily	4	0.194	P9WFT5,P9WFT9,P9WFV5,P9WFV7	0.159,0.184,0.227,0.207	0	0	0	1	0	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0
-IPR004154	Anticodon-binding	domain	4	0.164	P9WFT5,P9WFT9,P9WFV5,P9WFV7	0.129,0.129,0.208,0.19	0	0	0	1	0	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0
-IPR002314	Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)	domain	4	0.433	P9WFT5,P9WFT7,P9WFT9,P9WFV7	0.298,0.42,0.644,0.369	0	0	0	1	1	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
-IPR012340	Nucleic acid-binding, OB-fold	homologous_superfamily	3	0.216	P9WFU1,P9WFU9,P9WFW3	0.184,0.281,0.182	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	1	0	0	0	0
-IPR009008	Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain	homologous_superfamily	3	0.181	P9WFS9,P9WFV1,P9WFV3	0.164,0.201,0.178	1	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0
-IPR013155	Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding	domain	3	0.137	P9WFS9,P9WFV1,P9WFV3	0.157,0.119,0.134	1	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0
-IPR010978	Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm	homologous_superfamily	3	0.194	P9WFS9,P9WFT7,P9WFU3	0.072,0.263,0.246	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002300	Aminoacyl-tRNA synthetase, class Ia	domain	2	0.609	P9WFS9,P9WFV3	0.614,0.605	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
-IPR004364	Aminoacyl-tRNA synthetase, class II (D/K/N)	domain	2	0.71	P9WFU9,P9WFW3	0.679,0.741	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0
-IPR004365	OB-fold nucleic acid binding domain, AA-tRNA synthetase-type	domain	2	0.146	P9WFU9,P9WFW3	0.15,0.143	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0
-IPR012947	Threonyl/alanyl tRNA synthetase, SAD	domain	2	0.065	P9WFT5,P9WFW7	0.081,0.049	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR002305	Aminoacyl-tRNA synthetase, class Ic	family	2	0.768	P9WFT1,P9WFT3	0.696,0.839	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR015413	Methionyl/Leucyl tRNA synthetase	domain	2	0.388	P9WFU5,P9WFV1	0.667,0.11	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0
-IPR018163	Threonyl/alanyl tRNA synthetase, class II-like, putative editing domain superfamily	homologous_superfamily	2	0.217	P9WFT5,P9WFW7	0.272,0.162	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR000120	Amidase	family	1	0.976	P9WQA1	0.976	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
-IPR002317	Serine-tRNA ligase, type1	family	1	0.993	P9WFT7	0.993	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002942	RNA-binding S4 domain	domain	1	0.144	P9WFT1	0.144	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002316	Proline-tRNA ligase, class IIa	family	1	0.082	P9WFT9	0.082	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002315	Glycyl-tRNA synthetase	family	1	0.495	P9WFV7	0.495	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
-IPR002318	Alanine-tRNA ligase, class IIc	family	1	0.968	P9WFW7	0.968	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR002303	Valine-tRNA ligase	family	1	0.988	P9WFS9	0.988	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002306	Tryptophan-tRNA ligase	family	1	0.97	P9WFT3	0.97	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002312	Aspartyl/Asparaginyl-tRNA synthetase, class IIb	family	1	0.093	P9WFW3	0.093	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
-IPR002307	Tyrosine-tRNA ligase	family	1	0.976	P9WFT1	0.976	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002313	Lysine-tRNA ligase, class II	family	1	0.972	P9WFU9	0.972	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-IPR002319	Phenylalanyl-tRNA synthetase	domain	1	0.701	P9WFU3	0.701	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002320	Threonine-tRNA ligase, class IIa	family	1	0.861	P9WFT5	0.861	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR000924	Glutamyl/glutaminyl-tRNA synthetase	family	1	0.11	P9WFV9	0.11	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR004500	Prolyl-tRNA synthetase, class IIa, bacterial-type	family	1	0.966	P9WFT9	0.966	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR004413	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase subunit B	family	1	0.949	P9WN61	0.949	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR004412	Glutamyl-tRNA(Gln) amidotransferase A subunit	family	1	0.964	P9WQA1	0.964	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
-IPR004188	Phenylalanine-tRNA ligase, class II, N-terminal	domain	1	0.196	P9WFU3	0.196	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR004115	GAD-like domain superfamily	homologous_superfamily	1	0.234	P9WFW3	0.234	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
-IPR003156	DHHA1 domain	domain	1	0.157	P9WFW7	0.157	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR003789	Aspartyl/glutamyl-tRNA amidotransferase subunit B-like	homologous_superfamily	1	0.285	P9WN61	0.285	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR004095	TGS	domain	1	0.105	P9WFT5	0.105	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002547	tRNA-binding domain	domain	1	0.134	P9WFU1	0.134	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR005147	tRNA synthetase, B5-domain	domain	1	0.09	P9WFU1	0.09	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR004516	Histidine-tRNA ligase/ATP phosphoribosyltransferase regulatory subunit	family	1	0.988	P9WFV5	0.988	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
-IPR004524	Aspartate-tRNA ligase, type 1	family	1	0.985	P9WFW3	0.985	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
-IPR004532	Phenylalanine-tRNA ligase, class IIc, beta subunit, bacterial type	family	1	0.998	P9WFU1	0.998	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR005121	Ferrodoxin-fold anticodon-binding domain	domain	1	0.112	P9WFU1	0.112	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR004527	Glutamate-tRNA ligase, bacterial/mitochondrial	family	1	0.976	P9WFV9	0.976	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR004529	Phenylalanyl-tRNA synthetase, class IIc, alpha subunit	family	1	0.833	P9WFU3	0.833	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR009000	Translation protein, beta-barrel domain superfamily	homologous_superfamily	1	0.123	P9WFW7	0.123	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR008925	Aminoacyl-tRNA synthetase, class I, anticodon-binding superfamily	homologous_superfamily	1	0.333	P9WFV9	0.333	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR008909	DALR anticodon binding	domain	1	0.22	P9WFW5	0.22	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-IPR007214	YbaK/aminoacyl-tRNA synthetase-associated domain	domain	1	0.184	P9WFT9	0.184	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR005148	Arginyl tRNA synthetase N-terminal domain	domain	1	0.162	P9WFW5	0.162	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-IPR006075	Aspartyl/Glutamyl-tRNA(Gln) amidotransferase, subunit B/E, catalytic	domain	1	0.576	P9WN61	0.576	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR005146	B3/B4 tRNA-binding domain	domain	1	0.208	P9WFU1	0.208	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR009061	Putative DNA-binding domain superfamily	homologous_superfamily	1	0.087	P9WFU1	0.087	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR014746	Glutamine synthetase/guanido kinase, catalytic domain	homologous_superfamily	1	0.591	P9WN61	0.591	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR014758	Methionyl-tRNA synthetase	family	1	0.923	P9WFU5	0.923	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
-IPR015273	Cysteinyl-tRNA synthetase, class Ia, DALR	domain	1	0.13	P9WFW1	0.13	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
-IPR015803	Cysteine-tRNA ligase	family	1	0.974	P9WFW1	0.974	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
-IPR015807	Histidine-tRNA ligase	family	1	0.981	P9WFV5	0.981	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
-IPR002301	Isoleucine-tRNA ligase	family	1	0.801	P9WFV3	0.801	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
-IPR002302	Leucine-tRNA ligase	family	1	0.982	P9WFV1	0.982	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
-IPR001278	Arginine-tRNA ligase	family	1	0.985	P9WFW5	0.985	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-IPR017959	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, subunit B /E	family	1	0.947	P9WN61	0.947	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR017958	Glutamyl-tRNA(Gln) amidotransferase, subunit B, conserved site	conserved_site	1	0.028	P9WN61	0.028	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR015866	Serine-tRNA synthetase, type1, N-terminal	domain	1	0.248	P9WFT7	0.248	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR018027	Asn/Gln amidotransferase	domain	1	0.289	P9WN61	0.289	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR018164	Alanyl-tRNA synthetase, class IIc, N-terminal	domain	1	0.629	P9WFW7	0.629	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR018165	Alanyl-tRNA synthetase, class IIc, core domain	domain	1	0.806	P9WFW7	0.806	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR018149	Lysyl-tRNA synthetase, class II, C-terminal	domain	1	0.143	P9WFU9	0.143	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-IPR018162	Alanine-tRNA ligase, class IIc, anti-codon-binding domain superfamily	homologous_superfamily	1	0.215	P9WFW7	0.215	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR020061	Glutamine-tRNA ligase, alpha-bundle domain superfamily	homologous_superfamily	1	0.167	P9WFV9	0.167	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR020556	Amidase, conserved site	conserved_site	1	0.063	P9WQA1	0.063	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
-IPR020751	Aminoacyl-tRNA synthetase, class I, anticodon-binding domain, subdomain 2	homologous_superfamily	1	0.208	P9WFV9	0.208	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR020752	Glutamate-tRNA synthetase, class I, anticodon-binding domain, subdomain 1	homologous_superfamily	1	0.104	P9WFV9	0.104	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR020825	Phenylalanyl-tRNA synthetase-like, B3/B4	homologous_superfamily	1	0.236	P9WFU1	0.236	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR022911	Phenylalanine-tRNA ligase alpha chain 1, bacterial	family	1	0.956	P9WFU3	0.956	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR019499	Valyl-tRNA synthetase, tRNA-binding arm	domain	1	0.073	P9WFS9	0.073	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR020058	Glutamyl/glutaminyl-tRNA synthetase, class Ib, catalytic domain	domain	1	0.645	P9WFV9	0.645	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR023168	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, C-terminal, domain 2	homologous_superfamily	1	0.116	P9WN61	0.116	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR023457	Methionine-tRNA synthetase, type 2	family	1	0.983	P9WFU5	0.983	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
-IPR023586	Isoleucine-tRNA ligase, type 2	family	1	0.989	P9WFV3	0.989	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
-IPR023631	Amidase signature domain	domain	1	0.913	P9WQA1	0.913	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
-IPR023717	Prolyl-tRNA synthetase, class IIa, type 1	family	1	0.993	P9WFT9	0.993	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR024088	Tyrosine-tRNA ligase, bacterial-type	family	1	0.972	P9WFT1	0.972	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR024107	Tyrosine-tRNA ligase, bacterial-type, type 1	family	1	0.988	P9WFT1	0.988	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR024109	Tryptophan-tRNA ligase, bacterial-type	family	1	0.976	P9WFT3	0.976	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR024909	Cysteinyl-tRNA synthetase/mycothiol ligase	family	1	0.977	P9WFW1	0.977	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
-IPR025709	Leucyl-tRNA synthetase, editing domain	domain	1	0.204	P9WFV1	0.204	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
-IPR027031	Glycyl-tRNA synthetase/DNA polymerase subunit gamma-2	family	1	0.19	P9WFV7	0.19	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
-IPR029351	GAD domain	domain	1	0.135	P9WFW3	0.135	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
-IPR032678	tRNA synthetases class I, catalytic domain	domain	1	0.652	P9WFW1	0.652	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
-IPR033656	Histidyl-anticodon-binding	domain	1	0.213	P9WFV5	0.213	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
-IPR022961	Glycine-tRNA ligase, bacterial	family	1	0.983	P9WFV7	0.983	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
-IPR023033	Alanine-tRNA ligase, eukaryota/bacteria	family	1	0.998	P9WFW7	0.998	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR033709	Isoleucyl tRNA synthetase type 2, anticodon-binding domain	domain	1	0.159	P9WFV3	0.159	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
-IPR033705	Valyl tRNA synthetase, anticodon-binding domain	domain	1	0.144	P9WFS9	0.144	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR033729	Serine-tRNA ligase catalytic core domain	domain	1	0.68	P9WFT7	0.68	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR033714	Phenylalanly tRNA synthetase, tRNA-binding-domain	domain	1	0.124	P9WFU1	0.124	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR033731	Glycyl-tRNA synthetase-like core domain	domain	1	0.702	P9WFV7	0.702	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
-IPR033910	Glutamyl-tRNA synthetase	domain	1	0.669	P9WFV9	0.669	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR033911	Methioninyl-tRNA synthetase core domain	domain	1	0.667	P9WFU5	0.667	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
-IPR033728	Threonine-tRNA ligase catalytic core domain	domain	1	0.449	P9WFT5	0.449	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR035684	Arginyl-tRNA synthetase, catalytic core domain	domain	1	0.491	P9WFW5	0.491	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-IPR036690	Ferrodoxin-fold anticodon-binding domain superfamily	homologous_superfamily	1	0.116	P9WFU1	0.116	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR036695	Arginyl tRNA synthetase N-terminal domain superfamily	homologous_superfamily	1	0.2	P9WFW5	0.2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-IPR036754	YbaK/aminoacyl-tRNA synthetase-associated domain superfamily	homologous_superfamily	1	0.313	P9WFT9	0.313	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR036928	Amidase signature (AS) superfamily	homologous_superfamily	1	0.986	P9WQA1	0.986	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
-IPR036986	RNA-binding S4 domain superfamily	homologous_superfamily	1	0.224	P9WFT1	0.224	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR037118	Valyl-tRNA synthetase, tRNA-binding arm superfamily	homologous_superfamily	1	0.08	P9WFS9	0.08	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR033730	Prokaryote proline-tRNA ligase core domain	domain	1	0.34	P9WFT9	0.34	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR041616	Phenylalanyl tRNA synthetase beta chain, core domain	domain	1	0.286	P9WFU1	0.286	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR041715	Class II Histidinyl-tRNA synthetase (HisRS)-like catalytic core domain	domain	1	0.719	P9WFV5	0.719	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
-IPR042103	Serine-tRNA synthetase, type1, N-terminal domain superfamily	homologous_superfamily	1	0.241	P9WFT7	0.241	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR041872	Methionyl-tRNA synthetase, anticodon-binding domain	domain	1	0.31	P9WFU5	0.31	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
-IPR044136	Lysine-tRNA ligase, class II, N-terminal	domain	1	0.212	P9WFU9	0.212	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-IPR044140	Proline--tRNA ligase, anticodon binding domain	domain	1	0.139	P9WFT9	0.139	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR045060	Phenylalanine-tRNA ligase, class IIc, beta subunit	family	1	0.68	P9WFU1	0.68	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR045462	Aminoacyl-tRNA synthetase, class I, anticodon-binding	domain	1	0.269	P9WFV9	0.269	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR047089	Aspartate-tRNA ligase, type 1, anticodon recognition domain	domain	1	0.222	P9WFW3	0.222	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
-IPR047090	Aspartate-tRNA ligase, type 1, core domain	domain	1	0.709	P9WFW3	0.709	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
-IPR047246	Threonine-tRNA ligase, class IIa, anticodon-binding domain	domain	1	0.121	P9WFT5	0.121	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR049940	Glutamyl-Q tRNA(Asp) synthetase/Glutamate--tRNA ligase	family	1	0.982	P9WFV9	0.982	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-IPR050058	Alanine--tRNA ligase	family	1	0.991	P9WFW7	0.991	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-IPR050062	Proline-tRNA synthetase	family	1	0.967	P9WFT9	0.967	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR050203	Tryptophan--tRNA ligase	family	1	0.976	P9WFT3	0.976	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR054608	Tyrosine--tRNA ligase SYY-like, C-terminal domain	domain	1	0.144	P9WFT1	0.144	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR045864	Class II Aminoacyl-tRNA synthetase/Biotinyl protein ligase (BPL) and lipoyl protein ligase (LPL)	homologous_superfamily	10	0.662	P9WFT5,P9WFT7,P9WFT9,P9WFU1,P9WFU3,P9WFU9,P9WFV5,P9WFV7,P9WFW3,P9WFW7	0.467,0.749,0.84,0.297,0.965,0.697,0.752,0.786,0.795,0.274	0	0	0	1	1	1	1	1	0	1	0	0	1	1	0	0	1	0	1	0	0
+IPR014729	Rossmann-like alpha/beta/alpha sandwich fold	homologous_superfamily	9	0.561	P9WFS9,P9WFT1,P9WFT3,P9WFU5,P9WFV1,P9WFV3,P9WFV9,P9WFW1,P9WFW5	0.498,0.524,0.964,0.64,0.287,0.444,0.494,0.648,0.551	1	1	1	0	0	0	0	0	1	0	1	1	0	0	1	1	0	1	0	0	0
+IPR006195	Aminoacyl-tRNA synthetase, class II	domain	8	0.669	P9WFT5,P9WFT7,P9WFT9,P9WFU3,P9WFU9,P9WFV5,P9WFV7,P9WFW3	0.462,0.642,0.766,0.651,0.642,0.712,0.773,0.705	0	0	0	1	1	1	0	1	0	1	0	0	1	1	0	0	1	0	0	0	0
+IPR001412	Aminoacyl-tRNA synthetase, class I, conserved site	conserved_site	7	0.019	P9WFS9,P9WFT1,P9WFT3,P9WFU5,P9WFV1,P9WFV3,P9WFW5	0.014,0.026,0.033,0.019,0.011,0.012,0.018	1	1	1	0	0	0	0	0	1	0	1	1	0	0	0	0	0	1	0	0	0
+IPR009080	Aminoacyl-tRNA synthetase, class Ia, anticodon-binding	homologous_superfamily	6	0.255	P9WFS9,P9WFU5,P9WFV1,P9WFV3,P9WFW1,P9WFW5	0.275,0.308,0.194,0.216,0.303,0.233	1	0	0	0	0	0	0	0	1	0	1	1	0	0	0	1	0	1	0	0	0
+IPR036621	Anticodon-binding domain superfamily	homologous_superfamily	4	0.196	P9WFT5,P9WFT9,P9WFV5,P9WFV7	0.16,0.186,0.229,0.21	0	0	0	1	0	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0
+IPR004154	Anticodon-binding	domain	4	0.166	P9WFT5,P9WFT9,P9WFV5,P9WFV7	0.13,0.131,0.21,0.192	0	0	0	1	0	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0
+IPR002314	Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)	domain	4	0.434	P9WFT5,P9WFT7,P9WFT9,P9WFV7	0.299,0.422,0.646,0.371	0	0	0	1	1	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
+IPR012340	Nucleic acid-binding, OB-fold	homologous_superfamily	3	0.217	P9WFU1,P9WFU9,P9WFW3	0.185,0.283,0.184	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	1	0	0	0	0
+IPR009008	Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain	homologous_superfamily	3	0.182	P9WFS9,P9WFV1,P9WFV3	0.165,0.202,0.179	1	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0
+IPR013155	Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding	domain	3	0.138	P9WFS9,P9WFV1,P9WFV3	0.158,0.12,0.135	1	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0
+IPR010978	Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm	homologous_superfamily	3	0.196	P9WFS9,P9WFT7,P9WFU3	0.073,0.265,0.249	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002300	Aminoacyl-tRNA synthetase, class Ia	domain	2	0.611	P9WFS9,P9WFV3	0.616,0.606	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+IPR004364	Aminoacyl-tRNA synthetase, class II (D/K/N)	domain	2	0.712	P9WFU9,P9WFW3	0.681,0.742	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0
+IPR004365	OB-fold nucleic acid binding domain, AA-tRNA synthetase-type	domain	2	0.148	P9WFU9,P9WFW3	0.152,0.145	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0
+IPR012947	Threonyl/alanyl tRNA synthetase, SAD	domain	2	0.066	P9WFT5,P9WFW7	0.082,0.05	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR002305	Aminoacyl-tRNA synthetase, class Ic	family	2	0.77	P9WFT1,P9WFT3	0.698,0.842	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR015413	Methionyl/Leucyl tRNA synthetase	domain	2	0.391	P9WFU5,P9WFV1	0.671,0.111	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0
+IPR018163	Threonyl/alanyl tRNA synthetase, class II-like, putative editing domain superfamily	homologous_superfamily	2	0.218	P9WFT5,P9WFW7	0.273,0.163	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR000120	Amidase	family	1	0.978	P9WQA1	0.978	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+IPR002317	Serine-tRNA ligase, type1	family	1	0.995	P9WFT7	0.995	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002942	RNA-binding S4 domain	domain	1	0.146	P9WFT1	0.146	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002316	Proline-tRNA ligase, class IIa	family	1	0.089	P9WFT9	0.089	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002315	Glycyl-tRNA synthetase	family	1	0.497	P9WFV7	0.497	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
+IPR002318	Alanine-tRNA ligase, class IIc	family	1	0.969	P9WFW7	0.969	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR002303	Valine-tRNA ligase	family	1	0.989	P9WFS9	0.989	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002306	Tryptophan-tRNA ligase	family	1	0.973	P9WFT3	0.973	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002312	Aspartyl/Asparaginyl-tRNA synthetase, class IIb	family	1	0.099	P9WFW3	0.099	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+IPR002307	Tyrosine-tRNA ligase	family	1	0.979	P9WFT1	0.979	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002313	Lysine-tRNA ligase, class II	family	1	0.974	P9WFU9	0.974	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+IPR002319	Phenylalanyl-tRNA synthetase	domain	1	0.704	P9WFU3	0.704	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002320	Threonine-tRNA ligase, class IIa	family	1	0.863	P9WFT5	0.863	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR000924	Glutamyl/glutaminyl-tRNA synthetase	family	1	0.12	P9WFV9	0.12	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR004500	Prolyl-tRNA synthetase, class IIa, bacterial-type	family	1	0.967	P9WFT9	0.967	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR004413	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase subunit B	family	1	0.951	P9WN61	0.951	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR004412	Glutamyl-tRNA(Gln) amidotransferase A subunit	family	1	0.966	P9WQA1	0.966	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+IPR004188	Phenylalanine-tRNA ligase, class II, N-terminal	domain	1	0.199	P9WFU3	0.199	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR004115	GAD-like domain superfamily	homologous_superfamily	1	0.236	P9WFW3	0.236	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+IPR003156	DHHA1 domain	domain	1	0.158	P9WFW7	0.158	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR003789	Aspartyl/glutamyl-tRNA amidotransferase subunit B-like	homologous_superfamily	1	0.287	P9WN61	0.287	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR004095	TGS	domain	1	0.107	P9WFT5	0.107	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002547	tRNA-binding domain	domain	1	0.135	P9WFU1	0.135	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR005147	tRNA synthetase, B5-domain	domain	1	0.091	P9WFU1	0.091	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR004516	Histidine-tRNA ligase/ATP phosphoribosyltransferase regulatory subunit	family	1	0.991	P9WFV5	0.991	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
+IPR004524	Aspartate-tRNA ligase, type 1	family	1	0.987	P9WFW3	0.987	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+IPR004532	Phenylalanine-tRNA ligase, class IIc, beta subunit, bacterial type	family	1	0.999	P9WFU1	0.999	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR005121	Ferrodoxin-fold anticodon-binding domain	domain	1	0.113	P9WFU1	0.113	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR004527	Glutamate-tRNA ligase, bacterial/mitochondrial	family	1	0.978	P9WFV9	0.978	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR004529	Phenylalanyl-tRNA synthetase, class IIc, alpha subunit	family	1	0.836	P9WFU3	0.836	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR009000	Translation protein, beta-barrel domain superfamily	homologous_superfamily	1	0.124	P9WFW7	0.124	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR008925	Aminoacyl-tRNA synthetase, class I, anticodon-binding superfamily	homologous_superfamily	1	0.335	P9WFV9	0.335	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR008909	DALR anticodon binding	domain	1	0.222	P9WFW5	0.222	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
+IPR007214	YbaK/aminoacyl-tRNA synthetase-associated domain	domain	1	0.186	P9WFT9	0.186	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR005148	Arginyl tRNA synthetase N-terminal domain	domain	1	0.164	P9WFW5	0.164	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
+IPR006075	Aspartyl/Glutamyl-tRNA(Gln) amidotransferase, subunit B/E, catalytic	domain	1	0.578	P9WN61	0.578	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR005146	B3/B4 tRNA-binding domain	domain	1	0.209	P9WFU1	0.209	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR009061	Putative DNA-binding domain superfamily	homologous_superfamily	1	0.088	P9WFU1	0.088	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR014746	Glutamine synthetase/guanido kinase, catalytic domain	homologous_superfamily	1	0.593	P9WN61	0.593	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR014758	Methionyl-tRNA synthetase	family	1	0.925	P9WFU5	0.925	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
+IPR015273	Cysteinyl-tRNA synthetase, class Ia, DALR	domain	1	0.132	P9WFW1	0.132	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
+IPR015803	Cysteine-tRNA ligase	family	1	0.977	P9WFW1	0.977	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
+IPR015807	Histidine-tRNA ligase	family	1	0.983	P9WFV5	0.983	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
+IPR002301	Isoleucine-tRNA ligase	family	1	0.802	P9WFV3	0.802	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+IPR002302	Leucine-tRNA ligase	family	1	0.983	P9WFV1	0.983	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+IPR001278	Arginine-tRNA ligase	family	1	0.987	P9WFW5	0.987	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
+IPR017959	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, subunit B /E	family	1	0.949	P9WN61	0.949	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR017958	Glutamyl-tRNA(Gln) amidotransferase, subunit B, conserved site	conserved_site	1	0.029	P9WN61	0.029	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR015866	Serine-tRNA synthetase, type1, N-terminal	domain	1	0.251	P9WFT7	0.251	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR018027	Asn/Gln amidotransferase	domain	1	0.291	P9WN61	0.291	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR018164	Alanyl-tRNA synthetase, class IIc, N-terminal	domain	1	0.631	P9WFW7	0.631	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR018165	Alanyl-tRNA synthetase, class IIc, core domain	domain	1	0.808	P9WFW7	0.808	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR018149	Lysyl-tRNA synthetase, class II, C-terminal	domain	1	0.152	P9WFU9	0.152	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+IPR018162	Alanine-tRNA ligase, class IIc, anti-codon-binding domain superfamily	homologous_superfamily	1	0.216	P9WFW7	0.216	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR020061	Glutamine-tRNA ligase, alpha-bundle domain superfamily	homologous_superfamily	1	0.169	P9WFV9	0.169	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR020556	Amidase, conserved site	conserved_site	1	0.065	P9WQA1	0.065	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+IPR020751	Aminoacyl-tRNA synthetase, class I, anticodon-binding domain, subdomain 2	homologous_superfamily	1	0.21	P9WFV9	0.21	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR020752	Glutamate-tRNA synthetase, class I, anticodon-binding domain, subdomain 1	homologous_superfamily	1	0.106	P9WFV9	0.106	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR020825	Phenylalanyl-tRNA synthetase-like, B3/B4	homologous_superfamily	1	0.237	P9WFU1	0.237	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR022911	Phenylalanine-tRNA ligase alpha chain 1, bacterial	family	1	0.959	P9WFU3	0.959	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR019499	Valyl-tRNA synthetase, tRNA-binding arm	domain	1	0.074	P9WFS9	0.074	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR020058	Glutamyl/glutaminyl-tRNA synthetase, class Ib, catalytic domain	domain	1	0.647	P9WFV9	0.647	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR023168	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, C-terminal, domain 2	homologous_superfamily	1	0.118	P9WN61	0.118	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+IPR023457	Methionine-tRNA synthetase, type 2	family	1	0.985	P9WFU5	0.985	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
+IPR023586	Isoleucine-tRNA ligase, type 2	family	1	0.99	P9WFV3	0.99	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+IPR023631	Amidase signature domain	domain	1	0.915	P9WQA1	0.915	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+IPR023717	Prolyl-tRNA synthetase, class IIa, type 1	family	1	0.995	P9WFT9	0.995	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR024088	Tyrosine-tRNA ligase, bacterial-type	family	1	0.974	P9WFT1	0.974	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR024107	Tyrosine-tRNA ligase, bacterial-type, type 1	family	1	0.991	P9WFT1	0.991	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR024109	Tryptophan-tRNA ligase, bacterial-type	family	1	0.979	P9WFT3	0.979	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR024909	Cysteinyl-tRNA synthetase/mycothiol ligase	family	1	0.979	P9WFW1	0.979	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
+IPR025709	Leucyl-tRNA synthetase, editing domain	domain	1	0.205	P9WFV1	0.205	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+IPR027031	Glycyl-tRNA synthetase/DNA polymerase subunit gamma-2	family	1	0.192	P9WFV7	0.192	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
+IPR029351	GAD domain	domain	1	0.136	P9WFW3	0.136	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+IPR032678	tRNA synthetases class I, catalytic domain	domain	1	0.655	P9WFW1	0.655	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
+IPR033656	Histidyl-anticodon-binding	domain	1	0.215	P9WFV5	0.215	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
+IPR022961	Glycine-tRNA ligase, bacterial	family	1	0.985	P9WFV7	0.985	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
+IPR023033	Alanine-tRNA ligase, eukaryota/bacteria	family	1	0.999	P9WFW7	0.999	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR033709	Isoleucyl tRNA synthetase type 2, anticodon-binding domain	domain	1	0.16	P9WFV3	0.16	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+IPR033705	Valyl tRNA synthetase, anticodon-binding domain	domain	1	0.146	P9WFS9	0.146	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR033729	Serine-tRNA ligase catalytic core domain	domain	1	0.683	P9WFT7	0.683	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR033714	Phenylalanly tRNA synthetase, tRNA-binding-domain	domain	1	0.125	P9WFU1	0.125	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR033731	Glycyl-tRNA synthetase-like core domain	domain	1	0.704	P9WFV7	0.704	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
+IPR033910	Glutamyl-tRNA synthetase	domain	1	0.671	P9WFV9	0.671	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR033911	Methioninyl-tRNA synthetase core domain	domain	1	0.671	P9WFU5	0.671	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
+IPR033728	Threonine-tRNA ligase catalytic core domain	domain	1	0.451	P9WFT5	0.451	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR035684	Arginyl-tRNA synthetase, catalytic core domain	domain	1	0.493	P9WFW5	0.493	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
+IPR036690	Ferrodoxin-fold anticodon-binding domain superfamily	homologous_superfamily	1	0.117	P9WFU1	0.117	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR036695	Arginyl tRNA synthetase N-terminal domain superfamily	homologous_superfamily	1	0.202	P9WFW5	0.202	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
+IPR036754	YbaK/aminoacyl-tRNA synthetase-associated domain superfamily	homologous_superfamily	1	0.314	P9WFT9	0.314	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR036928	Amidase signature (AS) superfamily	homologous_superfamily	1	0.988	P9WQA1	0.988	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+IPR036986	RNA-binding S4 domain superfamily	homologous_superfamily	1	0.226	P9WFT1	0.226	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR037118	Valyl-tRNA synthetase, tRNA-binding arm superfamily	homologous_superfamily	1	0.081	P9WFS9	0.081	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR033730	Prokaryote proline-tRNA ligase core domain	domain	1	0.342	P9WFT9	0.342	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR041616	Phenylalanyl tRNA synthetase beta chain, core domain	domain	1	0.288	P9WFU1	0.288	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR041715	Class II Histidinyl-tRNA synthetase (HisRS)-like catalytic core domain	domain	1	0.721	P9WFV5	0.721	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
+IPR042103	Serine-tRNA synthetase, type1, N-terminal domain superfamily	homologous_superfamily	1	0.243	P9WFT7	0.243	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR041872	Methionyl-tRNA synthetase, anticodon-binding domain	domain	1	0.312	P9WFU5	0.312	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
+IPR044136	Lysine-tRNA ligase, class II, N-terminal	domain	1	0.214	P9WFU9	0.214	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+IPR044140	Proline--tRNA ligase, anticodon binding domain	domain	1	0.141	P9WFT9	0.141	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR045060	Phenylalanine-tRNA ligase, class IIc, beta subunit	family	1	0.681	P9WFU1	0.681	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR045462	Aminoacyl-tRNA synthetase, class I, anticodon-binding	domain	1	0.271	P9WFV9	0.271	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR047089	Aspartate-tRNA ligase, type 1, anticodon recognition domain	domain	1	0.224	P9WFW3	0.224	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+IPR047090	Aspartate-tRNA ligase, type 1, core domain	domain	1	0.71	P9WFW3	0.71	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+IPR047246	Threonine-tRNA ligase, class IIa, anticodon-binding domain	domain	1	0.123	P9WFT5	0.123	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR049940	Glutamyl-Q tRNA(Asp) synthetase/Glutamate--tRNA ligase	family	1	0.984	P9WFV9	0.984	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
+IPR050058	Alanine--tRNA ligase	family	1	0.992	P9WFW7	0.992	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+IPR050062	Proline-tRNA synthetase	family	1	0.969	P9WFT9	0.969	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR050203	Tryptophan--tRNA ligase	family	1	0.979	P9WFT3	0.979	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR054608	Tyrosine--tRNA ligase SYY-like, C-terminal domain	domain	1	0.146	P9WFT1	0.146	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0

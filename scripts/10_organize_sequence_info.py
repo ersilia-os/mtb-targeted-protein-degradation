@@ -60,7 +60,7 @@ for interpro_id in sorted(acc_to_name_type):
         protein_length = int(data_protein["Protein Length"].tolist()[0])
         matches = data_protein["Matches"].tolist()[0]
         matches = [i.split("..") for i in matches.split(",")]
-        matches = sum([int(i[1]) - int(i[0]) for i in matches])
+        matches = sum([int(i[1]) - int(i[0]) + 1 for i in matches])  # Why +1? If [1,2] --> 2 residues
         coverages.append(round(matches / protein_length, 3))
 
     # Create binary vector

@@ -111,7 +111,7 @@ A summary file containing one row per detected pocket and structure is available
 
 #### Pymol visualization  
 
-PyMOL session files (`.pse`) have been prepared to facilitate the visualization of detected pockets and their corresponding residues. These were generated using the `scripts/09_prepare_pymol_visualizations.py` script as step 09 in the pipeline.  
+We prepared PyMOL session files (`.pse`) to facilitate the visualization of detected pockets and their corresponding residues. These were generated using the `scripts/09_prepare_pymol_visualizations.py` script as step 09 in the pipeline.  
 
 Each PyMOL session (one per protein) includes the following elements:  
 
@@ -123,6 +123,47 @@ Each PyMOL session (one per protein) includes the following elements:
 | **Aligned structures (all but AF2)**             | Gray color, cartoon representation                                                          | ❌ No        |
 | **Pockets detected in aligned structures**       | Gray-colored points                                                                         | ❌ No        |
 | **InterPro annotations**                         | Includes conserved sites, domains, families, homologous superfamilies etc (red color, surface representation) | ❌ No        |
+
+
+#### Data organization
+
+We then organized sequence and protein information using scripts `scripts/10_organize_sequence_info.py` and `scripts/11_organize_pocket_info.py`, respectively. Sequence summary information can be found at `processed/sequences/interpro_summary.tsv`, and includes the following features:
+
+| **Field**                  | **Description**                                                                            |
+|----------------------------|--------------------------------------------------------------------------------------------|
+| `Accession`                | InterPro Accession identifier                                                              |
+| `Name`                     | Name of the InterPro entry                                                                 |
+| `Type`                     | Type of annotation (e.g., domain, conserved site, homologous superfamily)                 |
+| `Number of proteins`       | Number of proteins associated with the InterPro entry                                     |
+| `Average Coverage`         | Average sequence coverage across the associated proteins                                  |
+
+Additionally, the file contains final binary columns (1/0) indicating the presence or absence of each annotation across different proteins.
+
+Pocket summary information together with InterPro can be found at `processed/sequences/pocket_detection_data_interpro.csv`, and includes the following features.
+
+| **Field**                          | **Description**                                                    |
+|-------------------------------------|--------------------------------------------------------------------|
+| `Uniprot_AC`                       | Uniprot AC identifier file                                        |
+| `File name`                         | PDB file in which pockets have been detected                     |
+| `Prediction type`                   | The method used for protein structure prediction (e.g., AlphaFold2, AlphaFold3) |
+| `Full path`                         | The full directory path where the PDB file is stored             |
+| `Pocket number`                     | The identified pocket number within the structure                 |
+| `Pocket score`                      | The score assigned to the detected pocket                        |
+| `Pocket probability`                | The probability value indicating confidence in pocket detection  |
+| `Pocket centroid coordinate (x y z)` | The (x, y, z) coordinates of the pocket’s centroid               |
+| `Pocket residues (chain_resn)`      | List of residues forming the pocket, with chain and residue number |
+| `Confidence score`                  | Confidence measures: pLDDT (AF2, AF3, Chai) or QSQE (SM)          |
+| `Interpro ID`                       | Identifier of the matched InterPro domain                        |
+| `Interpro name`                     | Name of the matched InterPro domain                              |
+| `Interpro Matches`                  | Residue ranges corresponding to the InterPro domain             |
+| `Residues in pocket`                | Number of residues forming the pocket                           |
+| `Residues in interpro`              | Number of residues forming the InterPro domain                  |
+| `Residues overlap`                  | Number of residues shared between the pocket and InterPro domain |
+| `Coverage pocket`                   | Fraction of pocket residues that overlap with an InterPro domain |
+| `Coverage domain`                   | Fraction of InterPro domain residues overlapping with the pocket |
+
+For the sake of simplicity, those pocket-InterPro pairs having no overlapping residues have been omitted in the file. 
+
 
 
 ## About the Ersilia Open Source Initiative
