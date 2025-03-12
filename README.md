@@ -137,7 +137,7 @@ We then organized sequence and protein information using scripts `scripts/10_org
 | `Number of proteins`       | Number of proteins associated with the InterPro entry                                     |
 | `Average Coverage`         | Average sequence coverage across the associated proteins                                  |
 
-Additionally, the file contains final binary columns (1/0) indicating the presence or absence of each annotation across different proteins.
+Additionally, the file contains final binary columns (1/0) indicating the presence or absence of each annotation across different proteins. An additional file including manually curated InterPro annotations (i.e. Catalytic domain (ATP binding site), Anticodon Binding Domain, etc.) is found in `processed/sequences/interpro_summary_curated.tsv`.
 
 Pocket summary information together with InterPro can be found at `processed/sequences/pocket_detection_data_interpro.csv`, and includes the following features.
 
