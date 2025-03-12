@@ -79,3 +79,60 @@ interpro_data = interpro_data.sort_values('Number of proteins', ascending=False)
 
 # Save results
 interpro_data.to_csv(os.path.join(outdir, 'interpro_summary.tsv'), sep='\t', index=False)
+
+
+### CURATE INTERPRO ANNOTATIONS ###
+
+def curate_InterPro(name):
+    """
+    Classifies an InterPro domain name into functional categories with refined classification.
+
+    Parameters:
+    name (str): The name of the InterPro domain to be classified.
+
+    Returns:
+    str: The category of the domain (e.g., "Catalytic Domain", "Editing Domain", "Other too broad/unspecified functional entities").
+    """
+    
+    # Convert name to lowercase for case-insensitive matching
+    name = name.lower()
+
+    # Categorization logic with refined classification
+    if "rossmann" in name or "atp" in name or "catalytic" in name or "core domain" in name:
+        return "Catalytic Domain (ATP Binding Site)"
+    elif "anticodon-binding" in name or "anticodon binding" in name or "anti-codon-binding" in name:
+        return "Anticodon Binding Domain"
+    elif "editing" in name:
+        return "Editing Domain"
+    elif "tRNA-binding" in name or "ob-fold" in name:
+        return "tRNA Binding Domain"
+    elif "rna-binding" in name or "s4 domain" in name:
+        return "RNA Binding Domain"
+    elif "synthetase" in name or "ligase" in name or "amidotransferase" in name or "synthetase-associated" in name or "amidase" in name or "b5-domain" in name or "beta-barrel" in name or "conserved site" in name:
+        return "Other too broad/unspecified functional entities"
+    else:
+        return "Other"
+    
+
+# root = os.path.dirname(os.path.abspath(__file__))
+root = "/home/acomajuncosa/Documents/mtb-targeted-protein-degradation"
+df = pd.read_csv(os.path.join(root, "processed", "sequences", "interpro_summary.tsv"), sep='\t')
+
+# Remove those with coverage > 60
+df = df[df['Average Coverage'] < 0.60].reset_index(drop=True)
+
+# Curate names
+curated_annotation = df['Name'].tolist()
+curated_annotation = [curate_InterPro(i) for i in curated_annotation]
+df.insert(2, column='Curated annotation', value=curated_annotation)
+
+# Save results
+df.to_csv(os.path.join(root, "processed", "sequences", "interpro_summary_curated.tsv"), sep='\t', index=False)
+
+# labels = sorted(set(df['Curated annotation']))
+# for label in labels:
+#     names = df[df['Curated annotation'] == label]['Name']
+#     print(label + " (" + str(len(names)) + ")")
+#     for name in names:
+#         print("   -" + name)
+#     print("\n")

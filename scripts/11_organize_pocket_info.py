@@ -98,7 +98,7 @@ pocket_detection_interpro_df["Residues overlap"] = len_overlap
 pocket_detection_interpro_df["Coverage pocket"] = coverage_pocket
 pocket_detection_interpro_df["Coverage domain"] = coverage_domain
 
-# Omit those pairs having no overlapping residues
+# Omit those pairs having no overlapping residues 
 pocket_detection_interpro_df = pocket_detection_interpro_df[pocket_detection_interpro_df["Residues overlap"] > 0].reset_index(drop=True)
 
 # Save file
