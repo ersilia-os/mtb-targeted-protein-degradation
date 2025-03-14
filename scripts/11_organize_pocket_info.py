@@ -5,17 +5,21 @@ import os
 root = os.path.dirname(os.path.abspath(__file__))
 outdir = os.path.abspath(os.path.join(root, "..", "processed"))
 path_to_sequence_info = os.path.abspath(os.path.join(root, "..", "data", "sequences", "interpro"))
-path_to_sequence_summary = os.path.abspath(os.path.join(root, "..", "processed", "sequences", "interpro_summary.tsv"))
+path_to_sequence_summary = os.path.abspath(os.path.join(root, "..", "processed", "sequences", "interpro_summary_curated.tsv"))
 
 # Load pocket detection data
 pocket_detection_df = pd.read_csv(os.path.join(outdir, "pocket_detection_data.csv"))
 uniprots = sorted(set(pocket_detection_df['Uniprot AC']))
 
 # Load all interpro IDs
-interpro_ids = sorted(pd.read_csv(path_to_sequence_summary, sep='\t')['Accession'])
+df = pd.read_csv(path_to_sequence_summary, sep='\t')
+interpro_ids = set(df['Accession'])
+interpro_id_to_name = {i: j for i,j in zip(df['Accession'], df['Name'])}
+interpro_id_to_curated = {i: j for i,j in zip(df['Accession'], df['Curated annotation'])}
 
 uniprot_to_interpro_matches = {}
 uniprot_to_interpro_names = {}
+uniprot_to_plength = {}
 
 # Load interpro data for each protein
 for uni in uniprots:
@@ -31,23 +35,27 @@ for uni in uniprots:
     df['Protein Accession'] = df['Protein Accession'].str.upper()
 
     # Get id to matches
-    interpro_matches = {i: [k.split("..") for k in j.split(",")] for i,j in zip(df["Accession"], df["Matches"])}
-    interpro_names = {i: j for i,j in zip(df["Accession"], df["Name"])}
+    # Select only those interpro that are relevant i.e. coverage < 0.60 in interpro_summary.tsv
+    interpro_matches = {i: [k.split("..") for k in j.split(",")] for i,j in zip(df["Accession"], df["Matches"]) if i in interpro_ids}
+    interpro_names = {i: j for i,j in zip(df["Accession"], df["Name"]) if i in interpro_ids}
 
     # Save
     uniprot_to_interpro_matches[uni] = interpro_matches
     uniprot_to_interpro_names[uni] = interpro_names
+    uniprot_to_plength[uni] = int(df["Protein Length"].tolist()[0])
 
     del interpro_matches, interpro_names
 
 interpro_ids = []
 interpro_names = []
+interpro_curated = []
 interpro_matches = []
 len_pocket = []
 len_interpro = []
 len_overlap = []
 coverage_pocket = []
 coverage_domain = []
+overall_coverage_domain = []
 
 pocket_detection_interpro_df = pd.DataFrame(columns=pocket_detection_df.columns).astype(pocket_detection_df.dtypes.to_dict())
 
@@ -69,6 +77,7 @@ for pocket in pocket_detection_df.iterrows():
         # Store data from interpro domains
         interpro_ids.append(interpro)
         interpro_names.append(uniprot_to_interpro_names[uni][interpro])
+        interpro_curated.append(interpro_id_to_curated[interpro])
         interpro_matches.append(uniprot_to_interpro_matches[uni][interpro])
 
         # Number of residues in the pocket
@@ -85,18 +94,21 @@ for pocket in pocket_detection_df.iterrows():
         pocket_in_dom = set([i for i in pocket_residues if i in dom_residues])
 
         # Save
-        coverage_pocket.append(round(len(pocket_in_dom) / len(pocket_residues), 2))
-        coverage_domain.append(round(len(dom_in_pocket) / len(dom_residues), 2))
+        coverage_pocket.append(round(len(pocket_in_dom) / len(pocket_residues), 3))
+        coverage_domain.append(round(len(dom_in_pocket) / len(dom_residues), 3))
+        overall_coverage_domain.append(round(len(dom_residues) / uniprot_to_plength[uni], 3))
 
 # Store data
 pocket_detection_interpro_df["Interpro ID"] = interpro_ids
 pocket_detection_interpro_df["Interpro name"] = interpro_names
+pocket_detection_interpro_df["Interpro curated annotation"] = interpro_curated
 pocket_detection_interpro_df["Interpro Matches"] = interpro_matches
 pocket_detection_interpro_df["Residues in pocket"] = len_pocket
 pocket_detection_interpro_df["Residues in interpro"] = len_interpro
 pocket_detection_interpro_df["Residues overlap"] = len_overlap
 pocket_detection_interpro_df["Coverage pocket"] = coverage_pocket
 pocket_detection_interpro_df["Coverage domain"] = coverage_domain
+pocket_detection_interpro_df["Overall coverage domain"] = overall_coverage_domain
 
 # Omit those pairs having no overlapping residues 
 pocket_detection_interpro_df = pocket_detection_interpro_df[pocket_detection_interpro_df["Residues overlap"] > 0].reset_index(drop=True)
