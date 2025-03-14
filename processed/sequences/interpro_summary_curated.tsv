@@ -8,7 +8,7 @@ IPR002314	Aminoacyl-tRNA synthetase, class II (G/ P/ S/T)	Other too broad/unspec
 IPR012340	Nucleic acid-binding, OB-fold	tRNA Binding Domain	homologous_superfamily	3	0.217	P9WFU1,P9WFU9,P9WFW3	0.185,0.283,0.184	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	1	0	0	0	0
 IPR009008	Valyl/Leucyl/Isoleucyl-tRNA synthetase, editing domain	Editing Domain	homologous_superfamily	3	0.182	P9WFS9,P9WFV1,P9WFV3	0.165,0.202,0.179	1	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0
 IPR013155	Methionyl/Valyl/Leucyl/Isoleucyl-tRNA synthetase, anticodon-binding	Anticodon Binding Domain	domain	3	0.138	P9WFS9,P9WFV1,P9WFV3	0.158,0.12,0.135	1	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0
-IPR010978	Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm	RNA Binding Domain	homologous_superfamily	3	0.196	P9WFS9,P9WFT7,P9WFU3	0.073,0.265,0.249	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR010978	Class I and II aminoacyl-tRNA synthetase, tRNA-binding arm	tRNA Binding Domain	homologous_superfamily	3	0.196	P9WFS9,P9WFT7,P9WFU3	0.073,0.265,0.249	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR004365	OB-fold nucleic acid binding domain, AA-tRNA synthetase-type	tRNA Binding Domain	domain	2	0.148	P9WFU9,P9WFW3	0.152,0.145	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0
 IPR012947	Threonyl/alanyl tRNA synthetase, SAD	Other too broad/unspecified functional entities	domain	2	0.066	P9WFT5,P9WFW7	0.082,0.05	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 IPR015413	Methionyl/Leucyl tRNA synthetase	Other too broad/unspecified functional entities	domain	2	0.391	P9WFU5,P9WFV1	0.671,0.111	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0
@@ -23,7 +23,7 @@ IPR004115	GAD-like domain superfamily	Other	homologous_superfamily	1	0.236	P9WFW
 IPR003156	DHHA1 domain	Other	domain	1	0.158	P9WFW7	0.158	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 IPR003789	Aspartyl/glutamyl-tRNA amidotransferase subunit B-like	Other too broad/unspecified functional entities	homologous_superfamily	1	0.287	P9WN61	0.287	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 IPR004095	TGS	Other	domain	1	0.107	P9WFT5	0.107	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR002547	tRNA-binding domain	RNA Binding Domain	domain	1	0.135	P9WFU1	0.135	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR002547	tRNA-binding domain	tRNA Binding Domain	domain	1	0.135	P9WFU1	0.135	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR005147	tRNA synthetase, B5-domain	Other too broad/unspecified functional entities	domain	1	0.091	P9WFU1	0.091	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR005121	Ferrodoxin-fold anticodon-binding domain	Anticodon Binding Domain	domain	1	0.113	P9WFU1	0.113	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR009000	Translation protein, beta-barrel domain superfamily	Other too broad/unspecified functional entities	homologous_superfamily	1	0.124	P9WFW7	0.124	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
@@ -32,7 +32,7 @@ IPR008909	DALR anticodon binding	Anticodon Binding Domain	domain	1	0.222	P9WFW5	
 IPR007214	YbaK/aminoacyl-tRNA synthetase-associated domain	Other too broad/unspecified functional entities	domain	1	0.186	P9WFT9	0.186	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR005148	Arginyl tRNA synthetase N-terminal domain	Other too broad/unspecified functional entities	domain	1	0.164	P9WFW5	0.164	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
 IPR006075	Aspartyl/Glutamyl-tRNA(Gln) amidotransferase, subunit B/E, catalytic	Catalytic Domain (ATP Binding Site)	domain	1	0.578	P9WN61	0.578	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-IPR005146	B3/B4 tRNA-binding domain	RNA Binding Domain	domain	1	0.209	P9WFU1	0.209	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR005146	B3/B4 tRNA-binding domain	tRNA Binding Domain	domain	1	0.209	P9WFU1	0.209	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR009061	Putative DNA-binding domain superfamily	Other	homologous_superfamily	1	0.088	P9WFU1	0.088	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR014746	Glutamine synthetase/guanido kinase, catalytic domain	Catalytic Domain (ATP Binding Site)	homologous_superfamily	1	0.593	P9WN61	0.593	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 IPR015273	Cysteinyl-tRNA synthetase, class Ia, DALR	Other too broad/unspecified functional entities	domain	1	0.132	P9WFW1	0.132	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -46,7 +46,7 @@ IPR020556	Amidase, conserved site	Other too broad/unspecified functional entitie
 IPR020751	Aminoacyl-tRNA synthetase, class I, anticodon-binding domain, subdomain 2	Anticodon Binding Domain	homologous_superfamily	1	0.21	P9WFV9	0.21	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 IPR020752	Glutamate-tRNA synthetase, class I, anticodon-binding domain, subdomain 1	Anticodon Binding Domain	homologous_superfamily	1	0.106	P9WFV9	0.106	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 IPR020825	Phenylalanyl-tRNA synthetase-like, B3/B4	Other too broad/unspecified functional entities	homologous_superfamily	1	0.237	P9WFU1	0.237	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR019499	Valyl-tRNA synthetase, tRNA-binding arm	RNA Binding Domain	domain	1	0.074	P9WFS9	0.074	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR019499	Valyl-tRNA synthetase, tRNA-binding arm	tRNA Binding Domain	domain	1	0.074	P9WFS9	0.074	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR023168	Aspartyl/glutamyl-tRNA(Asn/Gln) amidotransferase, C-terminal, domain 2	Other too broad/unspecified functional entities	homologous_superfamily	1	0.118	P9WN61	0.118	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 IPR025709	Leucyl-tRNA synthetase, editing domain	Editing Domain	domain	1	0.205	P9WFV1	0.205	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 IPR027031	Glycyl-tRNA synthetase/DNA polymerase subunit gamma-2	Other too broad/unspecified functional entities	family	1	0.192	P9WFV7	0.192	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
@@ -54,14 +54,14 @@ IPR029351	GAD domain	Other	domain	1	0.136	P9WFW3	0.136	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR033656	Histidyl-anticodon-binding	Anticodon Binding Domain	domain	1	0.215	P9WFV5	0.215	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 IPR033709	Isoleucyl tRNA synthetase type 2, anticodon-binding domain	Anticodon Binding Domain	domain	1	0.16	P9WFV3	0.16	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 IPR033705	Valyl tRNA synthetase, anticodon-binding domain	Anticodon Binding Domain	domain	1	0.146	P9WFS9	0.146	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR033714	Phenylalanly tRNA synthetase, tRNA-binding-domain	RNA Binding Domain	domain	1	0.125	P9WFU1	0.125	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR033714	Phenylalanly tRNA synthetase, tRNA-binding-domain	tRNA Binding Domain	domain	1	0.125	P9WFU1	0.125	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR033728	Threonine-tRNA ligase catalytic core domain	Catalytic Domain (ATP Binding Site)	domain	1	0.451	P9WFT5	0.451	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR035684	Arginyl-tRNA synthetase, catalytic core domain	Catalytic Domain (ATP Binding Site)	domain	1	0.493	P9WFW5	0.493	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
 IPR036690	Ferrodoxin-fold anticodon-binding domain superfamily	Anticodon Binding Domain	homologous_superfamily	1	0.117	P9WFU1	0.117	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR036695	Arginyl tRNA synthetase N-terminal domain superfamily	Other too broad/unspecified functional entities	homologous_superfamily	1	0.202	P9WFW5	0.202	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
 IPR036754	YbaK/aminoacyl-tRNA synthetase-associated domain superfamily	Other too broad/unspecified functional entities	homologous_superfamily	1	0.314	P9WFT9	0.314	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR036986	RNA-binding S4 domain superfamily	RNA Binding Domain	homologous_superfamily	1	0.226	P9WFT1	0.226	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-IPR037118	Valyl-tRNA synthetase, tRNA-binding arm superfamily	RNA Binding Domain	homologous_superfamily	1	0.081	P9WFS9	0.081	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+IPR037118	Valyl-tRNA synthetase, tRNA-binding arm superfamily	tRNA Binding Domain	homologous_superfamily	1	0.081	P9WFS9	0.081	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR033730	Prokaryote proline-tRNA ligase core domain	Catalytic Domain (ATP Binding Site)	domain	1	0.342	P9WFT9	0.342	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR041616	Phenylalanyl tRNA synthetase beta chain, core domain	Catalytic Domain (ATP Binding Site)	domain	1	0.288	P9WFU1	0.288	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 IPR042103	Serine-tRNA synthetase, type1, N-terminal domain superfamily	Other too broad/unspecified functional entities	homologous_superfamily	1	0.243	P9WFT7	0.243	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
