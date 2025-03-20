@@ -42,7 +42,8 @@ conda install -c conda-forge openjdk
 This repository is work in progress, as summarized in the following progress report meetings:
 
 * [Check-in meeting 1](https://docs.google.com/presentation/d/1a7K4EkecYM63CPa7QRw1SOEGv2AEA3FYjpLJPYPpIkY/edit?usp=drive_link) (2025/02/04). Selection and structural annotation of tRNA synthetases.
-* Check-in meeting 2 (scheduled mid March 2025)
+* [Check-in meeting 2](https://docs.google.com/presentation/d/13RxQsi4-3t9LYxYGGvtfwdeYd3KJTor_07sc7zx3pwM/edit?usp=sharing)(2025/03/19). Binding site detection and visualization.
+* Check-in meeting 3 scheduled early April 2025.
 
 Below, we explain the progress made chronologically.
 
