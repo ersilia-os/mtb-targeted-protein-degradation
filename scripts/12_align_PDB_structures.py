@@ -32,7 +32,7 @@ def load_pymol_session_align(session_input, session_output, structures):
         cmd.load(structure)
 
         # Align with reference
-        structure_name = os.path.basename(structure).replace('.ent', '').replace('.pdb', '')
+        structure_name = os.path.basename(structure).replace('.ent', '').replace('.pdb', '').replace('.cif', '')
         cmd.align(structure_name, reference)
 
     # Hide all surface representations
@@ -57,7 +57,7 @@ for uni in sorted(os.listdir(pdb_structures)):
 
     # Enumerate PDB structures
     structures = sorted(os.listdir(os.path.join(pdb_structures, uni, uni + "_archive-PDB")))
-    structures = [i for i in structures if '.ent' in i and '.txt' not in i]
+    structures = [i for i in structures if ('.ent' in i or '.cif' in i) and '.txt' not in i]
     structures = [os.path.join(pdb_structures, uni, uni + "_archive-PDB", i) for i in structures]
 
     load_pymol_session_align(os.path.join(pymol_sessions, uni + ".pse.gz"), 
