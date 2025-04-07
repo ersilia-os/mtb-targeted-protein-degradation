@@ -1,0 +1,9 @@
+@<TRIPOS>MOLECULE
+../processed/detected_pockets/P9WFT7/chai1_P9WFT7_model_4/pockets/pocket_2.pdb
+ 1 0 0 0 0
+SMALL
+GASTEIGER
+
+@<TRIPOS>ATOM
+      1 C           5.4630   19.0390    1.1270 C.3     2  IG2         0.0000
+@<TRIPOS>BOND

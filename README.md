@@ -30,11 +30,12 @@ In addition, the following tools are required:
 * [P2RANK](https://github.com/rdk/p2rank) for pocket detection. 
 
 
-To run P2RANK, Java is required:
+To run P2RANK, Java is required. Additionally, openbabel needs to be installed for file format conversion:
 
 ```bash
 conda activate adda4tb
 conda install -c conda-forge openjdk
+conda install -c conda-forge openbabel
 ```
 
 ## Progress reporting
@@ -70,11 +71,11 @@ Afterwards, structures are aligned again with the `scripts/05_align_relaxed_stru
 
 #### Sequence data
 
-We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/05_sequence_annotation.py` script.
+We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/06_sequence_annotation.py` script.
 
 #### Ligands data
 
-In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/06_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
+In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/07_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
 
 #### Aggregated data
 
@@ -93,7 +94,7 @@ An aggregated file containing one row per processed structure is available [here
 
 #### Pocket detection
 
-After the complete structural and sequential characterization of tRNA synthetases, we detected pockets in AF2, AF3, Chai-1 and SwissModel predicted models. Following the [authors recommendations](https://github.com/rdk/p2rank/issues/76): for each structure, we considered detected pockets as those with a probability (K) > 0.2, but at least Top-3 (N) per structure. After that, we filtered those pockets having at least one residue with pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel), discarding about 25-30% of the pockets. Cut-offs are arbitrary; usual recommendations are 70 & 0.7, we’ve been slightly less restrictive.
+After the complete structural and sequential characterization of tRNA synthetases, we detected pockets in AF2, AF3, Chai-1 and SwissModel predicted models with `scripts/08_detect_pockets.py`. Following the [authors recommendations](https://github.com/rdk/p2rank/issues/76): for each structure, we considered detected pockets as those with a probability (K) > 0.2, but at least Top-3 (N) per structure. After that, we filtered those pockets having at least one residue with pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel), discarding about 25-30% of the pockets. Cut-offs are arbitrary; usual recommendations are 70 & 0.7, we’ve been slightly less restrictive.
 
 A summary file containing one row per detected pocket and structure is available [here](/processed/pocket_detection_data.csv). This file contains the following information:
 
