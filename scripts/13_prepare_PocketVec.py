@@ -59,7 +59,7 @@ def pdb_to_sd_obabel(input_pdb, output_sd=None):
         raise RuntimeError("Open Babel conversion failed.")
 
 pocket_detection_data = pd.read_csv("../processed/pocket_detection_data.csv")
-path_to_pocketvec = "../processed/pocketvec"
+path_to_pocketvec = "../processed/pocketvec_PRE"
 path_to_processed = "../processed/aligned_relaxed_structures"
 path_to_pockets = "../processed/detected_pockets"
 
