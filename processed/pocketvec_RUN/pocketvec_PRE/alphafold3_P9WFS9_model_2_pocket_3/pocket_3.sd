@@ -1,0 +1,9 @@
+@<TRIPOS>MOLECULE
+../processed/detected_pockets/P9WFS9/alphafold3_P9WFS9_model_2/pockets/pocket_3.pdb
+ 1 0 0 0 0
+SMALL
+GASTEIGER
+
+@<TRIPOS>ATOM
+      1 C           0.1960   29.9520   10.0400 C.3     3  IG3         0.0000
+@<TRIPOS>BOND
