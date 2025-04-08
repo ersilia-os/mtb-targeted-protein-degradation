@@ -69,14 +69,6 @@ Then, we prepared these structures for docking with protein protonation with PDB
 
 Afterwards, structures are aligned again with the `scripts/05_align_relaxed_structures.py` script, using their unrelaxed counterparts as reference for all the alignments. At this stage, no structures were removed, even those with high RMSD against the unrelaxed structures. 
 
-#### Sequence data
-
-We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/06_sequence_annotation.py` script.
-
-#### Ligands data
-
-In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/07_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
-
 #### Aggregated data
 
 An aggregated file containing one row per processed structure is available [here](/processed/trna_synthetases_data.csv). This file contains the following information:
@@ -127,6 +119,14 @@ Each PyMOL session (one per protein) includes the following elements:
 | **InterPro annotations**                         | Includes conserved sites, domains, families, homologous superfamilies etc (red color, surface representation) | ❌ No        |
 
 
+#### Sequence data
+
+We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/06_sequence_annotation.py` script.
+
+#### Ligands data
+
+In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/07_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
+
 #### Data organization
 
 We then organized sequence and protein information using scripts `scripts/10_organize_sequence_info.py` and `scripts/11_organize_pocket_info.py`, respectively. Sequence summary information can be found at `processed/sequences/interpro_summary.tsv`, and includes the following features:
@@ -166,6 +166,10 @@ Pocket summary information together with InterPro can be found at `processed/seq
 
 For the sake of simplicity, those pocket-InterPro pairs having no overlapping residues have been omitted in the file. 
 
+
+## TL;DR
+
+To do.
 
 
 ## About the Ersilia Open Source Initiative
