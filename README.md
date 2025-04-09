@@ -1,10 +1,10 @@
 # Targeted protein degradation in Mycobacterium tuberculosis
 Discovery of potential degraders (BacPROTACS) for essential tRNA synthetases in _Mycobacterium tuberculosis_.
 
-## Background
+## Background 📚
 
 This project is part of the [GC-ADDA4TB project](https://www.lifearc.org/project/grand-challenges-programme/), led by [Prof. Erick Strauss](https://scholar.google.com/citations?user=zK9kCVUAAAAJ&hl=en).
-The project builds upon the [BacPROTACs technology](https://pubmed.ncbi.nlm.nih.gov/35662409/) in which small-molecule bifunctional degraders are designed to harness the proteolytic machinery for targeted protein degradataion (TPD) of essential proteins in Mtb. This involves linking (a) a ligand that binds to a protein of interest (POI) to (b) a molecule that recruits the mycobacterial protease machinery, such as the ClpC:ClpP complex (ClpCP).
+The project builds upon the [BacPROTACs technology](https://pubmed.ncbi.nlm.nih.gov/35662409/) in which small-molecule bifunctional degraders are designed to harness the proteolytic machinery for targeted protein degradation (TPD) of essential proteins in Mtb. This involves linking (a) a ligand that binds to a protein of interest (POI) to (b) a molecule that recruits the mycobacterial protease machinery, such as the ClpC:ClpP complex (ClpCP).
 
 In a [CRISPR genetic screening](https://pubmed.ncbi.nlm.nih.gov/34297925/), several _Mtb_ tRNA synthetases were identified as highly vulnerable in _Mtb_. Here, targeting these tRNA synthetases with TPD is proposed as a novel therapeutic strategy.
 
@@ -13,9 +13,9 @@ In this project, the main objective is to prioritise a set of purchasable or eas
 2. Large-scale virtual screening for compounds with strong predicted binding scores across multiple tRNA synthetase binding sites.
 3. Final shortlisting using additional criteria, such as the ligand's amenability to being extended with a linker to dCymM without disrupting the binding pose.
 
-## Domain-specific requirements
+## Domain-specific requirements 🛠️
 
-We recommend to create a Conda environment to run this code.
+We recommend creating a Conda environment to run this code. 🐍
 ```bash
 conda create -n adda4tb python=3.10
 conda activate adda4tb
@@ -38,17 +38,17 @@ conda install -c conda-forge openjdk
 conda install -c conda-forge openbabel
 ```
 
-## Progress reporting
+## Progress reporting 📈
 
 This repository is work in progress, as summarized in the following progress report meetings:
 
 * [Check-in meeting 1](https://docs.google.com/presentation/d/1a7K4EkecYM63CPa7QRw1SOEGv2AEA3FYjpLJPYPpIkY/edit?usp=drive_link) (2025/02/04). Selection and structural annotation of tRNA synthetases.
 * [Check-in meeting 2](https://docs.google.com/presentation/d/13RxQsi4-3t9LYxYGGvtfwdeYd3KJTor_07sc7zx3pwM/edit?usp=sharing) (2025/03/19). Binding site detection and visualization.
-* Check-in meeting 3 scheduled early April 2025.
+* Check-in meeting 3 is scheduled early April 2025.
 
 Below, we explain the progress made chronologically.
 
-### Sequence and structure annotation of tRNA synthetases
+### Sequence and structure annotation of tRNA synthetases 🧩
 
 Based on the results of the CRISPR genetic screen ([Bosch et al, 2021; Figure 5](assets/bosch_2021_figure_5.jpg)), we have selected [21 essential tRNA synthetases](data/mtb_trna_synthetases_bosch_2021_fig5_annotated.csv). The UniProt AC, name, protein sequence and EC number have been obtained from UniProt ([Mtb H37RV proteome](data/mtb_h37rv_proteome.tsv)).
 
@@ -63,7 +63,7 @@ We have used the following servers or databases to obtain structural data for th
 * [AlphaFill](https://alphafill.eu/): The AlphaFill resource was used to obtain AF2 structures along with ligands. We used the `/scripts/01_download_alphafill.py` script to programmatically download the structures and store them in [this subfolder](/data/structures/alphafill_database/).
 * [Swiss-Model](https://swissmodel.expasy.org/): The Swiss-Model server was used to obtain homology models for each sequence. They can be found in [this folder](/data/structures/swissmodel). Note that full coverage is not guaranteed, and that we required a minimum of 80%. A variable number of models per query were returned.
 
-The multiple struture files were organized in the [processed data subfolder](processed/structures) and stored both in `.cif` and `.pdb` formats. This was done with the `/scripts/02_organize_structures.py` script. This scripts ensures that only one chain is saved for each file, and that sequences are not chunked. Note that we ommitted the PDBe files in this automated processing. Moreover, to simplify visualization, we aligned all structures using the `/scripts/03_align_structures.py` script. Based on RMSD, we removed structures that seemed to be far apart from the rest.
+The multiple structure files were organized in the [processed data subfolder](processed/structures) and stored both in `.cif` and `.pdb` formats. This was done with the `/scripts/02_organize_structures.py` script. This scripts ensures that only one chain is saved for each file, and that sequences are not chunked. Note that we omitted the PDBe files in this automated processing. Moreover, to simplify visualization, we aligned all structures using the `/scripts/03_align_structures.py` script. Based on RMSD, we removed structures that seemed to be far apart from the rest.
 
 Then, we prepared these structures for docking with protein protonation with PDB2PQR and relaxation with PyRosetta using the `scripts/04_relax_structures.py` script. This procedure is computationally intensive. 
 
@@ -77,7 +77,7 @@ We downloaded protein family and domain annotations from [InterPro](https://www.
 
 In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/07_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
 
-#### Aggregated data
+#### Aggregated data 📊
 
 An aggregated file containing one row per processed structure is available [here](/processed/trna_synthetases_data.csv). This file contains the following information:
 
@@ -92,7 +92,7 @@ An aggregated file containing one row per processed structure is available [here
 | `sequence_structure`   | Sequence found in the PDB file                                                                         |
 | `full_sequence`        | Sequence found in UniProt                                                                              |
 
-#### Pocket detection
+#### Pocket detection 🔍🎯
 
 After the complete structural and sequential characterization of tRNA synthetases, we detected pockets in AF2, AF3, Chai-1 and SwissModel predicted models with `scripts/08_detect_pockets.py`. Following the [authors recommendations](https://github.com/rdk/p2rank/issues/76): for each structure, we considered detected pockets as those with a probability (K) > 0.2, but at least Top-3 (N) per structure. After that, we filtered those pockets having at least one residue with pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel), discarding about 25-30% of the pockets. Cut-offs are arbitrary; usual recommendations are 70 & 0.7, we’ve been slightly less restrictive.
 
@@ -111,7 +111,7 @@ A summary file containing one row per detected pocket and structure is available
 | `Pocket residues (chain_resn)`      | List of residues forming the pocket, with chain and residue number |
 | `B-factors`                         | Confidence measures: pLDDT (AF2, AF3, Chai) or QSQE (SM)           |
 
-#### Pymol visualization  
+#### Pymol visualization 👀
 
 We prepared PyMOL session files (`.pse`) to facilitate the visualization of detected pockets and their corresponding residues. These were generated using the `scripts/09_prepare_pymol_visualizations.py` script as step 09 in the pipeline.  
 
@@ -127,7 +127,7 @@ Each PyMOL session (one per protein) includes the following elements:
 | **InterPro annotations**                         | Includes conserved sites, domains, families, homologous superfamilies etc (red color, surface representation) | ❌ No        |
 
 
-#### Data organization
+#### Data organization 🗂️
 
 We then organized sequence and protein information using scripts `scripts/10_organize_sequence_info.py` and `scripts/11_organize_pocket_info.py`, respectively. Sequence summary information can be found at `processed/sequences/interpro_summary.tsv`, and includes the following features:
 
@@ -167,11 +167,17 @@ Pocket summary information together with InterPro can be found at `processed/seq
 For the sake of simplicity, those pocket-InterPro pairs having no overlapping residues have been omitted in the file. 
 
 
-## TL;DR
+## TL;DR ⏱️
 
-1. Sequence and structure annotation of tRNA synthetases
+We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthetases in *Mycobacterium tuberculosis*.
+
+1. Sequence annotation via InerPro.
+2. Structural characterization: 
+    - Source data: AF2, AF3, Chai-1, SwissModel, etc.
+    - Relaxation: PyRosetta
+    - Pocket detection: P2Rank
 
 
-## About the Ersilia Open Source Initiative
+## About the Ersilia Open Source Initiative 🌍❤️
 
-This repository is developed by the [Ersilia Open Source Initiative](https://ersilia.io). Ersilia develops AI/ML tools to support drug discovery research in the Global South. To learn more about us, please visit our [GitBook Documentation](https://ersilia.gitbook.io) and our [GitHub profile](https://github.com/ersilia-os/).
+This repository is developed by the [Ersilia Open Source Initiative](https://ersilia.io). Ersilia develops AI/ML tools to support drug discovery research in the Global South. To learn more about us, please visit our [GitBook Documentation](https://ersilia.gitbook.io) 🌐 and our [GitHub profile](https://github.com/ersilia-os/).
