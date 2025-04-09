@@ -169,13 +169,14 @@ For the sake of simplicity, those pocket-InterPro pairs having no overlapping re
 
 ## TL;DR ⏱️
 
-We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthetases in *Mycobacterium tuberculosis*.
+We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthetases in *Mycobacterium tuberculosis*. For each of these tRNA synthetases:
 
 1. Sequence annotation via InerPro.
 2. Structural characterization: 
-    - Source data: AF2, AF3, Chai-1, SwissModel, etc.
+    - Data sources: AF2, AF3, Chai-1, SwissModel, etc.
     - Relaxation: PyRosetta
     - Pocket detection: P2Rank
+    - Pocket characterization and clustering: PocketVec
 
 
 ## About the Ersilia Open Source Initiative 🌍❤️
