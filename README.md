@@ -1,6 +1,17 @@
 # Targeted protein degradation in Mycobacterium tuberculosis
 Discovery of potential degraders (BacPROTACS) for essential tRNA synthetases in _Mycobacterium tuberculosis_.
 
+## Table of Contents
+- [Background 📚](#background-)
+- [Domain-specific requirements 🛠️](#domain-specific-requirements-)
+- [Progress reporting 📈](#progress-reporting-)
+  - [Sequence and structure annotation 🧩](#sequence-and-structure-annotation-of-trna-synthetases-)
+    - [Pocket detection 🔍🎯](#pocket-detection-)
+    - [Pymol visualization 👀](#pymol-visualization-)
+    - [Data organization 🗂️](#data-organization-)
+- [TL;DR ⏱️](#tldr-)
+- [About the Ersilia Open Source Initiative 🌍❤️](#about-the-ersilia-open-source-initiative-)
+
 ## Background 📚
 
 This project is part of the [GC-ADDA4TB project](https://www.lifearc.org/project/grand-challenges-programme/), led by [Prof. Erick Strauss](https://scholar.google.com/citations?user=zK9kCVUAAAAJ&hl=en).
@@ -171,7 +182,7 @@ For the sake of simplicity, those pocket-InterPro pairs having no overlapping re
 
 We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthetases in *Mycobacterium tuberculosis*. For each of these tRNA synthetases:
 
-1. Sequence annotation via InerPro.
+1. Sequence annotation via InterPro.
 2. Structural characterization: 
     - Data sources: AF2, AF3, Chai-1, SwissModel, etc.
     - Relaxation: PyRosetta
