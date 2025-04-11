@@ -9,6 +9,8 @@ Discovery of potential degraders (BacPROTACS) for essential tRNA synthetases in 
     - [Pocket detection 🔍🎯](#pocket-detection-)
     - [Pymol visualization 👀](#pymol-visualization-)
     - [Data organization 🗂️](#data-organization-)
+    - [Additional analyses 🧪](#additional-analyses-)
+    - [Pocket characterization 📐](#pocket-characterization-)
 - [TL;DR ⏱️](#tldr-)
 - [About the Ersilia Open Source Initiative 🌍❤️](#about-the-ersilia-open-source-initiative-)
 
@@ -176,6 +178,14 @@ Pocket summary information together with InterPro can be found at `processed/seq
 | `Coverage domain`                   | Fraction of InterPro domain residues overlapping with the pocket |
 
 For the sake of simplicity, those pocket-InterPro pairs having no overlapping residues have been omitted in the file. 
+
+#### Additional analyses 🧪
+
+In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDBe) are aligned to predicted models to evaluate spatial coherence between structure sources. The script also checks for overlaps between detected pockets and known ligand binding sites, with results summarized in `processed/pdbe_annotation_report.csv`. Meanwhile, `scripts/14_calculate_SeqId.py` computes pairwise sequence identities between the 21 tRNA synthetases using global alignment (Needleman–Wunsch algorithm).
+
+#### Pocket characterization 📐
+
+Pocket characterization is performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). 
 
 
 ## TL;DR ⏱️
