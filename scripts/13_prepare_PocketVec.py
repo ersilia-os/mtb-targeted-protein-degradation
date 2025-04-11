@@ -65,15 +65,15 @@ path_to_pockets = "../processed/detected_pockets"
 
 for uni, st, pocket in zip(pocket_detection_data['Uniprot AC'], pocket_detection_data['File name'], pocket_detection_data['Pocket number']):
 
-    name_dir = st.strip(".pdb") + "_pocket_" + str(pocket)
+    name_dir = st.removesuffix(".pdb") + "_pocket_" + str(pocket)
 
     # Create directory
     os.makedirs(os.path.join(path_to_pocketvec, name_dir), exist_ok=True)
 
     # Copy/convert structure
     pdb_to_mol2_obabel(os.path.join(path_to_processed, uni, st),
-                       os.path.join(path_to_pocketvec, name_dir, st.strip(".pdb") + ".mol2"))
+                       os.path.join(path_to_pocketvec, name_dir, st.removesuffix(".pdb") + ".mol2"))
     
     # Copy/convert pocket
-    pdb_to_mol2_obabel(os.path.join(path_to_pockets, uni, st.strip(".pdb"), "pockets", f"pocket_{pocket}.pdb"),
+    pdb_to_mol2_obabel(os.path.join(path_to_pockets, uni, st.removesuffix(".pdb"), "pockets", f"pocket_{pocket}.pdb"),
                        os.path.join(path_to_pocketvec, name_dir, f"pocket_{pocket}.sd"))
