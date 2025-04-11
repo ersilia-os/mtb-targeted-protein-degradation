@@ -2,17 +2,17 @@
 Discovery of potential degraders (BacPROTACS) for essential tRNA synthetases in _Mycobacterium tuberculosis_.
 
 ## Table of Contents
-- [Background 📚](#background-)
-- [Domain-specific requirements 🛠️](#domain-specific-requirements-)
-- [Progress reporting 📈](#progress-reporting-)
-  - [Sequence and structure annotation 🧩](#sequence-and-structure-annotation-of-trna-synthetases-)
-    - [Pocket detection 🔍🎯](#pocket-detection-)
-    - [Pymol visualization 👀](#pymol-visualization-)
-    - [Data organization 🗂️](#data-organization-)
-    - [Additional analyses 🧪](#additional-analyses-)
-    - [Pocket characterization 📐](#pocket-characterization-)
-- [TL;DR ⏱️](#tldr-)
-- [About the Ersilia Open Source Initiative 🌍❤️](#about-the-ersilia-open-source-initiative-)
+- [Background](#background-)
+- [Domain-specific requirements](#domain-specific-requirements-)
+- [Progress reporting](#progress-reporting-)
+  - [Sequence and structure annotation](#sequence-and-structure-annotation-of-trna-synthetases-)
+    - [Pocket detection](#pocket-detection-)
+    - [Pymol visualization](#pymol-visualization-)
+    - [Data organization](#data-organization-)
+    - [Additional analyses](#additional-analyses-)
+    - [Pocket characterization](#pocket-characterization-)
+- [TL;DR](#tldr-)
+- [About the Ersilia Open Source Initiative](#about-the-ersilia-open-source-initiative-)
 
 ## Background 📚
 
