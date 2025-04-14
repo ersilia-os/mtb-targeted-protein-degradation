@@ -3,3 +3,4 @@ requests==2.32.3
 biopython==1.84
 chembl-webresource-client==0.10.9
 matplotlib==3.10.1
+scikit-learn==1.6.0
