@@ -113,10 +113,10 @@ labels = [i + " (tRNA)" if i in tRNAs else i for i in uniprots]
 
 # Save the identity matrix to a CSV file
 identity_df = pd.DataFrame(identity_matrix, index=labels, columns=labels)
-identity_df.to_csv("../processed/sequences/SeqId_matrix.tsv", sep="\t")
+identity_df.to_csv("../processed/sequences/NW_SeqAlign/SeqId_matrix.tsv", sep="\t")
 # Save the proportion matrix to a CSV file
 prop_df = pd.DataFrame(prop_matrix, index=labels, columns=labels)
-prop_df.to_csv("../processed/sequences/Prop_matrix.tsv", sep="\t")
+prop_df.to_csv("../processed/sequences/NW_SeqAlign/Prop_matrix.tsv", sep="\t")
 
 # Plot
 size = 5
