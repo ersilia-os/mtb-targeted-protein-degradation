@@ -1,9 +1,10 @@
-@<TRIPOS>MOLECULE
 ../processed/detected_pockets/P9WFV3/chai1_P9WFV3_model_1/pockets/pocket_2.pdb
- 1 0 0 0 0
-SMALL
-GASTEIGER
+ OpenBabel04152514323D
 
-@<TRIPOS>ATOM
-      1 C          19.8800    7.1710   27.8550 C.3     2  IG2         0.0000
-@<TRIPOS>BOND
+  1  0  0  0  0  0  0  0  0  0999 V2000
+   19.8800    7.1710   27.8550 C   0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+>  <HEADER>
+    Pocket 2 Centroid
+
+$$$$

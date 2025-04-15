@@ -1,9 +1,10 @@
-@<TRIPOS>MOLECULE
 ../processed/detected_pockets/P9WFU1/swissmodel_P9WFU1_model_0/pockets/pocket_3.pdb
- 1 0 0 0 0
-SMALL
-GASTEIGER
+ OpenBabel04152514313D
 
-@<TRIPOS>ATOM
-      1 C         -19.3390   25.4200   10.1750 C.3     3  IG3         0.0000
-@<TRIPOS>BOND
+  1  0  0  0  0  0  0  0  0  0999 V2000
+  -19.3390   25.4200   10.1750 C   0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+>  <HEADER>
+    Pocket 3 Centroid
+
+$$$$

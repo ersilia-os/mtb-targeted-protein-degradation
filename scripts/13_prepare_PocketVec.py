@@ -75,5 +75,5 @@ for uni, st, pocket in zip(pocket_detection_data['Uniprot AC'], pocket_detection
                        os.path.join(path_to_pocketvec, name_dir, st.removesuffix(".pdb") + ".mol2"))
     
     # Copy/convert pocket
-    pdb_to_mol2_obabel(os.path.join(path_to_pockets, uni, st.removesuffix(".pdb"), "pockets", f"pocket_{pocket}.pdb"),
+    pdb_to_sd_obabel(os.path.join(path_to_pockets, uni, st.removesuffix(".pdb"), "pockets", f"pocket_{pocket}.pdb"),
                        os.path.join(path_to_pocketvec, name_dir, f"pocket_{pocket}.sd"))
