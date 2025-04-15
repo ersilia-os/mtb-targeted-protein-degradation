@@ -1,0 +1,7 @@
+- run_pocketvec.sh: YOUR_SCRATCH_PATH
+- run_pocketvec.sh: YOUR_QUEUE_NAME *
+- run_pocketvec.sh: YOUR_SINGULARITY_IMAGE
+- run_pocketvec.sh: YOUR_SCRIPT
+- run_pocketvec.sh: YOUR_ARRAY
+
+- gen_fps_rDock_center_HT.py: 
