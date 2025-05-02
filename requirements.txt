@@ -5,3 +5,4 @@ chembl-webresource-client==0.10.9
 matplotlib==3.10.1
 scikit-learn==1.6.0
 seaborn==0.13.2
+tqdm==4.67.1

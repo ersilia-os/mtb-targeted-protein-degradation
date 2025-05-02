@@ -183,12 +183,12 @@ For the sake of simplicity, those pocket-InterPro pairs having no overlapping re
 
 In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDBe) are aligned to predicted models to evaluate spatial coherence between structure sources. The script also checks for overlaps between detected pockets and known ligand binding sites, with results summarized in `processed/pdbe_annotation_report.csv`. Meanwhile, `scripts/14_calculate_SeqId.py` computes pairwise sequence identities between the 21 tRNA synthetases using global alignment (Needleman–Wunsch algorithm). At the structural level, `scripts/15_calculate_StSim.py` evaluates the structural similarity between tRNA synthetases, using Pymol. 
 
-#### Pocket characterization - PocketVec 📐
+#### Pocket characterization I - PocketVec 📐
 
 Pocket characterization is performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). 
 
 
-#### Pocket characterization - MaSIF 📐
+#### Pocket characterization II - MaSIF 📐
 
 
 ## TL;DR ⏱️
