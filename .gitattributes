@@ -1,4 +1,4 @@
 *.pse filter=lfs diff=lfs merge=lfs -text
 processed/pocketvec_RUN/* filter=lfs diff=lfs merge=lfs -text
 *PocketVec_descriptors.zip filter=lfs diff=lfs merge=lfs -text
-processed/protein_priorization/* filter=lfs diff=lfs merge=lfs -text
+processed/protein_prioritization/* filter=lfs diff=lfs merge=lfs -text
