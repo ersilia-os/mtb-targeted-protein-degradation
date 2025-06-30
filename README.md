@@ -58,6 +58,8 @@ This repository is work in progress, as summarized in the following progress rep
 * [Check-in meeting 1](https://docs.google.com/presentation/d/1a7K4EkecYM63CPa7QRw1SOEGv2AEA3FYjpLJPYPpIkY/edit?usp=drive_link) (2025/02/04). Selection and structural annotation of tRNA synthetases.
 * [Check-in meeting 2](https://docs.google.com/presentation/d/13RxQsi4-3t9LYxYGGvtfwdeYd3KJTor_07sc7zx3pwM/edit?usp=sharing) (2025/03/19). Binding site detection and visualization.
 * [Check-in meeting 3](https://docs.google.com/presentation/d/1N6U4t6mNQmerMz0nD9AVmwABik2z512OxZ6imQbzguY/edit?usp=drive_link) (2025/04/17). Binding site characterization and comparison. Exploration of oligomerization.
+* [Check-in meeting 4](https://docs.google.com/presentation/d/1ernke0imNeMticCVAVFo9MbsAVVPie80M7O59HP3DHY/edit?usp=sharing) (2025/05/12). Large-scale protein comparisons: sequence, structure and druggable pockets. 
+* [Check-in meeting 5](https://docs.google.com/presentation/d/1o3fwydNJ1JIlEGcfe1XXN29SGv75FAlaJ-uKpIR_9GQ/edit?usp=sharing) (2025/06/18). Protein prioritization. An in-person [follow-up meeting](https://docs.google.com/presentation/d/1LGjTsAx_hhvZWtOQJLbE6Wa53H3UQWUpu0kLTxtnVlg/edit?usp=sharing) was held in Stellenbosch. 
 
 Below, we explain the progress made chronologically.
 
@@ -86,7 +88,7 @@ Afterwards, structures are aligned again with the `scripts/05_align_relaxed_stru
 
 We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/06_sequence_annotation.py` script.
 
-#### Ligands data
+#### Ligand data
 
 In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using the UniProt AC identifiers. This was done with the `scripts/07_fetch_from_chembl.py` script. We only found data for 3 of the 21 tRNA synthetases.
 
@@ -154,7 +156,7 @@ We then organized sequence and protein information using scripts `scripts/10_org
 
 Additionally, the file contains final binary columns (1/0) indicating the presence or absence of each annotation across different proteins. An additional file including manually curated InterPro annotations (i.e. Catalytic domain (ATP binding site), Anticodon Binding Domain, etc.) is found in `processed/sequences/interpro_summary_curated.tsv`.
 
-Pocket summary information together with InterPro can be found at `processed/sequences/pocket_detection_data_interpro.csv`, and includes the following features.
+Pocket summary information together with InterPro annotations can be found at `processed/sequences/pocket_detection_data_interpro.csv`, and includes the following features.
 
 | **Field**                          | **Description**                                                    |
 |-------------------------------------|--------------------------------------------------------------------|
@@ -172,8 +174,8 @@ Pocket summary information together with InterPro can be found at `processed/seq
 | `Interpro name`                     | Name of the matched InterPro domain                              |
 | `Interpro Matches`                  | Residue ranges corresponding to the InterPro domain             |
 | `Residues in pocket`                | Number of residues forming the pocket                           |
-| `Residues in interpro`              | Number of residues forming the InterPro domain                  |
-| `Residues overlap`                  | Number of residues shared between the pocket and InterPro domain |
+| `Residues in Interpro`              | Number of residues forming the InterPro domain                  |
+| `Residues overlap`                  | Number of residues shared between the pocket and the InterPro domain |
 | `Coverage pocket`                   | Fraction of pocket residues that overlap with an InterPro domain |
 | `Coverage domain`                   | Fraction of InterPro domain residues overlapping with the pocket |
 
@@ -183,12 +185,14 @@ For the sake of simplicity, those pocket-InterPro pairs having no overlapping re
 
 In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDBe) are aligned to predicted models to evaluate spatial coherence between structure sources. The script also checks for overlaps between detected pockets and known ligand binding sites, with results summarized in `processed/pdbe_annotation_report.csv`. Meanwhile, `scripts/14_calculate_SeqId.py` computes pairwise sequence identities between the 21 tRNA synthetases using global alignment (Needleman–Wunsch algorithm). At the structural level, `scripts/15_calculate_StSim.py` evaluates the structural similarity between tRNA synthetases, using Pymol. 
 
-#### Pocket characterization I - PocketVec 📐
+#### Pocket characterization - PocketVec 📐
 
 Pocket characterization is performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). 
 
 
-#### Pocket characterization II - MaSIF 📐
+#### Protein prioritization
+
+tRNA synthetases have been prioritized taking multiple factors into account. 
 
 
 ## TL;DR ⏱️
