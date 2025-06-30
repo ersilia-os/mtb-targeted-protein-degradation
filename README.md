@@ -187,8 +187,7 @@ In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDB
 
 #### Pocket characterization - PocketVec 📐
 
-Pocket characterization is performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). 
-
+Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). Several PocketVec descriptors (12/276) were filtered out due to the excessive presence of outlier compounds (>80), following the authors' recommendations. In line with these, we used a PocketVec distance threshold of 0.17 to identify similar pockets.
 
 #### Protein prioritization
 
