@@ -115,7 +115,7 @@ A summary file containing one row per detected pocket and structure is available
 
 | **Field**                          | **Description**                                                    |
 |-------------------------------------|--------------------------------------------------------------------|
-| `Uniprot_AC`                       | Uniprot AC identifier file                                        |
+| `Uniprot_AC`                       | Uniprot AC identifier                                             |
 | `File name`                         | PDB file in which pockets have been detected                     |
 | `Prediction type`                   | The method used for protein structure prediction                 |
 | `Full path`                         | The full directory path where the PDB file is stored             |
@@ -160,7 +160,7 @@ Pocket summary information together with InterPro annotations can be found at `p
 
 | **Field**                          | **Description**                                                    |
 |-------------------------------------|--------------------------------------------------------------------|
-| `Uniprot_AC`                       | Uniprot AC identifier file                                        |
+| `Uniprot_AC`                       | Uniprot AC identifier                                             |
 | `File name`                         | PDB file in which pockets have been detected                     |
 | `Prediction type`                   | The method used for protein structure prediction (e.g., AlphaFold2, AlphaFold3) |
 | `Full path`                         | The full directory path where the PDB file is stored             |
@@ -187,11 +187,20 @@ In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDB
 
 #### Pocket characterization - PocketVec 📐
 
-Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). Several PocketVec descriptors (12/276) were filtered out due to the excessive presence of outlier compounds (>80), following the authors' recommendations. In line with these, we used a PocketVec distance threshold of 0.17 to identify similar pockets.
+Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). Docking calculations were performed in an HPC cluster allowing CPU parallelization and PocketVec descriptors were calculated from docking scores in `scripts/16_calculate_PocketVec.py`. Several PocketVec descriptors (12/276) were filtered out due to the excessive presence of outlier compounds (>80), following the authors' recommendations. In line with these, we used a PocketVec distance threshold of 0.17 to classify any pocket pair of interest as similar.
 
 #### Protein prioritization
 
-tRNA synthetases have been prioritized taking multiple factors into account. 
+tRNA synthetases have been prioritized taking multiple factors into account. In brief, we exhaustively enumerated protein pairs (210) and triplets (1,330) and classified them according to PocketVec distance, Global Similarity (both structural and sequential) and the number of pockets mapped to the catalytic domain (see `notebooks/17a_Protein_prioritization.ipynb`). Global similarity was established at a 35% sequence identity and 10Å RMSD cut-offs for sequential and structural similarity, respectively. We extended comparisons at the PocketVec descriptors level, accounting for 32,561 pairs and 2,499,258 triplets, and collected lenient (PocketVec distance < 0.17) and stringent (PocketVec distance < 0.14) sets of PocketVec descriptor pairs (1,481 and 76) and triplets (3,880 and 807) in `notebooks/17b_Protein_prioritization_pairs.ipynb` and `notebooks/17b_Protein_prioritization_triplets.ipynb`. Finally, we performed an intra-set normalization to derive a 'Prioritization score' per protein, considering how many times the protein appeared in the collected sets, therefore indicating similarity to other tRNA synthetases and potential polypharmacology. Final results are summarized in `processed/protein_prioritization/final_results.tsv` and include the following information:
+
+| **Field**                          | **Description**                                                    |
+|-------------------------------------|--------------------------------------------------------------------|
+| `Uniprot_AC`                       | Uniprot AC identifier                                             |
+| `Gene name`                         | Standard gene name associated with the Uniprot AC identifier     |
+| `Vulnerability score`                   | Vulnerability score derived from [Bosch et al, 2021](https://pubmed.ncbi.nlm.nih.gov/34297925/) |
+| `Score`                         | Prioritizazion Score             |
+| `Tier`                     | Protein-associated tier                 |
+| `sim_Tier1-5`                     | Number of proteins in the same tier having a PocketVec distance < 0.17      |
 
 
 ## TL;DR ⏱️
@@ -203,7 +212,7 @@ We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthet
     - Data sources: AF2, AF3, Chai-1, SwissModel, etc.
     - Relaxation: PyRosetta
     - Pocket detection: P2Rank
-    - Pocket characterization and clustering: PocketVec and MaSIF
+    - Pocket characterization and clustering: PocketVec
 
 
 ## About the Ersilia Open Source Initiative 🌍❤️
