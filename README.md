@@ -191,7 +191,7 @@ Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-
 
 #### Protein prioritization
 
-tRNA synthetases have been prioritized taking multiple factors into account. In brief, we exhaustively enumerated protein pairs (210) and triplets (1,330) and classified them according to PocketVec distance, Global Similarity (both structural and sequential) and the number of pockets mapped to the catalytic domain (see `notebooks/17a_Protein_prioritization.ipynb`). Global similarity was established at a 35% sequence identity and 10Å RMSD cut-offs for sequential and structural similarity, respectively. We extended comparisons at the PocketVec descriptors level, accounting for 32,561 pairs and 2,499,258 triplets, and collected lenient (PocketVec distance < 0.17) and stringent (PocketVec distance < 0.14) sets of PocketVec descriptor pairs (1,481 and 76) and triplets (3,880 and 807) in `notebooks/17b_Protein_prioritization_pairs.ipynb` and `notebooks/17b_Protein_prioritization_triplets.ipynb`. Finally, we performed an intra-set normalization to derive a 'Prioritization score' per protein, considering how many times the protein appeared in the collected sets, therefore indicating similarity to other tRNA synthetases and potential polypharmacology. Final results are summarized in `processed/protein_prioritization/final_results.tsv` and include the following information:
+tRNA synthetases have been prioritized taking multiple factors into account. In brief, we exhaustively enumerated protein pairs (210) and triplets (1,330) and classified them according to PocketVec distance, Global Similarity (both structural and sequential) and the number of pockets mapped to the catalytic domain (see `notebooks/17a_Protein_prioritization.ipynb`). Global similarity was established at a 35% sequence identity and 10Å RMSD cut-offs for sequential and structural similarity, respectively. We extended comparisons at the PocketVec descriptors level, accounting for 32,561 pairs and 2,499,258 triplets, and collected lenient (PocketVec distance < 0.17) and stringent (PocketVec distance < 0.14) sets of PocketVec descriptor pairs (1,481 and 76) and triplets (3,880 and 807) in `notebooks/17b_Protein_prioritization_pairs.ipynb` and `notebooks/17b_Protein_prioritization_triplets.ipynb`. Finally, we performed an intra-set normalization to derive a 'Prioritization score' per protein, considering how many times the protein appeared in the collected sets, therefore indicating similarity to other tRNA synthetases and potential polypharmacology (see `notebooks/17c_Protein_prioritization_individual.ipynb`). Final results are summarized in `processed/protein_prioritization/final_results.tsv` and include the following information:
 
 | **Field**                          | **Description**                                                    |
 |-------------------------------------|--------------------------------------------------------------------|
@@ -200,7 +200,7 @@ tRNA synthetases have been prioritized taking multiple factors into account. In 
 | `Vulnerability score`                   | Vulnerability score derived from [Bosch et al, 2021](https://pubmed.ncbi.nlm.nih.gov/34297925/) |
 | `Score`                         | Prioritizazion Score             |
 | `Tier`                     | Protein-associated tier                 |
-| `sim_Tier1-5`                     | Number of proteins in the same tier having a PocketVec distance < 0.17      |
+| `sim_Tier1-5`                     | Number of proteins in the same tier having a PocketVec distance < 0.14      |
 
 
 ## TL;DR ⏱️
@@ -213,6 +213,7 @@ We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthet
     - Relaxation: PyRosetta
     - Pocket detection: P2Rank
     - Pocket characterization and clustering: PocketVec
+3. Protein prioritization based on potential polypharmacology
 
 
 ## About the Ersilia Open Source Initiative 🌍❤️
