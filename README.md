@@ -202,6 +202,12 @@ tRNA synthetases have been prioritized taking multiple factors into account. In 
 | `Tier`                     | Protein-associated tier                 |
 | `sim_Tier1-5`                     | Number of proteins in the same tier having a PocketVec distance < 0.14      |
 
+Finally, ...
+
+#### Diverse library characterization
+
+We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our reference set of small molecules. 
+
 
 ## TL;DR ⏱️
 
@@ -214,6 +220,7 @@ We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthet
     - Pocket detection: P2Rank
     - Pocket characterization and clustering: PocketVec
 3. Protein prioritization based on potential polypharmacology
+4. 
 
 
 ## About the Ersilia Open Source Initiative 🌍❤️
