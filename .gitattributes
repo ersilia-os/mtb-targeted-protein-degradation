@@ -2,3 +2,4 @@
 processed/pocketvec_RUN/* filter=lfs diff=lfs merge=lfs -text
 *PocketVec_descriptors.zip filter=lfs diff=lfs merge=lfs -text
 processed/protein_prioritization/* filter=lfs diff=lfs merge=lfs -text
+processed/enamine_characterization/conformations.sdf.gz filter=lfs diff=lfs merge=lfs -text
