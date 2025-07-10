@@ -6,8 +6,6 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import pickle
-import shutil
-import string
 import gzip
 import os
 
@@ -27,60 +25,27 @@ def generate_3d_conformer(input_list):
     if status != 0:
         return None
     AllChem.UFFOptimizeMolecule(mol)
-    return [IK, mol]
+    mol.SetProp("_Name", IK)
+    return mol
 
 
 # Prepare input list
 input_list = [[ik, IK_TO_SMILES[ik]]for ik in IKs]
-
-# Get alphabet
-alphabet_upper = string.ascii_uppercase
-
-# Create output directories 
-OUTPATH = "../processed/enamine_characterization/conformations"
-for i in alphabet_upper:
-    for j in alphabet_upper:
-        os.makedirs(os.path.join(OUTPATH, i, j), exist_ok=True)
-
 
 # Run conformer generation - parallelized
 N_WORKERS = 12
 with Pool(N_WORKERS) as pool:
     mols = list(tqdm(pool.imap(generate_3d_conformer, input_list), total=len(input_list)))
 
-print("Creating individual files...")
-
 # Write results
-processed_molecules = 0
-for mol in mols:
-    if mol is not None:
-        IK, mol = mol
-        writer = Chem.SDWriter(os.path.join(OUTPATH, IK[0], IK[1], IK + ".sdf"))
-        mol.SetProp("_Name", IK)
-        writer.write(mol)
-        writer.close()
-        processed_molecules += 1
-
-print("Creating a single SDF file...")
-
-# Write results in a single SDF file
 processed_molecules = 0
 with gzip.open("../processed/enamine_characterization/conformations.sdf.gz", "wt") as gzfile:
     writer = Chem.SDWriter(gzfile)
     for mol in mols:
         if mol is not None:
-            IK, mol = mol
-            mol.SetProp("_Name", IK)
             writer.write(mol)
             processed_molecules += 1
     writer.close()
 
-# Create zip
-shutil.make_archive(OUTPATH, 'gztar', OUTPATH)
-
-# Remove directory and keep only the compressed file
-shutil.rmtree(OUTPATH)
-
-# Print some info
 print(f"Initial number of molecules: {len(IKs)}")
 print(f"Processed number of molecules: {processed_molecules}")
