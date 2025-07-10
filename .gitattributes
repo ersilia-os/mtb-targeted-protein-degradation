@@ -3,3 +3,6 @@ processed/pocketvec_RUN/* filter=lfs diff=lfs merge=lfs -text
 *PocketVec_descriptors.zip filter=lfs diff=lfs merge=lfs -text
 processed/protein_prioritization/* filter=lfs diff=lfs merge=lfs -text
 processed/enamine_characterization/conformations.sdf.gz filter=lfs diff=lfs merge=lfs -text
+processed/enamine_characterization/conformations.tar.gz filter=lfs diff=lfs merge=lfs -text
+processed/unidock_docking/conformations_prepared.tar.gz filter=lfs diff=lfs merge=lfs -text
+processed/unidock_docking/input_ligands.txt filter=lfs diff=lfs merge=lfs -text

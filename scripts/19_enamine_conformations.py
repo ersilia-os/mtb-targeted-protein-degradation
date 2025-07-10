@@ -1,4 +1,5 @@
 from rdkit.Chem import rdFingerprintGenerator
+from rdkit.Chem.rdmolfiles import MolToV2KMolBlock
 from multiprocessing import Pool
 from rdkit.Chem import AllChem
 from rdkit import Chem
@@ -34,13 +35,14 @@ def generate_3d_conformer(input_list):
 input_list = [[ik, IK_TO_SMILES[ik]]for ik in IKs]
 
 # Get alphabet
-alphabet_upper = string.ascii_uppercase
+# alphabet_upper = string.ascii_uppercase
 
 # Create output directories 
 OUTPATH = "../processed/enamine_characterization/conformations"
-for i in alphabet_upper:
-    for j in alphabet_upper:
-        os.makedirs(os.path.join(OUTPATH, i, j), exist_ok=True)
+os.makedirs(os.path.join(OUTPATH), exist_ok=True)
+# for i in alphabet_upper:
+#     for j in alphabet_upper:
+#         os.makedirs(os.path.join(OUTPATH, i, j), exist_ok=True)
 
 
 # Run conformer generation - parallelized
@@ -55,25 +57,28 @@ processed_molecules = 0
 for mol in mols:
     if mol is not None:
         IK, mol = mol
-        writer = Chem.SDWriter(os.path.join(OUTPATH, IK[0], IK[1], IK + ".sdf"))
         mol.SetProp("_Name", IK)
-        writer.write(mol)
-        writer.close()
-        processed_molecules += 1
+        molblock = Chem.MolToV2KMolBlock(mol)
+        out_path = os.path.join(OUTPATH, IK + ".sdf")
+        with open(out_path, "w") as f:
+            f.write(molblock)
+            f.write("$$$$\n")
+            processed_molecules += 1
 
 print("Creating a single SDF file...")
 
 # Write results in a single SDF file
 processed_molecules = 0
 with gzip.open("../processed/enamine_characterization/conformations.sdf.gz", "wt") as gzfile:
-    writer = Chem.SDWriter(gzfile)
     for mol in mols:
         if mol is not None:
             IK, mol = mol
             mol.SetProp("_Name", IK)
-            writer.write(mol)
+            molblock = Chem.MolToV2KMolBlock(mol)
+            gzfile.write(molblock)
+            gzfile.write("$$$$\n")
             processed_molecules += 1
-    writer.close()
+
 
 # Create zip
 shutil.make_archive(OUTPATH, 'gztar', OUTPATH)
