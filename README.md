@@ -206,7 +206,12 @@ Finally, ...
 
 #### Diverse library characterization
 
-We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our reference set of small molecules. 
+We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our reference set of small molecules. First, we generated Morgan Count Fingerprints for 100,157 compounds (see `scripts/18_enamine_mfps.py`). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`). 90% of these small molecules were in the [270,400] Da range. 
+
+### Uni-dock docking preparation
+
+Before docking 
+
 
 
 ## TL;DR ⏱️
