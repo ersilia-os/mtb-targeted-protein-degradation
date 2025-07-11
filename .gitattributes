@@ -6,3 +6,4 @@ processed/enamine_characterization/conformations.sdf.gz filter=lfs diff=lfs merg
 processed/enamine_characterization/conformations.tar.gz filter=lfs diff=lfs merge=lfs -text
 processed/unidock_docking/conformations_prepared.tar.gz filter=lfs diff=lfs merge=lfs -text
 processed/unidock_docking/input_ligands.txt filter=lfs diff=lfs merge=lfs -text
+processed/unidock_docking/structures_prepared.tar.gz filter=lfs diff=lfs merge=lfs -text
