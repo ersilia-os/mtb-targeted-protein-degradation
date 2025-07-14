@@ -13,13 +13,16 @@ import gzip
 import os
 
 # Load compound info
-IKs = open("../processed/enamine_characterization/IKs.txt", "r").readlines()
-IKs = [i.strip() for i in IKs]
+IDs = open("../processed/enamine_characterization/IDs.txt", "r").readlines()
+IDs = [i.strip() for i in IDs]
+ID_TO_SMILES = pickle.load(open("../processed/enamine_characterization/ID_TO_SMI.pkl", "rb"))
 IK_TO_SMILES = pickle.load(open("../processed/enamine_characterization/IK_TO_SMI.pkl", "rb"))
+ID_TO_IK = pickle.load(open("../processed/enamine_characterization/ID_TO_IK.pkl", "rb"))
+
 
 # Given (NAME, SMILES) create 3D conformer
 def generate_3d_conformer(input_list):
-    IK, smi = input_list
+    ID, IK, smi = input_list
     mol = Chem.MolFromSmiles(smi)
     mol = Chem.AddHs(mol)
     params = AllChem.ETKDGv3()
@@ -28,11 +31,11 @@ def generate_3d_conformer(input_list):
     if status != 0:
         return None
     AllChem.UFFOptimizeMolecule(mol)
-    return [IK, mol]
+    return [ID, IK, mol]
 
 
 # Prepare input list
-input_list = [[ik, IK_TO_SMILES[ik]]for ik in IKs]
+input_list = [[id, ID_TO_IK[id], ID_TO_SMILES[id]]for id in IDs]
 
 # Get alphabet
 # alphabet_upper = string.ascii_uppercase
@@ -56,12 +59,16 @@ print("Creating individual files...")
 processed_molecules = 0
 for mol in mols:
     if mol is not None:
-        IK, mol = mol
-        mol.SetProp("_Name", IK)
+        ID, IK, mol = mol
+        mol.SetProp("_Name", ID)
+        mol.SetProp("_ID", ID)
+        mol.SetProp("_IK", IK)
         molblock = Chem.MolToV2KMolBlock(mol)
-        out_path = os.path.join(OUTPATH, IK + ".sdf")
+        out_path = os.path.join(OUTPATH, ID + ".sdf")
         with open(out_path, "w") as f:
             f.write(molblock)
+            f.write(f">  <_ID>\n{ID}\n\n")
+            f.write(f">  <_IK>\n{IK}\n\n")
             f.write("$$$$\n")
             processed_molecules += 1
 
@@ -72,10 +79,14 @@ processed_molecules = 0
 with gzip.open("../processed/enamine_characterization/conformations.sdf.gz", "wt") as gzfile:
     for mol in mols:
         if mol is not None:
-            IK, mol = mol
-            mol.SetProp("_Name", IK)
+            ID, IK, mol = mol
+            mol.SetProp("_Name", ID)
+            mol.SetProp("_ID", ID)
+            mol.SetProp("_IK", IK)
             molblock = Chem.MolToV2KMolBlock(mol)
             gzfile.write(molblock)
+            gzfile.write(f">  <_ID>\n{ID}\n\n")
+            gzfile.write(f">  <_IK>\n{IK}\n\n")
             gzfile.write("$$$$\n")
             processed_molecules += 1
 
@@ -87,5 +98,5 @@ shutil.make_archive(OUTPATH, 'gztar', OUTPATH)
 shutil.rmtree(OUTPATH)
 
 # Print some info
-print(f"Initial number of molecules: {len(IKs)}")
+print(f"Initial number of molecules: {len(IDs)}")
 print(f"Processed number of molecules: {processed_molecules}")
