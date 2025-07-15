@@ -166,4 +166,4 @@ for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], d
 
 
 
-    break
+    
