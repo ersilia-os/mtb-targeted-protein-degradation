@@ -23,7 +23,7 @@ with tarfile.open("../processed/enamine_characterization/conformations.tar.gz", 
 print("Creating file with all ligand paths...")
 with open("../processed/unidock_docking/input_ligands.txt", "w") as outfile:
     for sdf in sorted(os.listdir(PATH_TO_CONFORMATIONS_ENAMINE)):
-            outfile.write(os.path.join("..", "processed", "unidock_docking", "conformations", sdf))
+            outfile.write(os.path.join(".", "..", "processed", "unidock_docking", "conformations", sdf))
             outfile.write("\n")
 
 # Prepare sdfs for docking
@@ -36,7 +36,7 @@ os.system(COMMAND)
 print("Creating file with all ligand paths again, discarding those that failed...")
 with open("../processed/unidock_docking/input_ligands.txt", "w") as outfile:
     for sdf in sorted(os.listdir(PATH_TO_CONFORMATIONS_PREPARED)):
-            outfile.write(os.path.join("..", "processed", "unidock_docking", "conformations", sdf))
+            outfile.write(os.path.join(".", "..", "processed", "unidock_docking", "conformations_prepared", sdf))
             outfile.write("\n")
 
 print("Organizing directory...")
