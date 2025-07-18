@@ -41,6 +41,9 @@ In addition, the following tools are required:
 * [PDB2PQR](https://pdb2pqr.readthedocs.io/en/latest/) for protonation at pH 7.0.
 * [PyRosetta](https://www.pyrosetta.org/) for protein structure relaxation. PyRosetta can be installed with the [PyRosetta Installer](https://www.pyrosetta.org/downloads).
 * [P2RANK](https://github.com/rdk/p2rank) for pocket detection. 
+* [PocketVec]
+* [Uni-Dock]
+* [LazyQSAR]
 
 
 To run P2RANK, Java is required. Additionally, openbabel needs to be installed for file format conversion:
