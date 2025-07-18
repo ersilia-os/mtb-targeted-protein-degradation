@@ -2,6 +2,15 @@ tmp
 .DS_Store
 foo.ipynb
 notebooks/dev.ipynb
+processed/unidock_docking/conformations_prepared/
+processed/unidock_docking/docking_results/**/docking/
+processed/unidock_docking/docking_results/**/docking/*.sdf
+
+!processed/unidock_docking/conformations_prepared.tar.gz
+!processed/unidock_docking/input_ligands.txt
+!processed/unidock_docking/structures_prepared.tar.gz
+!processed/unidock_docking/docking_results/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
