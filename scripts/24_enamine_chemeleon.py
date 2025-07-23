@@ -73,7 +73,7 @@ for batch in tqdm(range(0, len(ID_TO_SMILES), BATCH_SIZE)):
 X = np.array(X, dtype="float16")
 
 # Assert that the number of IDs and MFPs are the same
-assert len(IDs) == X.shape[0], f"ERROR: Number of IDs ({len(IDs)}) does not match number of MFPs ({X.shape[0]})"
+assert len(IDs) == X.shape[0], f"ERROR: Number of IDs ({len(IDs)}) does not match number of CheMeleon embeddings ({X.shape[0]})"
 
 # Save results
 np.savez_compressed(os.path.join(OUTDIR, "X_CheMeleon.npz"), X=X)
