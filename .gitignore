@@ -5,6 +5,7 @@ notebooks/dev.ipynb
 processed/unidock_docking/conformations_prepared/
 processed/unidock_docking/docking_results/**/docking/
 processed/unidock_docking/docking_results/**/docking/*.sdf
+data/Enamine/2024.07_Enamine_REAL_DB_9.6M.cxsmiles
 
 !processed/unidock_docking/conformations_prepared.tar.gz
 !processed/unidock_docking/input_ligands.txt
