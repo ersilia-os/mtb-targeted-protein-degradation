@@ -54,7 +54,7 @@ ID_TO_SMILES = pickle.load(open(os.path.join(PATH_TO_MFPS, "ID_TO_SMI.pkl"), "rb
 ID_TO_IK = pickle.load(open(os.path.join(PATH_TO_MFPS, "ID_TO_IK.pkl"), "rb"))
 
 # Instantiate CheMeleong embeddings
-chemeleon_fingerprint = CheMeleonFingerprint()
+chemeleon_fingerprint = CheMeleonFingerprint(device="cuda")  # remove cuda if no GPU is available
 
 print("Calculating CheMeleon embeddings...")
 BATCH_SIZE = 1000
