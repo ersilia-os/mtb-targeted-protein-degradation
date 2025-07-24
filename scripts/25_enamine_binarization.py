@@ -11,6 +11,8 @@ PATH_TO_REPORTS = os.path.join(root, "..", "processed", "unidock_docking", "dock
 PATH_TO_OUTPUT = os.path.join(root, "..", "processed", "unidock_docking", "binarized_reports")
 os.makedirs(PATH_TO_OUTPUT, exist_ok=True)
 
+# Create pickle to run jobs in the cluster
+p = []
 
 # For each pocket structure
 for st in tqdm(sorted(os.listdir(PATH_TO_REPORTS))):
@@ -28,5 +30,14 @@ for st in tqdm(sorted(os.listdir(PATH_TO_REPORTS))):
     report["bin_05"] = (report["score"] < perc_05).astype(int)
     report["bin_1"] = (report["score"] < perc_1).astype(int)
 
+    # Append to the list for parallel processing
+    p.append([st, "bin_01"])
+    p.append([st, "bin_05"])
+    p.append([st, "bin_1"])
+
     # Save report
     report.to_csv(os.path.join(PATH_TO_OUTPUT, f"report_bin_{st}.csv"), index=False)
+
+# Save pickle for parallel processing
+pickle.dump(p, open(os.path.join(root, "..", "processed", "unidock_docking", "pickle.pkl"), "wb"))
+
