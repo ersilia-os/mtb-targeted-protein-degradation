@@ -5,6 +5,7 @@ notebooks/dev.ipynb
 processed/unidock_docking/conformations_prepared/
 processed/unidock_docking/docking_results/**/docking/
 processed/unidock_docking/docking_results/**/docking/*.sdf
+processed/unidock_docking/models/**/**/*.joblib
 data/Enamine/2024.07_Enamine_REAL_DB_9.6M.cxsmiles
 
 !processed/unidock_docking/conformations_prepared.tar.gz
