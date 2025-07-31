@@ -4,6 +4,7 @@ import pandas as pd
 import lazyqsar
 import numpy as np
 import pickle
+import joblib
 import sys
 import os
 
@@ -36,8 +37,8 @@ id_to_embedding = {i: j for i,j in zip(ids, embeddings)}
 # Creating matrix
 X = np.array([id_to_embedding[i] for i in compounds])
 
-# Stratified 5-fold CV
-kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+# Stratified 3-fold CV
+kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 aucs = []
 
 sys.stderr.write(str(st) + " -- " + str(perc) + "\n\n")
@@ -53,13 +54,6 @@ for train_idx, test_idx in kf.split(X, Y):
     # Train model only on training set
     model = lazyqsar.LazyBinaryClassifier(model_type="random_forest", pca=False, min_seen_across_partitions=1, 
                                           num_trials=20, base_num_splits=1, max_samples=10000)
-
-    sys.stderr.write(str(X_train))
-    sys.stderr.flush()
-
-    sys.stderr.write(str(np.isnan(X_train).flatten().any()))
-    sys.stderr.write(str(np.isnan(Y_train).flatten().any()))
-    sys.stderr.flush()
 
     # Fit and predict
     model.fit(X_train, Y_train)
