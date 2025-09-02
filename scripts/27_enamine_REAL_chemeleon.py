@@ -1,4 +1,4 @@
-# This file is conceptually analogous to 18_enamine_mfps.py but using CheMeleon embeddings insted
+# FULL ENAMINE REAL CHARACTERIZATION
 # CAUTION: THIS SCRIPT NEEDS TO BE RUN WITH A CONDA ENVIRONMENT HAVING CHEMPROP >= 2.2.0
 
 from rdkit.Chem import MolFromSmiles, Mol
