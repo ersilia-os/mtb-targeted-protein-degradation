@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOCAL_DIR="/home/acomajuncosa/Documents_GPU/mtb-targeted-protein-degradation/processed/enamine_REAL_characterization/embeddings/"  # run from norssken-gpu-wsl machine
+LOCAL_DIR="/home/acomajuncosa/Documents_GPU/mtb-targeted-protein-degradation/processed/enamine_REAL_characterization/embeddings"  # results are gathered from norrsken-gpu-wsl
 REMOTE_USER="acomajuncosa"
 REMOTE_HOST="10.7.108.17"   # dante IP
 REMOTE_DIR="/aloy/home/acomajuncosa/Ersilia/mtb/processed/enamine_REAL_characterization/embeddings"
