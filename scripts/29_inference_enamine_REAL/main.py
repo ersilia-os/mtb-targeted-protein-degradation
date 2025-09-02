@@ -1,10 +1,9 @@
-from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_auc_score
-import pandas as pd
 import lazyqsar
+import pandas as pd
 import numpy as np
 import pickle
 import joblib
+import h5py
 import sys
 import os
 
@@ -15,62 +14,43 @@ root = os.path.dirname(os.path.abspath(__file__))
 
 # Load pickle
 st, perc = pickle.load(open(os.path.join(root, "..", "..", "processed", 'unidock_docking', 'pickle.pkl'), "rb"))[alpha]
+assert perc == "bin_01"
 
-# Get input data
-PATH_TO_REPORTS = os.path.join(root, "..", "..", "processed", "unidock_docking", "binarized_reports")
-PATH_TO_OUTPUT = os.path.join(root, "..", "..", "processed", "unidock_docking", "models", st, perc)
-PATH_TO_EMBEDDINGS = os.path.join(root, "..", "..", "processed", "enamine_characterization")
-os.makedirs(PATH_TO_OUTPUT, exist_ok=True)
+# Define paths
+PATH_TO_MODELS = "/aloy/home/acomajuncosa/Ersilia/mtb/processed/unidock_docking/models"
+PATH_TO_CHUNKS = "/aloy/home/acomajuncosa/Ersilia/mtb/processed/enamine_REAL_characterization/embeddings"
+PATH_TO_OUTPUT = "/aloy/home/acomajuncosa/Ersilia/mtb/processed/unidock_docking/inferences"
 
-# Load compounds and activities
-report = pd.read_csv(os.path.join(PATH_TO_REPORTS, f"report_bin_{st}.csv"))
-compounds = report["compound"].tolist()
-Y = np.array(report[perc].tolist())
+# Load model
+model = joblib.load(os.path.join(PATH_TO_MODELS, st, perc, 'LQ_RF.joblib'))
 
-# Load ids and embeddings
-ids = open(os.path.join(PATH_TO_EMBEDDINGS, "IDs_CheMeleon.txt")).read().splitlines()
-embeddings = np.load(os.path.join(PATH_TO_EMBEDDINGS, "X_CheMeleon.npz"))['X']
+# Set n_jobs to 1
+for mm in model.model.models:
+    mm.model_.n_jobs = 1
 
-# Mapping id to embedding
-id_to_embedding = {i: j for i,j in zip(ids, embeddings)}
+IDS, PROBS = [], []
 
-# Creating matrix
-X = np.array([id_to_embedding[i] for i in compounds])
+# For each chunk
+for chunk in range(0, 96):
 
-# Stratified 3-fold CV
-kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-aucs = []
+    # Load chunk
+    h5_path = os.path.join(PATH_TO_CHUNKS, f"enamine_REAL_chemeleon_chunk_{chunk}.h5")
+    with h5py.File(h5_path, "r") as h5f:
+        X, ids = h5f['X'][:], h5f['ids'][:]
 
-sys.stderr.write(str(st) + " -- " + str(perc) + "\n\n")
-sys.stderr.flush()
+    # Calculate probabilities
+    probs = model.predict_proba(X)
 
-# For each CV
-for train_idx, test_idx in kf.split(X, Y):
+    # Store results
+    PROBS.extend(probs[:, 1])
+    IDS.extend(ids.astype(str))
 
-    # Train test split
-    X_train, X_test = X[train_idx], X[test_idx]
-    Y_train, Y_test = Y[train_idx], Y[test_idx]
+    break
 
-    # Train model only on training set
-    model = lazyqsar.LazyBinaryClassifier(model_type="random_forest", pca=False, min_seen_across_partitions=1, 
-                                          num_trials=20, base_num_splits=1, max_samples=10000)
-
-    # Fit and predict
-    model.fit(X_train, Y_train)
-    probs = model.predict_proba(X_test)[:, 1]
-    
-    # Evaluate
-    auc = roc_auc_score(Y_test, probs)
-    aucs.append(auc)
+assert len(PROBS) == len(IDS)
 
 # Save results
-with open(os.path.join(PATH_TO_OUTPUT, f"AUROCs.csv"), "w") as f:
-    f.write(",".join([str(round(i, 3)) for i in aucs]))
-
-# Train model on all data
-model = lazyqsar.LazyBinaryClassifier(model_type="random_forest", pca=False, min_seen_across_partitions=1, 
-                                        num_trials=20, base_num_splits=1, max_samples=10000)
-model.fit(X, Y)
-
-# Save model
-joblib.dump(model, os.path.join(PATH_TO_OUTPUT, "LQ_RF.joblib"))
+h5_path = os.path.join(PATH_TO_OUTPUT, f"{st}_bin_01.h5")
+with h5py.File(h5_path, "w") as h5f:
+    h5f.create_dataset("ids", data=np.array(IDS, dtype=h5py.string_dtype(encoding="utf-8")))
+    h5f.create_dataset("probs", data=np.array(PROBS, dtype=np.float32))

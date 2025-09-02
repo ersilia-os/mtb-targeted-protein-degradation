@@ -97,7 +97,7 @@ for file_idx, chunk_start in enumerate(range(0, len(ALL_IDs), CHUNK_SIZE)):
 
         # Create datasets
         emb_ds = h5f.create_dataset("X", shape=(len(chunk_ids), 2048), dtype="float16", compression="gzip")
-        id_ds = h5f.create_dataset("ids", shape=(len(chunk_ids),), dtype="S32", compression="gzip")
+        id_ds = h5f.create_dataset("ids", shape=(len(chunk_ids),), dtype=h5py.string_dtype(encoding="utf-8"), compression="gzip")
 
         # For each batch in the chunk
         for batch_start in tqdm(range(0, len(chunk_ids), BATCH_SIZE), desc=f"Chunk {file_idx}"):
@@ -110,4 +110,4 @@ for file_idx, chunk_start in enumerate(range(0, len(ALL_IDs), CHUNK_SIZE)):
 
             # Write batch to HDF5
             emb_ds[batch_start:batch_end, :] = embeddings
-            id_ds[batch_start:batch_end] = np.array(batch_ids, dtype="S32")
+            id_ds[batch_start:batch_end] = np.array(batch_ids, dtype=h5py.string_dtype(encoding="utf-8"))

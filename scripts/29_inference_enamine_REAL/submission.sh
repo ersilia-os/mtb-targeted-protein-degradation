@@ -5,10 +5,10 @@
 #SBATCH --chdir=/aloy/home/acomajuncosa/Ersilia/mtb
 #SBATCH --time=12:00:00
 #SBATCH --ntasks=1
-#SBATCH --array=0-275
+#SBATCH --array=0-10
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=4G
-#SBATCH --output=./processed/unidock_docking/training_outputs/%x_%a.out
+#SBATCH --mem=8G
+#SBATCH --output=./processed/unidock_docking/inference_outputs/%x_%a.out
 #SBATCH -p sbnb_cpu_sphr,sbnb_cpu_zen3
 
 # Loads default environment configuration
@@ -20,4 +20,4 @@ export LD_LIBRARY_PATH=/apps/manual/software/CUDA/11.6.1/lib64:/apps/manual/soft
 
 alpha=($(seq 0 275))
 
-singularity exec --cleanenv /apps/singularity/ood_images/docker_irb_intel-optimized-tensorflow-avx512-2.13-pip-conda-jupyter-v6.sif ./scripts/26_train_models/run.sh ${alpha[$SLURM_ARRAY_TASK_ID]}
+singularity exec --cleanenv /apps/singularity/ood_images/docker_irb_intel-optimized-tensorflow-avx512-2.13-pip-conda-jupyter-v6.sif ./scripts/29_inference_enamine_REAL/run.sh ${alpha[$SLURM_ARRAY_TASK_ID]}
