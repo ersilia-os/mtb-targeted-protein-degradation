@@ -1,5 +1,0 @@
-gcc: warning: opt: linker input file unused because linking not done
-gcc: error: opt: linker input file not found: No such file or directory
-gcc: warning: opt: linker input file unused because linking not done
-gcc: error: opt: linker input file not found: No such file or directory
-
