@@ -70,7 +70,7 @@ print(f"Number of IDs in the final compound set: {len(set([i[1] for i in records
 # Store data in a csv file
 os.makedirs(PATH_TO_MFPS, exist_ok=True)
 output_df = pd.DataFrame(records, columns=["InChiKey", "id", "smiles"])
-output_df.to_csv(os.path.join(PATH_TO_MFPS, "enamine_REAL.csv"), index=False, sep='\t')
+output_df.to_csv(os.path.join(PATH_TO_MFPS, "enamine_REAL.tsv"), index=False, sep='\t')
 
 
 # Instantiate CheMeleon embeddings
