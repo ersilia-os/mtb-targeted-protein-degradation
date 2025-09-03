@@ -29,18 +29,25 @@ IDs = sorted(ID_TO_SMILES)
 # Prepare input list
 input_list = [[id, ID_TO_SMILES[id]]for id in IDs]
 
+# Splitting
+SPLIT_SIZE = 100000
+chunks = [input_list[i:i+SPLIT_SIZE] for i in range(0, len(input_list), SPLIT_SIZE)]
+id_to_split = {}
+for si, chunk in enumerate(chunks):
+    for cid, _ in chunk:
+        id_to_split[cid] = si
+
 # Create output directories 
-OUTPATH = "../processed/enamine_REAL_characterization"
+OUTPATH = "../processed/enamine_REAL_characterization/conformations"
 os.makedirs(os.path.join(OUTPATH), exist_ok=True)
 
-# Run conformer generation - parallelized
-N_WORKERS = 32
-with Pool(N_WORKERS) as pool:
-    mols = list(tqdm(pool.imap(generate_3d_conformer, input_list), total=len(input_list)))
+N_WORKERS = 16
+for si, chunk in enumerate(chunks):
+    with Pool(N_WORKERS) as pool:
+        part = dict(tqdm(pool.imap(generate_3d_conformer, chunk), total=len(chunk)))
+    with gzip.open(os.path.join(OUTPATH, f"mols_{si:02d}.pkl.gz"), "wb") as f:
+        pickle.dump(part, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-# Convert to dict
-mols = dict(mols)
-
-# Dump results
-with gzip.open(os.path.join(OUTPATH, "mols.pkl.gz"), "wb") as f:
-    pickle.dump(mols, f, protocol=pickle.HIGHEST_PROTOCOL)
+with gzip.open(os.path.join(OUTPATH, "id_to_split.tsv.gz"), "wt", encoding="utf-8") as f:
+    for cid, si in id_to_split.items():
+        f.write(f"{cid}\t{si}\n")

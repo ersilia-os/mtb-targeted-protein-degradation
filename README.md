@@ -214,7 +214,7 @@ After the structural characterization of 21 essential tRNA synthetases, we searc
 
 We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our starting set of small molecules. First, we calculated Morgan Count Fingerprints and [CheMeleon](https://github.com/JacksonBurns/chemeleon) embeddings for 100,157 compounds (see `scripts/18_enamine_mfps.py` and `scripts/24_enamine_chemeleon.py`, respectively. ⚠️ CheMeleon embeddings were calculated using Ersilia’s NVIDIA GeForce RTX 4090). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`). 90% of these small molecules were in the [270,400] Da range.
 
-### Uni-Dock docking preparation I
+### Uni-Dock docking preparation I - ENAMINE Diversity Library HLL-100 (100k)
 
 #### Ligands
 
@@ -228,7 +228,7 @@ We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our
 
 Protein-small molecule docking was performed with [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) with search mode _fast_ and _vina_ scoring function using Ersilia’s NVIDIA GeForce RTX 4090 (276 pocket structures x 100k compounds ~ 1 week of computation time, see `scripts/22_unidock_docking.py`). 
 
-### Training surrogate model
+### Training surrogate model I
 
 For each pocket structure (x276) a ML model was trained using [LazyQSAR](https://github.com/ersilia-os/lazy-qsar) and [CheMeleon](https://github.com/JacksonBurns/chemeleon) descriptors at 3 binarization percentiles (0.1%, 0.5% and 1%, see `scripts/25_enamine_binarization.py` and `scripts/26_train_models`). After .. the results, only the models trained on 0.1% binarized data were ... 
 
