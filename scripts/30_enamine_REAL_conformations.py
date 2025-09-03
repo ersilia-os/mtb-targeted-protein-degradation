@@ -33,8 +33,6 @@ input_list = [[id, ID_TO_SMILES[id]]for id in IDs]
 OUTPATH = "../processed/enamine_REAL_characterization"
 os.makedirs(os.path.join(OUTPATH), exist_ok=True)
 
-input_list = input_list[:100000]
-
 # Run conformer generation - parallelized
 N_WORKERS = 32
 with Pool(N_WORKERS) as pool:
