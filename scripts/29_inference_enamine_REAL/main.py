@@ -13,7 +13,7 @@ alpha = int(sys.argv[1])
 root = os.path.dirname(os.path.abspath(__file__))
 
 # Load pickle
-st, perc = pickle.load(open(os.path.join(root, "..", "..", "processed", 'unidock_docking', 'pickle.pkl'), "rb"))[alpha]
+st, perc = pickle.load(open(os.path.join(root, "..", "..", "processed", 'unidock_docking', 'pickle_bins_01.pkl'), "rb"))[alpha]
 assert perc == "bin_01"
 
 # Define paths
@@ -31,7 +31,8 @@ for mm in model.model.models:
 IDS, PROBS = [], []
 
 # For each chunk
-for chunk in range(0, 96):
+# for chunk in range(0, 96):
+for chunk in [0, 1, 11, 12, 13, 14, 15, 16, 17, 18, 19]:
 
     # Load chunk
     h5_path = os.path.join(PATH_TO_CHUNKS, f"enamine_REAL_chemeleon_chunk_{chunk}.h5")
@@ -45,12 +46,10 @@ for chunk in range(0, 96):
     PROBS.extend(probs[:, 1])
     IDS.extend(ids.astype(str))
 
-    break
-
 assert len(PROBS) == len(IDS)
 
 # Save results
-h5_path = os.path.join(PATH_TO_OUTPUT, f"{st}_bin_01.h5")
-with h5py.File(h5_path, "w") as h5f:
-    h5f.create_dataset("ids", data=np.array(IDS, dtype=h5py.string_dtype(encoding="utf-8")))
-    h5f.create_dataset("probs", data=np.array(PROBS, dtype=np.float32))
+results = pd.DataFrame([])
+results['probs'] = PROBS
+results['ids'] = IDS.astype(str)
+results.to_csv(os.path.join(PATH_TO_OUTPUT, f"{st}_bin_01.csv.gz"), index=False, compression={'method': 'gzip','compresslevel': 9})

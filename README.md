@@ -1,5 +1,5 @@
 # Targeted protein degradation in Mycobacterium tuberculosis
-Discovery of potential degraders (BacPROTACS) for essential tRNA synthetases in _Mycobacterium tuberculosis_.
+Discovery of potential degraders (BacPROTACS) for essential tRNA synthetases in _Mycobacterium tuberculosis_. This repository is work in progress.
 
 ## Table of Contents
 - [Background](#background-)
@@ -41,9 +41,9 @@ In addition, the following tools are required:
 * [PDB2PQR](https://pdb2pqr.readthedocs.io/en/latest/) for protonation at pH 7.0.
 * [PyRosetta](https://www.pyrosetta.org/) for protein structure relaxation. PyRosetta can be installed with the [PyRosetta Installer](https://www.pyrosetta.org/downloads).
 * [P2RANK](https://github.com/rdk/p2rank) for pocket detection. 
-* [PocketVec]
-* [Uni-Dock]
-* [LazyQSAR]
+* [PocketVec](https://github.com/sbnb-irb/pocketvec) for pocket characterization.
+* [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) for protein-small molecule flexible docking.
+* [LazyQSAR](https://github.com/ersilia-os/lazy-qsar) for ML bioactivity modelling. 
 
 
 To run P2RANK, Java is required. Additionally, openbabel needs to be installed for file format conversion:
@@ -63,6 +63,7 @@ This repository is work in progress, as summarized in the following progress rep
 * [Check-in meeting 3](https://docs.google.com/presentation/d/1N6U4t6mNQmerMz0nD9AVmwABik2z512OxZ6imQbzguY/edit?usp=drive_link) (2025/04/17). Binding site characterization and comparison. Exploration of oligomerization.
 * [Check-in meeting 4](https://docs.google.com/presentation/d/1ernke0imNeMticCVAVFo9MbsAVVPie80M7O59HP3DHY/edit?usp=sharing) (2025/05/12). Large-scale protein comparisons: sequence, structure and druggable pockets. 
 * [Check-in meeting 5](https://docs.google.com/presentation/d/1o3fwydNJ1JIlEGcfe1XXN29SGv75FAlaJ-uKpIR_9GQ/edit?usp=sharing) (2025/06/18). Protein prioritization. An in-person [follow-up meeting](https://docs.google.com/presentation/d/1LGjTsAx_hhvZWtOQJLbE6Wa53H3UQWUpu0kLTxtnVlg/edit?usp=sharing) was held in Stellenbosch. 
+* [Check-in meeting 6]() ...
 
 Below, we explain the progress made chronologically.
 
@@ -190,9 +191,9 @@ In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDB
 
 #### Pocket characterization - PocketVec 📐
 
-Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). Docking calculations were performed in an HPC cluster allowing CPU parallelization and PocketVec descriptors were calculated from docking scores in `scripts/16_calculate_PocketVec.py`. Several PocketVec descriptors (12/276) were filtered out due to the excessive presence of outlier compounds (>80), following the authors' recommendations. In line with these, we used a PocketVec distance threshold of 0.17 to classify any pocket pair of interest as similar.
+Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). Docking calculations were performed in an HPC cluster allowing CPU parallelization and PocketVec descriptors were calculated from raw docking scores in `scripts/16_calculate_PocketVec.py`. Several PocketVec descriptors (12/276) were filtered out due to the excessive presence of outlier compounds (>80), following the authors' recommendations. In line with these, we used a PocketVec distance threshold of 0.17 to classify any pocket pair of interest as similar.
 
-#### Protein prioritization
+#### Protein prioritization ⚠️
 
 tRNA synthetases have been prioritized taking multiple factors into account. In brief, we exhaustively enumerated protein pairs (210) and triplets (1,330) and classified them according to PocketVec distance, Global Similarity (both structural and sequential) and the number of pockets mapped to the catalytic domain (see `notebooks/17a_Protein_prioritization.ipynb`). Global similarity was established at a 35% sequence identity and 10Å RMSD cut-offs for sequential and structural similarity, respectively. We extended comparisons at the PocketVec descriptors level, accounting for 32,561 pairs and 2,499,258 triplets, and collected lenient (PocketVec distance < 0.17) and stringent (PocketVec distance < 0.14) sets of PocketVec descriptor pairs (1,481 and 76) and triplets (3,880 and 807) in `notebooks/17b_Protein_prioritization_pairs.ipynb` and `notebooks/17b_Protein_prioritization_triplets.ipynb`. Finally, we performed an intra-set normalization to derive a 'Prioritization score' per protein, considering how many times the protein appeared in the collected sets, therefore indicating similarity to other tRNA synthetases and potential polypharmacology (see `notebooks/17c_Protein_prioritization_individual.ipynb`). Final results are summarized in `processed/protein_prioritization/final_results.tsv` and include the following information:
 
@@ -203,17 +204,32 @@ tRNA synthetases have been prioritized taking multiple factors into account. In 
 | `Vulnerability score`                   | Vulnerability score derived from [Bosch et al, 2021](https://pubmed.ncbi.nlm.nih.gov/34297925/) |
 | `Score`                         | Prioritizazion Score             |
 | `Tier`                     | Protein-associated tier                 |
-| `sim_Tier1-5`                     | Number of proteins in the same tier having a PocketVec distance < 0.14      |
+| `sim_Tier1-5`                     | Number of proteins in the tier N having a PocketVec distance < 0.14      |
 
-Finally, ...
+## High-throughput virtual screening ⚡
 
-#### Diverse library characterization
+After the structural characterization of 21 essential tRNA synthetases, we search for potential small-molecule binders in an active learning fashion. First, we dock a chemically diverse set of 100k compounds against each pocket structure and we then train a surrogate model with [LazyQSAR](https://github.com/ersilia-os/lazy-qsar). 
 
-We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our reference set of small molecules. First, we generated Morgan Count Fingerprints for 100,157 compounds (see `scripts/18_enamine_mfps.py`). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`). 90% of these small molecules were in the [270,400] Da range. 
 
-### Uni-dock docking preparation
+### Characterization of a chemically diverse library of compounds ⚗️
 
-Before docking 
+We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our starting set of small molecules. First, we calculated Morgan Count Fingerprints and [CheMeleon](https://github.com/JacksonBurns/chemeleon) embeddings for 100,157 compounds (see `scripts/18_enamine_mfps.py` and `scripts/24_enamine_chemeleon.py`, respectively. ⚠️ CheMeleon embeddings were calculated using Ersilia’s NVIDIA GeForce RTX 4090). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`). 90% of these small molecules were in the [270,400] Da range.
+
+### Uni-Dock docking preparation
+
+#### Ligands
+
+100,154 compounds with 3D conformations were prepared using the `ligandprep` functionality of `unidocktools` (see `scripts/20_unidock_ligandprep.py`).
+
+#### Protein structures
+
+178 protein structures (totalling 276 pocket structures, see `processed/pocket_detection_data.csv`) were prepared using the `proteinprep` functionality of `unidocktools` (see `scripts/21_unidock_proteinprep.py`). 8 of them required manual intervention to fix PDB2PQR/Pyrosetta protonation issues.
+
+### Uni-Dock docking
+
+Protein-small molecule docking was performed with [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) with search mode _fast_ and _vina_ scoring function using Ersilia’s NVIDIA GeForce RTX 4090 (276 pocket structures x 100k compounds ~ 1 week of computation time, see `scripts/22_unidock_docking.py`). 
+
+ 
 
 
 
@@ -228,7 +244,8 @@ We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthet
     - Pocket detection: P2Rank
     - Pocket characterization and clustering: PocketVec
 3. Protein prioritization based on potential polypharmacology
-4. 
+4. HTVS - Uni-dock: 276 pocket structures against 100k compounds
+5. ... learning
 
 
 ## About the Ersilia Open Source Initiative 🌍❤️

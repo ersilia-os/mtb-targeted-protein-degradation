@@ -5,7 +5,7 @@
 #SBATCH --chdir=/aloy/home/acomajuncosa/Ersilia/mtb
 #SBATCH --time=12:00:00
 #SBATCH --ntasks=1
-#SBATCH --array=0-10
+#SBATCH --array=0-9
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
 #SBATCH --output=./processed/unidock_docking/inference_outputs/%x_%a.out
