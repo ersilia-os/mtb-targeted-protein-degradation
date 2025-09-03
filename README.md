@@ -210,12 +210,11 @@ tRNA synthetases have been prioritized taking multiple factors into account. In 
 
 After the structural characterization of 21 essential tRNA synthetases, we search for potential small-molecule binders in an active learning fashion. First, we dock a chemically diverse set of 100k compounds against each pocket structure and we then train a surrogate model with [LazyQSAR](https://github.com/ersilia-os/lazy-qsar). 
 
-
-### Characterization of a chemically diverse library of compounds ⚗️
+### Characterization of ENAMINE Diversity Library HLL-100 100k compounds ⚗️
 
 We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our starting set of small molecules. First, we calculated Morgan Count Fingerprints and [CheMeleon](https://github.com/JacksonBurns/chemeleon) embeddings for 100,157 compounds (see `scripts/18_enamine_mfps.py` and `scripts/24_enamine_chemeleon.py`, respectively. ⚠️ CheMeleon embeddings were calculated using Ersilia’s NVIDIA GeForce RTX 4090). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`). 90% of these small molecules were in the [270,400] Da range.
 
-### Uni-Dock docking preparation
+### Uni-Dock docking preparation I
 
 #### Ligands
 
@@ -225,9 +224,15 @@ We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our
 
 178 protein structures (totalling 276 pocket structures, see `processed/pocket_detection_data.csv`) were prepared using the `proteinprep` functionality of `unidocktools` (see `scripts/21_unidock_proteinprep.py`). 8 of them required manual intervention to fix PDB2PQR/Pyrosetta protonation issues.
 
-### Uni-Dock docking
+### Uni-Dock docking I
 
 Protein-small molecule docking was performed with [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) with search mode _fast_ and _vina_ scoring function using Ersilia’s NVIDIA GeForce RTX 4090 (276 pocket structures x 100k compounds ~ 1 week of computation time, see `scripts/22_unidock_docking.py`). 
+
+### Training surrogate model
+
+For each pocket structure (x276) a ML model was trained using [LazyQSAR](https://github.com/ersilia-os/lazy-qsar) and [CheMeleon](https://github.com/JacksonBurns/chemeleon) descriptors at 3 binarization percentiles (0.1%, 0.5% and 1%, see `scripts/25_enamine_binarization.py` and `scripts/26_train_models`). After .. the results, only the models trained on 0.1% binarized data were ... 
+
+### Characterization of Enamine REAL 10M compounds
 
  
 

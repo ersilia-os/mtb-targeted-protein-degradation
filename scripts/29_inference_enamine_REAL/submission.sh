@@ -5,10 +5,10 @@
 #SBATCH --chdir=/aloy/home/acomajuncosa/Ersilia/mtb
 #SBATCH --time=12:00:00
 #SBATCH --ntasks=1
-#SBATCH --array=0-9
+#SBATCH --array=0-275%10
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
-#SBATCH --output=./processed/unidock_docking/inference_outputs/%x_%a.out
+#SBATCH --output=./processed/unidock_docking/inferences_outputs/%x_%a.out
 #SBATCH -p sbnb_cpu_sphr,sbnb_cpu_zen3
 
 # Loads default environment configuration

@@ -31,8 +31,7 @@ for mm in model.model.models:
 IDS, PROBS = [], []
 
 # For each chunk
-# for chunk in range(0, 96):
-for chunk in [0, 1, 11, 12, 13, 14, 15, 16, 17, 18, 19]:
+for chunk in range(0, 96):
 
     # Load chunk
     h5_path = os.path.join(PATH_TO_CHUNKS, f"enamine_REAL_chemeleon_chunk_{chunk}.h5")
@@ -50,6 +49,6 @@ assert len(PROBS) == len(IDS)
 
 # Save results
 results = pd.DataFrame([])
+results['ids'] = np.array(IDS, dtype=str)
 results['probs'] = PROBS
-results['ids'] = IDS.astype(str)
 results.to_csv(os.path.join(PATH_TO_OUTPUT, f"{st}_bin_01.csv.gz"), index=False, compression={'method': 'gzip','compresslevel': 9})

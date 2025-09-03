@@ -1,5 +1,5 @@
 # This file is conceptually analogous to 18_enamine_mfps.py but using CheMeleon embeddings instead
-# CAUTION: THIS SCRIPT NEEDS TO BE RUN WITH A CONDA ENVIRONMENT HAVING CHEMPROP >= 2.2.0
+# CAUTION: THIS SCRIPT NEEDS TO BE RUN WITH A CONDA ENVIRONMENT HAVING CHEMPROP >= 2.2.0 ON A GPU MACHINE FOR MASSIVE PARALLELIZATION
 
 from rdkit.Chem import MolFromSmiles, Mol
 from urllib.request import urlretrieve
