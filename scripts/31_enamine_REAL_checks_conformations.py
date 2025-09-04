@@ -17,7 +17,7 @@ PATH_TO_CONFORMATIONS = os.path.join(root, "..", "..", "..", "Documents_GPU", "m
 MOLS_FAILED, MOLS_SUCCESS = [], []
 
 # For each split of 100k compounds
-for split in tqdm(range(0, 5)):
+for split in tqdm(range(0, 96)):
     with gzip.open(os.path.join(PATH_TO_CONFORMATIONS, f"mols_{split:02d}.pkl.gz"), "rb") as f:
         mols = pickle.load(f)
         failed = [i for i in mols if mols[i] == None]
