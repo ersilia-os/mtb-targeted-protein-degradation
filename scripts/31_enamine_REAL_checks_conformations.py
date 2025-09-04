@@ -1,5 +1,3 @@
-### TO BE RUN FROM NORRSKEN-GPU ###
-
 from tqdm import tqdm
 import pandas as pd
 import random
