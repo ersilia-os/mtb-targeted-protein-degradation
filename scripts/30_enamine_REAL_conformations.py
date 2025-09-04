@@ -41,7 +41,7 @@ for si, chunk in enumerate(chunks):
 OUTPATH = "../processed/enamine_REAL_characterization/conformations"
 os.makedirs(os.path.join(OUTPATH), exist_ok=True)
 
-N_WORKERS = 32
+N_WORKERS = 32  # TO BE RUN IN A 32 CPU MACHINE
 for si, chunk in enumerate(chunks):
     with Pool(N_WORKERS) as pool:
         part = dict(tqdm(pool.imap(generate_3d_conformer, chunk), total=len(chunk)))

@@ -13,6 +13,8 @@ processed/enamine_REAL_characterization/**
 !processed/unidock_docking/input_ligands.txt
 !processed/unidock_docking/structures_prepared.tar.gz
 !processed/unidock_docking/docking_results/
+!processed/enamine_REAL_characterization/failed_REAL.csv
+!processed/enamine_REAL_characterization/random_sample_REAL.csv
 
 
 # Byte-compiled / optimized / DLL files
