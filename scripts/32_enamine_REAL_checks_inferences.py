@@ -33,7 +33,7 @@ print(f"Loaded {len(FAILED)} failed compounds")
 print(f"Loaded {len(SUCCESS)} successful compounds")
 
 # Dump list of successful compounds
-PATH_TO_RESULTS = os.path.join("..", "processed", "unidock_docking", "inferences_top100k")
+PATH_TO_RESULTS = os.path.join("..", "processed", "unidock_docking", "inference_probs")
 pickle.dump(SUCCESS, open(os.path.join(PATH_TO_RESULTS, "success_mols.pkl"), "wb"))
 
 print("Reading inference results")

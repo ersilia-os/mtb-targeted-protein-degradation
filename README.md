@@ -210,6 +210,12 @@ tRNA synthetases have been prioritized taking multiple factors into account. In 
 
 After the structural characterization of 21 essential tRNA synthetases, we search for potential small-molecule binders in an active learning fashion. First, we dock a chemically diverse set of 100k compounds against each pocket structure and we then train a surrogate model with [LazyQSAR](https://github.com/ersilia-os/lazy-qsar). 
 
+Computational resources: (elaborate and explain where is each script executed)
+
+- herbert
+- norrsken-gpu-wsl
+- SBNB-IRB cluster (/aloy/home)
+
 ### Characterization of ENAMINE Diversity Library HLL-100 100k compounds ⚗️
 
 We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our starting set of small molecules. First, we calculated Morgan Count Fingerprints and [CheMeleon](https://github.com/JacksonBurns/chemeleon) embeddings for 100,157 compounds (see `scripts/18_enamine_mfps.py` and `scripts/24_enamine_chemeleon.py`, respectively. ⚠️ CheMeleon embeddings were calculated using Ersilia’s NVIDIA GeForce RTX 4090). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`). 90% of these small molecules were in the [270,400] Da range.
