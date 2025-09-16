@@ -53,4 +53,4 @@ for pocket in sorted(os.listdir(PATH_TO_INFERENCES)):
     probs = [inf[i] for i in SUCCESS]
 
     # Store
-    np.savez_compressed(os.path.join(PATH_TO_RESULTS, pocket.replace(".csv.gz", '')), np.array(probs).astype('float16'))
+    np.savez_compressed(os.path.join(PATH_TO_RESULTS, pocket.replace(".csv.gz", '')), np.array(probs).astype('float32'))

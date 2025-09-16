@@ -37,8 +37,8 @@ with open(PATH_TO_FAILED, "w") as out:
 # Get IDs
 IDs = sorted(MOLS_SUCCESS)
 
-# Sample 10k compounds
-sample = random.sample(IDs, 10000)
+# Sample 25k compounds
+sample = random.sample(IDs, 25000)
 print(f"Total number of sampled compounds: {len(sample)}")
 
 # Save results
