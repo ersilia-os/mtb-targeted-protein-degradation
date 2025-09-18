@@ -97,7 +97,7 @@ def generate_report(directory: str, output_csv: str = "scores.csv", score_field:
 # Define paths
 # root = '.'
 root = os.path.dirname(os.path.abspath(__file__))
-UNIDOCK_PATH = os.path.join(root, "..", "processed", "unidock_docking")
+UNIDOCK_PATH = os.path.join(root, "..", "processed", "unidock_REAL_docking")
 OUTPATH = os.path.join(UNIDOCK_PATH, "docking_results")
 os.makedirs(OUTPATH, exist_ok=True)
 
@@ -106,11 +106,6 @@ pocket_detection_data = pd.read_csv(os.path.join(root, "..", "processed", "pocke
 
 # Shuffle with fixed seed
 df = pocket_detection_data.sample(frac=1, random_state=42).reset_index(drop=True)
-
-# Untar conformations prepared
-shutil.unpack_archive(os.path.join(UNIDOCK_PATH, "conformations_prepared.tar.gz"), 
-                      os.path.join(UNIDOCK_PATH, "conformations_prepared"), 'gztar')
-
 
 # For each pocket
 for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], df['Pocket centroid coordinate (x y z)']):
@@ -141,29 +136,26 @@ for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], d
     output_dir = os.path.join(outpath, "docking")
     log_file = os.path.join(outpath, "logs.log")
 
-    # Run docking
-    run_unidock(receptor=receptor, ligand_index=ligand_index, center_x=center_x, center_y=center_y, center_z=center_z,
-                search_mode=search_mode, output_dir=output_dir, log_file=log_file)
+    # # Run docking
+    # run_unidock(receptor=receptor, ligand_index=ligand_index, center_x=center_x, center_y=center_y, center_z=center_z,
+    #             search_mode=search_mode, output_dir=output_dir, log_file=log_file)
     
-    print("Generating report!")
+    # print("Generating report!")
     
-    # Generate report
-    generate_report(os.path.join(outpath, "docking"), os.path.join(outpath, "report.csv"))
+    # # Generate report
+    # generate_report(os.path.join(outpath, "docking"), os.path.join(outpath, "report.csv"))
 
-    print("Compressing results!")
+    # print("Compressing results!")
 
-    # Tar results
-    with tarfile.open(os.path.join(outpath, "docking.tar.gz"), "w:gz", compresslevel=9) as tar:
-        tar.add(os.path.join(outpath, "docking"), arcname=os.path.basename(os.path.join(outpath, "docking")))
+    # # Tar results
+    # with tarfile.open(os.path.join(outpath, "docking.tar.gz"), "w:gz", compresslevel=9) as tar:
+    #     tar.add(os.path.join(outpath, "docking"), arcname=os.path.basename(os.path.join(outpath, "docking")))
 
-    # Tar logs
-    with tarfile.open(os.path.join(outpath, "logs.tar.gz"), "w:gz") as tar:
-        tar.add(os.path.join(outpath, "logs.log"), arcname="logs.log")
+    # # Tar logs
+    # with tarfile.open(os.path.join(outpath, "logs.tar.gz"), "w:gz") as tar:
+    #     tar.add(os.path.join(outpath, "logs.log"), arcname="logs.log")
 
-    # Remove file and directory
-    os.remove(os.path.join(outpath, "logs.log"))
-    shutil.rmtree(os.path.join(outpath, "docking"))
+    # # Remove file and directory
+    # os.remove(os.path.join(outpath, "logs.log"))
+    # shutil.rmtree(os.path.join(outpath, "docking"))
 
-
-
-    

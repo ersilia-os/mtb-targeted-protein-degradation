@@ -10,6 +10,8 @@ data/Enamine/2024.07_Enamine_REAL_DB_9.6M.cxsmiles
 processed/enamine_REAL_characterization/**
 processed/unidock_docking/inference_probs/**
 processed/unidock_REAL_docking/conformations_prepared/**
+processed/unidock_REAL_docking/conformations_prepared/structures_prepared.tar.gz
+processed/unidock_REAL_docking/input_ligands/**
 
 !processed/unidock_docking/conformations_prepared.tar.gz
 !processed/unidock_docking/input_ligands.txt
