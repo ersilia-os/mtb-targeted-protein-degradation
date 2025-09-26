@@ -131,7 +131,7 @@ for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], d
     # Prepare docking variables
     receptor = os.path.join(outpath, file.replace(".pdb", ".pdbqt"))
     center_x, center_y, center_z = centroid.split()
-    ligand_index = os.path.join(UNIDOCK_PATH, "input_ligands.txt")
+    ligand_index = os.path.join(UNIDOCK_PATH, "input_ligands", f"input_ligands_{label}.txt")
     search_mode = 'fast'
     output_dir = os.path.join(outpath, "docking")
     log_file = os.path.join(outpath, "logs.log")
@@ -158,6 +158,3 @@ for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], d
     # Remove file and directory
     os.remove(os.path.join(outpath, "logs.log"))
     shutil.rmtree(os.path.join(outpath, "docking"))
-
-    break
-
