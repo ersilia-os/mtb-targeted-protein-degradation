@@ -131,31 +131,30 @@ for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], d
     # Prepare docking variables
     receptor = os.path.join(outpath, file.replace(".pdb", ".pdbqt"))
     center_x, center_y, center_z = centroid.split()
-    ligand_index = os.path.join(UNIDOCK_PATH, "input_ligands.txt")
+    ligand_index = os.path.join(UNIDOCK_PATH, "input_ligands", f"input_ligands_{label}.txt")
     search_mode = 'fast'
     output_dir = os.path.join(outpath, "docking")
     log_file = os.path.join(outpath, "logs.log")
 
-    # # Run docking
-    # run_unidock(receptor=receptor, ligand_index=ligand_index, center_x=center_x, center_y=center_y, center_z=center_z,
-    #             search_mode=search_mode, output_dir=output_dir, log_file=log_file)
+    # Run docking
+    run_unidock(receptor=receptor, ligand_index=ligand_index, center_x=center_x, center_y=center_y, center_z=center_z,
+                search_mode=search_mode, output_dir=output_dir, log_file=log_file)
     
-    # print("Generating report!")
+    print("Generating report!")
     
-    # # Generate report
-    # generate_report(os.path.join(outpath, "docking"), os.path.join(outpath, "report.csv"))
+    # Generate report
+    generate_report(os.path.join(outpath, "docking"), os.path.join(outpath, "report.csv"))
 
-    # print("Compressing results!")
+    print("Compressing results!")
 
-    # # Tar results
-    # with tarfile.open(os.path.join(outpath, "docking.tar.gz"), "w:gz", compresslevel=9) as tar:
-    #     tar.add(os.path.join(outpath, "docking"), arcname=os.path.basename(os.path.join(outpath, "docking")))
+    # Tar results
+    with tarfile.open(os.path.join(outpath, "docking.tar.gz"), "w:gz", compresslevel=9) as tar:
+        tar.add(os.path.join(outpath, "docking"), arcname=os.path.basename(os.path.join(outpath, "docking")))
 
-    # # Tar logs
-    # with tarfile.open(os.path.join(outpath, "logs.tar.gz"), "w:gz") as tar:
-    #     tar.add(os.path.join(outpath, "logs.log"), arcname="logs.log")
+    # Tar logs
+    with tarfile.open(os.path.join(outpath, "logs.tar.gz"), "w:gz") as tar:
+        tar.add(os.path.join(outpath, "logs.log"), arcname="logs.log")
 
-    # # Remove file and directory
-    # os.remove(os.path.join(outpath, "logs.log"))
-    # shutil.rmtree(os.path.join(outpath, "docking"))
-
+    # Remove file and directory
+    os.remove(os.path.join(outpath, "logs.log"))
+    shutil.rmtree(os.path.join(outpath, "docking"))
