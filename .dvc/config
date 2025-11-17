@@ -1,4 +1,6 @@
 [core]
-    remote = s3remote
+    remote = gdrive
 ['remote "s3remote"']
     url = s3://tbprotacsgcadda/mtb-targeted-protein-degradation
+['remote "gdrive"']
+    url = gdrive://1H4ikXCINFlkTasR0gSEGAvJPRvLiZBef
