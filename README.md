@@ -75,14 +75,14 @@ Based on the results of the CRISPR genetic screen ([Bosch et al, 2021; Figure 5]
 
 We have used the following servers or databases to obtain structural data for the selected tRNA synthetases. To ease the query of some resources, we have generated FASTA files for each tRNA synthetase using the `scripts/00_generate_fasta_files.py` script.
 
-* [PDBe](https://www.ebi.ac.uk/pdbe/): Experimental structures (when available) can be found in the [this subfolder](/data/structures/pdbe_database). Note that these structures are often presented in multimeric form, and do not necessarily have full sequence coverage.
-* [AlphaFold2 database](https://alphafold.ebi.ac.uk/): Predicted structures with AF2 were downloaded from the AF2-EBI database and stored in [this subfolder](/data/structures/alphafold2_database). All structures in AF2 had 100% sequence coverage and are monomeric. Only one model was downloaded.
-* [AlphaFold3 server](https://alphafoldserver.com/): We predicted structures with the AF3 server and downloaded them into [this subfolder](/data/structures/alphafold3_webserver). Five models are available per query.
-* [Chai-1 server](https://lab.chaidiscovery.com/dashboard): Likewise, we predicted structures with the Chai-1 server, ticking the MSA option. Results are stored in [this subfolder](/data/structures/chai1_server). Five models per query were returned.
-* [AlphaFill](https://alphafill.eu/): The AlphaFill resource was used to obtain AF2 structures along with ligands. We used the `/scripts/01_download_alphafill.py` script to programmatically download the structures and store them in [this subfolder](/data/structures/alphafill_database/).
-* [Swiss-Model](https://swissmodel.expasy.org/): The Swiss-Model server was used to obtain homology models for each sequence. They can be found in [this folder](/data/structures/swissmodel). Note that full coverage is not guaranteed, and that we required a minimum of 80%. A variable number of models per query were returned.
+* [PDBe](https://www.ebi.ac.uk/pdbe/): Experimental structures (when available) can be found in `/data/structures/pdbe_database`. Note that these structures are often presented in multimeric form, and do not necessarily have full sequence coverage.
+* [AlphaFold2 database](https://alphafold.ebi.ac.uk/): Predicted structures with AF2 were downloaded from the AF2-EBI database and stored in `/data/structures/alphafold2_database`. All structures in AF2 had 100% sequence coverage and are monomeric. Only one model was downloaded.
+* [AlphaFold3 server](https://alphafoldserver.com/): We predicted structures with the AF3 server and downloaded them into `/data/structures/alphafold3_webserver`. Five models are available per query.
+* [Chai-1 server](https://lab.chaidiscovery.com/dashboard): Likewise, we predicted structures with the Chai-1 server, ticking the MSA option. Results are stored in `/data/structures/chai1_server`. Five models per query were returned.
+* [AlphaFill](https://alphafill.eu/): The AlphaFill resource was used to obtain AF2 structures along with ligands. We used the `/scripts/01_download_alphafill.py` script to programmatically download the structures and store them in `/data/structures/alphafill_database/`.
+* [Swiss-Model](https://swissmodel.expasy.org/): The Swiss-Model server was used to obtain homology models for each sequence. They can be found in `/data/structures/swissmodel`. Note that full coverage is not guaranteed, and that we required a minimum of 80%. A variable number of models per query were returned.
 
-The multiple structure files were organized in the [processed data subfolder](processed/structures) and stored both in `.cif` and `.pdb` formats. This was done with the `/scripts/02_organize_structures.py` script. This scripts ensures that only one chain is saved for each file, and that sequences are not chunked. Note that we omitted the PDBe files in this automated processing. Moreover, to simplify visualization, we aligned all structures using the `/scripts/03_align_structures.py` script. Based on RMSD, we removed structures that seemed to be far apart from the rest.
+The multiple structure files were organized in the `processed/structures` directory and stored both in `.cif` and `.pdb` formats. This was done with the `/scripts/02_organize_structures.py` script. This scripts ensures that only one chain is saved for each file, and that sequences are not chunked. Note that we omitted the PDBe files in this automated processing. Moreover, to simplify visualization, we aligned all structures using the `/scripts/03_align_structures.py` script. Based on RMSD, we removed structures that seemed to be far apart from the rest.
 
 Then, we prepared these structures for docking with protein protonation with PDB2PQR and relaxation with PyRosetta using the `scripts/04_relax_structures.py` script. This procedure is computationally intensive. 
 
@@ -90,7 +90,7 @@ Afterwards, structures are aligned again with the `scripts/05_align_relaxed_stru
 
 #### Sequence data
 
-We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found [here](data/sequences/interpro). Sequence annotation data was processed using the `scripts/06_sequence_annotation.py` script.
+We downloaded protein family and domain annotations from [InterPro](https://www.ebi.ac.uk/interpro/). Files can be found  in `data/sequences/interpro`. Sequence annotation data was processed using the `scripts/06_sequence_annotation.py` script.
 
 #### Ligand data
 
@@ -98,7 +98,7 @@ In a first instance, we fetched data from [ChEMBL](https://www.ebi.ac.uk/chembl/
 
 #### Aggregated data 📊
 
-An aggregated file containing one row per processed structure is available [here](/processed/trna_synthetases_data.csv). This file contains the following information:
+An aggregated file containing one row per processed structure is available in `/processed/trna_synthetases_data.csv`. This file contains the following information:
 
 | **Field**              | **Description**                                                                                         |
 |-------------------------|---------------------------------------------------------------------------------------------------------|
@@ -115,7 +115,7 @@ An aggregated file containing one row per processed structure is available [here
 
 After the complete structural and sequential characterization of tRNA synthetases, we detected pockets in AF2, AF3, Chai-1 and SwissModel predicted models with `scripts/08_detect_pockets.py`. Following the [authors recommendations](https://github.com/rdk/p2rank/issues/76): for each structure, we considered detected pockets as those with a probability (K) > 0.2, but at least Top-3 (N) per structure. After that, we filtered those pockets having at least one residue with pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel), discarding about 25-30% of the pockets. Cut-offs are arbitrary; usual recommendations are 70 & 0.7, we’ve been slightly less restrictive.
 
-A summary file containing one row per detected pocket and structure is available [here](/processed/pocket_detection_data.csv). This file contains the following information:
+A summary file containing one row per detected pocket and structure is available in `/processed/pocket_detection_data.csv`. This file contains the following information:
 
 | **Field**                          | **Description**                                                    |
 |-------------------------------------|--------------------------------------------------------------------|
@@ -148,7 +148,7 @@ Each PyMOL session (one per protein) includes the following elements:
 
 #### Data organization 🗂️
 
-We then organized sequence and protein information using scripts `scripts/10_organize_sequence_info.py` and `scripts/11_organize_pocket_info.py`, respectively. Sequence summary information can be found at `processed/sequences/interpro_summary.tsv`, and includes the following features:
+We then organized sequence and protein information using scripts `scripts/10_organize_sequence_info.py` and `scripts/11_organize_pocket_info.py`, respectively. Sequence summary information can be found at `processed/sequences/interpro_summary.tsv`, and include the following features:
 
 | **Field**                  | **Description**                                                                            |
 |----------------------------|--------------------------------------------------------------------------------------------|
@@ -160,7 +160,7 @@ We then organized sequence and protein information using scripts `scripts/10_org
 
 Additionally, the file contains final binary columns (1/0) indicating the presence or absence of each annotation across different proteins. An additional file including manually curated InterPro annotations (i.e. Catalytic domain (ATP binding site), Anticodon Binding Domain, etc.) is found in `processed/sequences/interpro_summary_curated.tsv`.
 
-Pocket summary information together with InterPro annotations can be found at `processed/sequences/pocket_detection_data_interpro.csv`, and includes the following features.
+Pocket summary information together with InterPro annotations can be found at `processed/pocket_detection_data_interpro.csv`, and includes the following features.
 
 | **Field**                          | **Description**                                                    |
 |-------------------------------------|--------------------------------------------------------------------|
@@ -187,11 +187,11 @@ For the sake of simplicity, those pocket-InterPro pairs having no overlapping re
 
 #### Additional analyses 🧪
 
-In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDBe) are aligned to predicted models to evaluate spatial coherence between structure sources. The script also checks for overlaps between detected pockets and known ligand binding sites, with results summarized in `processed/pdbe_annotation_report.csv`. Meanwhile, `scripts/14_calculate_SeqId.py` computes pairwise sequence identities between the 21 tRNA synthetases using global alignment (Needleman–Wunsch algorithm). At the structural level, `scripts/15_calculate_StSim.py` evaluates the structural similarity between tRNA synthetases, using Pymol. 
+In `scripts/12_align_PDB_structures.py`, experimental structures (e.g., from PDBe) are aligned to predicted models to evaluate spatial coherence between structure sources. The script also checks for overlaps between detected pockets and known ligand binding sites, with results summarized in `processed/pdbe_annotation_report.csv`. Meanwhile, `scripts/14_calculate_SeqId.py` computes pairwise sequence identities between the 21 tRNA synthetases using global alignment (Needleman–Wunsch algorithm). At the structural level, `scripts/15_calculate_StSim.py` evaluates the structural similarity between tRNA synthetases, using Pymol. Main outputs are a matrix of sequence identities (`processed/sequences/NW_SeqAlign/SeqId_matrix.tsv` with their corresponding aligned proportions in `processed/sequences/NW_SeqAlign/Prop_matrix.tsv`) and set of CSV files including RMSDs between all structure pairs among all 21 tRNA synthetases (`processed/structural_comparisons`). 
 
 #### Pocket characterization - PocketVec 📐
 
-Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). Docking calculations were performed in an HPC cluster allowing CPU parallelization and PocketVec descriptors were calculated from raw docking scores in `scripts/16_calculate_PocketVec.py`. Several PocketVec descriptors (12/276) were filtered out due to the excessive presence of outlier compounds (>80), following the authors' recommendations. In line with these, we used a PocketVec distance threshold of 0.17 to classify any pocket pair of interest as similar.
+Pocket characterization was performed using PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)). Docking calculations were performed in an HPC cluster allowing CPU parallelization and PocketVec descriptors were calculated from raw docking scores in `scripts/16_calculate_PocketVec.py`. Several PocketVec descriptors (12/276) were filtered out due to the excessive presence of outlier compounds (>80), following the authors' recommendations. In line with these, we used a PocketVec distance threshold of 0.17 to classify any pocket pair of interest as similar. PocketVec descriptors are found in `/processed/pocketvec_RUN/fps_rank.pkl`. 
 
 #### Protein prioritization ⚠️
 
