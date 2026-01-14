@@ -40,13 +40,13 @@ In addition, the following tools are required:
 * [Open source PyMol](https://github.com/schrodinger/pymol-open-source) for protein visualization.
 * [PDB2PQR](https://pdb2pqr.readthedocs.io/en/latest/) for protonation at pH 7.0.
 * [PyRosetta](https://www.pyrosetta.org/) for protein structure relaxation. PyRosetta can be installed with the [PyRosetta Installer](https://www.pyrosetta.org/downloads).
-* [P2RANK](https://github.com/rdk/p2rank) for pocket detection. 
+* [P2Rank](https://github.com/rdk/p2rank) for pocket detection. 
 * [PocketVec](https://github.com/sbnb-irb/pocketvec) for pocket characterization.
 * [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) for protein-small molecule flexible docking.
 * [LazyQSAR](https://github.com/ersilia-os/lazy-qsar) for ML bioactivity modelling. 
 
 
-To run P2RANK, Java is required. Additionally, openbabel needs to be installed for file format conversion:
+To run P2Rank, Java is required. Additionally, Openbabel needs to be installed for file format conversion:
 
 ```bash
 conda activate adda4tb
@@ -63,7 +63,10 @@ This repository is work in progress, as summarized in the following progress rep
 * [Check-in meeting 3](https://docs.google.com/presentation/d/1N6U4t6mNQmerMz0nD9AVmwABik2z512OxZ6imQbzguY/edit?usp=drive_link) (2025/04/17). Binding site characterization and comparison. Exploration of oligomerization.
 * [Check-in meeting 4](https://docs.google.com/presentation/d/1ernke0imNeMticCVAVFo9MbsAVVPie80M7O59HP3DHY/edit?usp=sharing) (2025/05/12). Large-scale protein comparisons: sequence, structure and druggable pockets. 
 * [Check-in meeting 5](https://docs.google.com/presentation/d/1o3fwydNJ1JIlEGcfe1XXN29SGv75FAlaJ-uKpIR_9GQ/edit?usp=sharing) (2025/06/18). Protein prioritization. An in-person [follow-up meeting](https://docs.google.com/presentation/d/1LGjTsAx_hhvZWtOQJLbE6Wa53H3UQWUpu0kLTxtnVlg/edit?usp=sharing) was held in Stellenbosch. 
-* [Check-in meeting 6]() ...
+* [Check-in meeting 6](https://docs.google.com/presentation/d/1newAljRfMfg3Jir2Jd1Uzkupof5a3rzpqgZf5P7-Fw4/edit?slide=id.g304d3f7c91c_0_552#slide=id.g304d3f7c91c_0_552) (2025/09/19) Docking Enamine DL HLL-100 (100k compounds), training surrogate models and screening Enamine REAL 9.56M. 
+* [Check-in meeting 7](https://docs.google.com/presentation/d/1yv2c_GnoGhCxWjBDK28UrZYc5-cIy0aKm86_I_GSWXg/edit?slide=id.g39dda5591f2_0_552#slide=id.g39dda5591f2_0_552) (2025/11/21) Docking prioritized compounds from Enamine REAL 9.56M. 
+* [Check-in meeting 8](https://docs.google.com/presentation/d/1feS_DK45iCSHywRhv-zUl2ittRGeEcKpsDj_YTkfGqw/edit?slide=id.g39dda5591f2_0_552#slide=id.g39dda5591f2_0_552) (2025/12/18) Surrogate modelling of Enamine REAL 9.56M. Moving towards billion scale inferences. 
+* [Check-in meeting 9]() ...
 
 Below, we explain the progress made chronologically.
 
