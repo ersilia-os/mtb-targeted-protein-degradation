@@ -67,7 +67,7 @@ This repository is work in progress, as summarized in the following progress rep
 * [Check-in meeting 6](https://docs.google.com/presentation/d/1newAljRfMfg3Jir2Jd1Uzkupof5a3rzpqgZf5P7-Fw4/edit?slide=id.g304d3f7c91c_0_552#slide=id.g304d3f7c91c_0_552) (2025/09/19) Docking Enamine DL HLL-100 (100k compounds), training surrogate models and screening Enamine REAL 9.56M. 
 * [Check-in meeting 7](https://docs.google.com/presentation/d/1yv2c_GnoGhCxWjBDK28UrZYc5-cIy0aKm86_I_GSWXg/edit?slide=id.g39dda5591f2_0_552#slide=id.g39dda5591f2_0_552) (2025/11/21) Docking prioritized compounds from Enamine REAL 9.56M. 
 * [Check-in meeting 8](https://docs.google.com/presentation/d/1feS_DK45iCSHywRhv-zUl2ittRGeEcKpsDj_YTkfGqw/edit?slide=id.g39dda5591f2_0_552#slide=id.g39dda5591f2_0_552) (2025/12/18) Surrogate modelling of Enamine REAL 9.56M. Moving towards billion scale inferences. 
-* [Check-in meeting 9]() ...
+* [Check-in meeting 9]() TO BE DONE
 
 Below, we explain the progress made chronologically.
 
@@ -214,33 +214,35 @@ tRNA synthetases have been prioritized taking multiple factors into account. In 
 
 After the structural characterization of 21 essential tRNA synthetases, we search for potential small-molecule binders in an active learning fashion. First, we dock a chemically diverse set of 100k compounds against each pocket structure and we then train a surrogate model with [LazyQSAR](https://github.com/ersilia-os/lazy-qsar). 
 
-Computational resources: (elaborate and explain where is each script executed)
+Computational resources:
 
-- herbert
-- norrsken-gpu-wsl
-- SBNB-IRB cluster (/aloy/home)
+- `herbert`
+- `norrsken-gpu-wsl` (NVIDIA GeForce RTX 4090)
+- `SBNB-IRB cluster` (HPC cluster with /aloy/home)
+
+By default, scripts were executed at `herbert` unless specified otherwise. 
 
 ### Characterization of ENAMINE Diversity Library HLL-100 100k compounds ⚗️
 
-We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our starting set of small molecules. First, we calculated Morgan Count Fingerprints and [CheMeleon](https://github.com/JacksonBurns/chemeleon) embeddings for 100,157 compounds (see `scripts/18_enamine_mfps.py` and `scripts/24_enamine_chemeleon.py`, respectively. ⚠️ CheMeleon embeddings were calculated using Ersilia’s NVIDIA GeForce RTX 4090). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`). 90% of these small molecules were in the [270,400] Da range.
+We selected the ENAMINE Diversity Library HLL-100 (Sublibrary of HLL-460) as our starting set of small molecules. First, we calculated Morgan Count Fingerprints and [CheMeleon](https://github.com/JacksonBurns/chemeleon) embeddings for 100,157 compounds (see `scripts/18_enamine_mfps.py` and `scripts/24_enamine_chemeleon.py`, respectively. ⚠️ CheMeleon embeddings were calculated using Ersilia’s NVIDIA GeForce RTX 4090. Fingerprints and embeddings are stored in `/processed/enamine_characterization`). We then generated 3D conformations for these compounds using the ETKDGv3 protocol together with UFF energy minimization, totalling 100,154 conformations (see `scripts/19_enamine_conformations.py`, conformations also located in `/processed/enamine_characterization`). 90% of these small molecules were in the [270,400] Da range.
 
-### Uni-Dock docking preparation I - ENAMINE Diversity Library HLL-100 (100k)
+### Screening ENAMINE Diversity Library HLL-100 (100k)
 
 #### Ligands
 
-100,154 compounds with 3D conformations were prepared using the `ligandprep` functionality of `unidocktools` (see `scripts/20_unidock_ligandprep.py`).
+100,154 compounds with 3D conformations were prepared using the `ligandprep` functionality of `unidocktools` (see `scripts/20_unidock_ligandprep.py`, executed in `norrsken-gpu-wsl` with a `unidock` conda environment). Results are found in `processed/unidock_docking/conformations_prepared`.
 
 #### Protein structures
 
-178 protein structures (totalling 276 pocket structures, see `processed/pocket_detection_data.csv`) were prepared using the `proteinprep` functionality of `unidocktools` (see `scripts/21_unidock_proteinprep.py`). 8 of them required manual intervention to fix PDB2PQR/Pyrosetta protonation issues.
+178 protein structures (totalling 276 pocket structures, see `processed/pocket_detection_data.csv`) were prepared using the `proteinprep` functionality of `unidocktools` (see `scripts/21_unidock_proteinprep.py`, executed in `norrsken-gpu-wsl` with a `unidock` conda environment having `ambertools` and `reduce` installed as well). 8 of them required manual intervention to fix PDB2PQR/Pyrosetta protonation issues. Results are stored in `processed/unidock_docking/structures_prepared.tar.gz`.
 
-### Uni-Dock docking I
+### Uni-Dock docking
 
-Protein-small molecule docking was performed with [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) with search mode _fast_ and _vina_ scoring function using Ersilia’s NVIDIA GeForce RTX 4090 (276 pocket structures x 100k compounds ~ 1 week of computation time, see `scripts/22_unidock_docking.py`). 
+Protein-small molecule docking was performed with [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) with search mode _fast_ and _vina_ scoring function using Ersilia’s NVIDIA GeForce RTX 4090 (276 pocket structures x 100k compounds ~ 1 week of computation time at `norrsken-gpu-wsl`, see `scripts/22_unidock_docking.py`). Docking results are stored in `processed/unidock_docking/docking_results`, inside the `docking.tar.gz` file within each pocket directory (276). A systematic search of errors and warnings is perfomed once the docking is completed, scanning the logs (`logs.tar.gz` files) with `scripts/23_unidock_checks.py`.
 
 ### Training surrogate model I
 
-For each pocket structure (x276) a ML model was trained using [LazyQSAR](https://github.com/ersilia-os/lazy-qsar) and [CheMeleon](https://github.com/JacksonBurns/chemeleon) descriptors at 3 binarization percentiles (0.1%, 0.5% and 1%, see `scripts/25_enamine_binarization.py` and `scripts/26_train_models`). After .. the results, only the models trained on 0.1% binarized data were ... 
+For each pocket structure (x276) a ML model was trained using [LazyQSAR](https://github.com/ersilia-os/lazy-qsar) and [CheMeleon](https://github.com/JacksonBurns/chemeleon) descriptors at 3 binarization percentiles (0.1%, 0.5% and 1%, see `scripts/25_enamine_binarization.py` and `scripts/26_train_models`). Binarized reports mapping compound IDs, docking scores and 3 bin flags are available at `processed/unidock_docking/binarized_reports`. Models were trained at the `SBNB-IRB cluster`, allowing for intensive parallelization (3 bins x 276 pockets = 828 jobs), and saved in `processed/unidock_docking/models` (joblib files). After analyzing the results, only the models trained on 0.1% binarized data were used in subsequent steps. 
 
 ### Characterization of Enamine REAL 10M compounds
 
@@ -259,8 +261,8 @@ We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthet
     - Pocket detection: P2Rank
     - Pocket characterization and clustering: PocketVec
 3. Protein prioritization based on potential polypharmacology
-4. HTVS - Uni-dock: 276 pocket structures against 100k compounds
-5. ... learning
+4. Docking with Uni-dock: 276 pocket structures against 100k compounds from Enamine Chemical Diversity
+5. Surrogate modelling (I)
 
 
 ## About the Ersilia Open Source Initiative 🌍❤️
