@@ -1,6 +1,7 @@
 tmp
 .DS_Store
 foo.ipynb
+service.json
 
 
 # notebooks/dev.ipynb

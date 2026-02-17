@@ -14,3 +14,5 @@ fpsim2==0.7.3
 pandamap==4.1.0
 pymol-open-source-whl==3.1.0.4
 pycirclize==1.10.1
+google_api_python_client==2.185.0
+google_auth==2.41.1
