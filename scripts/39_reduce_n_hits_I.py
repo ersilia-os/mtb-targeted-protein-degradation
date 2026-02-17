@@ -45,13 +45,13 @@ def get_A_compounds(M, split, top=10_000, seed=42):
 def get_B_compounds(M, split, POCKETS, top_per_pocket=100, min_targets=50, seed=42):
     sum_cpds = np.asarray(M.sum(axis=1)).ravel().astype(np.float32)
     eligible = sum_cpds >= float(min_targets)
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed)  # seeded
     B_compounds = []
     for column in range(M.shape[1]):
         r = M[:, column].nonzero()[0]  # Get non-zero indices
         r = r[eligible[r]]  # Only eligible cpds 
         n_targets = sum_cpds[r]
-        order = np.lexsort((rng.random(len(n_targets)), n_targets))
+        order = np.lexsort((rng.random(len(n_targets)), n_targets))  # random tie-breaker
         top_inds = r[order][:top_per_pocket]
         top_n_targets  = n_targets[order][:top_per_pocket]
         B_compounds.extend([split, POCKETS[column], i, j] for i,j in zip(top_inds, top_n_targets))
