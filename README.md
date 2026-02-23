@@ -61,7 +61,7 @@ This repository is work in progress, as summarized in the following progress rep
 
 * [Check-in meeting 1](https://docs.google.com/presentation/d/1a7K4EkecYM63CPa7QRw1SOEGv2AEA3FYjpLJPYPpIkY/edit?usp=drive_link) (2025/02/04). Selection and structural annotation of tRNA synthetases.
 * [Check-in meeting 2](https://docs.google.com/presentation/d/13RxQsi4-3t9LYxYGGvtfwdeYd3KJTor_07sc7zx3pwM/edit?usp=sharing) (2025/03/19). Binding site detection and visualization.
-* [Check-in meeting 3](https://docs.google.com/presentation/d/1N6U4t6mNQmerMz0nD9AVmwABik2z512OxZ6imQbzguY/edit?usp=drive_link) (2025/04/17). Binding site characterization and comparison. Exploration of oligomerization.
+* [Check-in meeting 3](https://docs.google.com/presentation/d/11D_Woyr3-8nlitXF87XaACPnfCvDAlQoX372Xf6A24Y/edit?usp=sharing) (2025/04/17). Binding site characterization and comparison. Exploration of oligomerization.
 * [Check-in meeting 4](https://docs.google.com/presentation/d/1ernke0imNeMticCVAVFo9MbsAVVPie80M7O59HP3DHY/edit?usp=sharing) (2025/05/12). Large-scale protein comparisons: sequence, structure and druggable pockets. 
 * [Check-in meeting 5](https://docs.google.com/presentation/d/1o3fwydNJ1JIlEGcfe1XXN29SGv75FAlaJ-uKpIR_9GQ/edit?usp=sharing) (2025/06/18). Protein prioritization. An in-person [follow-up meeting](https://docs.google.com/presentation/d/1LGjTsAx_hhvZWtOQJLbE6Wa53H3UQWUpu0kLTxtnVlg/edit?usp=sharing) was held in Stellenbosch. 
 * [Check-in meeting 6](https://docs.google.com/presentation/d/1newAljRfMfg3Jir2Jd1Uzkupof5a3rzpqgZf5P7-Fw4/edit?slide=id.g304d3f7c91c_0_552#slide=id.g304d3f7c91c_0_552) (2025/09/19) Docking Enamine DL HLL-100 (100k compounds), training surrogate models and screening Enamine REAL 9.56M. 
