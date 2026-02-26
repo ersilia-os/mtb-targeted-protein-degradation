@@ -119,44 +119,45 @@ for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], d
     # Create directories
     label = file.replace(".pdb", "") + "_pocket_" + str(pocket_number)
     outpath = os.path.join(OUTPATH, label)
-    os.makedirs(os.path.join(outpath, "docking"), exist_ok=True)
+    if os.path.exists(outpath) == False:
+        os.makedirs(os.path.join(outpath, "docking"), exist_ok=True)
 
-    # Extract structure - copy from unidock_REAL_docking or unidock_docking
-    tarfile.open(os.path.join(UNIDOCK_PATH, "structures_prepared.tar.gz")).extract("./" + file.replace(".pdb", ".pdbqt"), 
-                                                                                   path=outpath, filter='data')
+        # Extract structure - copy from unidock_REAL_docking or unidock_docking
+        tarfile.open(os.path.join(UNIDOCK_PATH, "structures_prepared.tar.gz")).extract("./" + file.replace(".pdb", ".pdbqt"), 
+                                                                                    path=outpath, filter='data')
 
-    # Copy pocket SD file
-    shutil.copyfile(os.path.join(root, "..", "processed", "pocketvec_PRE", label, f"pocket_{label.split('_')[-1]}.sd"), 
-                    os.path.join(outpath, f"pocket_{label.split('_')[-1]}.sd"))
-    
+        # Copy pocket SD file
+        shutil.copyfile(os.path.join(root, "..", "processed", "pocketvec_PRE", label, f"pocket_{label.split('_')[-1]}.sd"), 
+                        os.path.join(outpath, f"pocket_{label.split('_')[-1]}.sd"))
+        
 
-    # Prepare docking variables
-    receptor = os.path.join(outpath, file.replace(".pdb", ".pdbqt"))
-    center_x, center_y, center_z = centroid.split()
-    ligand_index = os.path.join(UNIDOCK_PATH, "input_ligands.txt")
-    search_mode = 'fast'
-    output_dir = os.path.join(outpath, "docking")
-    log_file = os.path.join(outpath, "logs.log")
+        # Prepare docking variables
+        receptor = os.path.join(outpath, file.replace(".pdb", ".pdbqt"))
+        center_x, center_y, center_z = centroid.split()
+        ligand_index = os.path.join(UNIDOCK_PATH, "input_ligands.txt")
+        search_mode = 'fast'
+        output_dir = os.path.join(outpath, "docking")
+        log_file = os.path.join(outpath, "logs.log")
 
-    # Run docking
-    run_unidock(receptor=receptor, ligand_index=ligand_index, center_x=center_x, center_y=center_y, center_z=center_z,
-                search_mode=search_mode, output_dir=output_dir, log_file=log_file)
-    
-    print("Generating report!")
-    
-    # Generate report
-    generate_report(os.path.join(outpath, "docking"), os.path.join(outpath, "report.csv"))
+        # Run docking
+        run_unidock(receptor=receptor, ligand_index=ligand_index, center_x=center_x, center_y=center_y, center_z=center_z,
+                    search_mode=search_mode, output_dir=output_dir, log_file=log_file)
+        
+        print("Generating report!")
+        
+        # Generate report
+        generate_report(os.path.join(outpath, "docking"), os.path.join(outpath, "report.csv"))
 
-    print("Compressing results!")
+        print("Compressing results!")
 
-    # Tar results
-    with tarfile.open(os.path.join(outpath, "docking.tar.gz"), "w:gz", compresslevel=9) as tar:
-        tar.add(os.path.join(outpath, "docking"), arcname=os.path.basename(os.path.join(outpath, "docking")))
+        # Tar results
+        with tarfile.open(os.path.join(outpath, "docking.tar.gz"), "w:gz", compresslevel=9) as tar:
+            tar.add(os.path.join(outpath, "docking"), arcname=os.path.basename(os.path.join(outpath, "docking")))
 
-    # Tar logs
-    with tarfile.open(os.path.join(outpath, "logs.tar.gz"), "w:gz") as tar:
-        tar.add(os.path.join(outpath, "logs.log"), arcname="logs.log")
+        # Tar logs
+        with tarfile.open(os.path.join(outpath, "logs.tar.gz"), "w:gz") as tar:
+            tar.add(os.path.join(outpath, "logs.log"), arcname="logs.log")
 
-    # Remove file and directory
-    os.remove(os.path.join(outpath, "logs.log"))
-    shutil.rmtree(os.path.join(outpath, "docking"))
+        # Remove file and directory
+        os.remove(os.path.join(outpath, "logs.log"))
+        shutil.rmtree(os.path.join(outpath, "docking"))
