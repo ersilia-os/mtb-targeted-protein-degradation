@@ -26,6 +26,7 @@ def run_unidock(
     search_mode: str = "detail",
     scoring: str = "vina",
     output_dir: str = "output",
+    batch: int = 500,
     log_file: str = "log.txt"
 ):
     
@@ -51,7 +52,8 @@ def run_unidock(
         "--cpu", str(cpu),
         "--search_mode", search_mode,
         "--scoring", scoring,
-        "--dir", output_dir
+        "--dir", output_dir,
+        "--batch", str(batch),
     ]
 
     print(" ".join(cmd))
@@ -113,13 +115,17 @@ df = df.sort_values(["_r", "Uniprot AC"]).drop(columns="_r").reset_index(drop=Tr
 for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], df['Pocket centroid coordinate (x y z)']):
 
     # Prints
+    label = file.replace(".pdb", "") + "_pocket_" + str(pocket_number)
     print("\n\n--- RUNNING DOCKING ---\n\n")
-    print(f"\n\n--- File name: {file}; Pocket number: {pocket_number} ---\n\n")
+    print(f"\n\n--- File name: {file}; Pocket number: {pocket_number} ---\nLabel: {label}\n\n")
 
     # Create directories
-    label = file.replace(".pdb", "") + "_pocket_" + str(pocket_number)
     outpath = os.path.join(OUTPATH, label)
-    if os.path.exists(outpath) == False:
+    if os.path.exists(outpath) == False or os.path.exists(os.path.join(outpath, 'report.csv')) == False or len(pd.read_csv(os.path.join(outpath, 'report.csv'))) < 99105:
+        print(f"Outpath exists: {os.path.exists(outpath)}")
+        print(f"Report.csv exists: {os.path.exists(os.path.join(outpath, 'report.csv'))}")
+        if os.path.exists(os.path.join(outpath, 'report.csv')):
+            print(f"Len report: {len(pd.read_csv(os.path.join(outpath, 'report.csv')))}")
         os.makedirs(os.path.join(outpath, "docking"), exist_ok=True)
 
         # Extract structure - copy from unidock_REAL_docking or unidock_docking
