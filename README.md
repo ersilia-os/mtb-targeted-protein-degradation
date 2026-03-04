@@ -67,7 +67,7 @@ This repository is work in progress, as summarized in the following progress rep
 * [Check-in meeting 6](https://docs.google.com/presentation/d/1newAljRfMfg3Jir2Jd1Uzkupof5a3rzpqgZf5P7-Fw4/edit?slide=id.g304d3f7c91c_0_552#slide=id.g304d3f7c91c_0_552) (2025/09/19) Docking Enamine DL HLL-100 (100k compounds), training surrogate models and screening Enamine REAL 9.56M. 
 * [Check-in meeting 7](https://docs.google.com/presentation/d/1yv2c_GnoGhCxWjBDK28UrZYc5-cIy0aKm86_I_GSWXg/edit?slide=id.g39dda5591f2_0_552#slide=id.g39dda5591f2_0_552) (2025/11/21) Docking prioritized compounds from Enamine REAL 9.56M. 
 * [Check-in meeting 8](https://docs.google.com/presentation/d/1feS_DK45iCSHywRhv-zUl2ittRGeEcKpsDj_YTkfGqw/edit?slide=id.g39dda5591f2_0_552#slide=id.g39dda5591f2_0_552) (2025/12/18) Surrogate modelling of Enamine REAL 9.56M. Moving towards billion scale inferences. 
-* [Check-in meeting 9](https://docs.google.com/presentation/d/1EXYev6f3sdS1xrC2bDNniU_oZptOdp2Iqw4PyK-6L8s/edit?slide=id.g3b496d7a12e_0_552&pli=1#slide=id.g3b496d7a12e_0_552) (2026/03/04) Happening soon. Docking prioritized compounds from Enamine REAL 10B. Selecting compounds for experimental validation. 
+* [Check-in meeting 9](https://docs.google.com/presentation/d/1EXYev6f3sdS1xrC2bDNniU_oZptOdp2Iqw4PyK-6L8s/edit?slide=id.g3b496d7a12e_0_552&pli=1#slide=id.g3b496d7a12e_0_552) (2026/03/04) Docking prioritized compounds from Enamine REAL 10B. Selecting compounds for experimental validation. 
 
 Below, we explain the progress made chronologically.
 
