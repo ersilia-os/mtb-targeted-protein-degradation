@@ -4,30 +4,6 @@ foo.ipynb
 service.json
 
 
-# notebooks/dev.ipynb
-# processed/unidock_docking/conformations_prepared/
-# processed/unidock_docking/docking_results/**/docking/
-# processed/unidock_docking/docking_results/**/docking/*.sdf
-# processed/unidock_docking/models/**/**/*.joblib
-# data/Enamine/2024.07_Enamine_REAL_DB_9.6M.cxsmiles
-# processed/enamine_REAL_characterization/**
-# processed/unidock_docking/inference_probs/**
-# processed/unidock_REAL_docking/conformations_prepared/**
-# processed/unidock_REAL_docking/structures_prepared.tar.gz
-# processed/unidock_REAL_docking/input_ligands/**
-# processed/unidock_REAL_docking/docking_results/**
-
-# !processed/unidock_docking/conformations_prepared.tar.gz
-# !processed/unidock_docking/input_ligands.txt
-# !processed/unidock_docking/structures_prepared.tar.gz
-# !processed/unidock_docking/docking_results/
-# !processed/enamine_REAL_characterization/failed_REAL.csv
-# !processed/enamine_REAL_characterization/random_sample_REAL.csv
-
-processed/**
-data/**
-
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -193,7 +169,5 @@ cython_debug/
 
 
 docking.tar.gz
-/data
-/processed
-notebooks/46_docking_exploration_IIa.ipynb
-notebooks/46_docking_exploration_IIa_backup.ipynb
+/data/
+/processed/
