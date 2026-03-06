@@ -171,4 +171,5 @@ cython_debug/
 docking.tar.gz
 /data/
 /processed/
+output/
 .env
