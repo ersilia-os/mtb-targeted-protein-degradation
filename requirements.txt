@@ -1,5 +1,5 @@
 pandas==2.2.3
-requests==2.32.4
+requests==2.34.2
 biopython==1.87
 chembl-webresource-client==0.10.9
 matplotlib==3.10.1
@@ -9,7 +9,7 @@ tqdm==4.67.1
 rdkit==2024.9.6
 openpyxl==3.1.5
 h5py==3.14.0
-pyarrow==21.0.0
+pyarrow==23.0.1
 fpsim2==0.7.3
 pandamap==4.1.0
 pymol-open-source-whl==3.1.0.4
