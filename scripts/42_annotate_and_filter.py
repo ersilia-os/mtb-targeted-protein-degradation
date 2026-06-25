@@ -58,9 +58,9 @@ df['QED'] = [QED.qed(m) for m in tqdm(mols)]
 eos12x7 = pd.read_csv(os.path.join(root, "processed", "unidock_REAL_docking", "inference_10B", "ersilia", "eos12x7.csv"))[["input", "nsps_score"]]
 
 
-assert (eos12x7['input'] == df['smiles']).all
+assert (eos12x7['input'] == df['smiles']).all()
 results = pd.concat([df, eos12x7], axis=1)
-assert (results['input'] == results['smiles']).all
+assert (results['input'] == results['smiles']).all()
 del results['index.1'], results['input']
 
 

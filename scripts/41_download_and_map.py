@@ -109,7 +109,7 @@ for split in tqdm(SPLITS):
     # Load split info
     smiles_ids = pd.read_csv(PATH_TO_IDs, sep='\t')
     smiles_ids = smiles_ids.iloc[inds].reset_index()
-    assert (smiles_ids['index'] == df['index']).all
+    assert (smiles_ids['index'] == df['index']).all()
 
     # Concatanate horizontally
     df = pd.concat([df, smiles_ids], axis=1)
