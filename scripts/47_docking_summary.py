@@ -24,6 +24,9 @@ LIBRARIES = {
 
 PERCENTILES = [0.01, 0.1, 1]
 
+SWISSMODEL_DIR = os.path.join(ROOT, "data", "structures", "swissmodel")
+PLDDT_TYPES = {"alphafold2", "alphafold3", "chai1"}
+
 
 def load_gene_map():
     path = os.path.join(ROOT, "data", "mtb_trna_synthetases_bosch_2021_fig5.csv")
@@ -66,12 +69,39 @@ def load_pocket_domains():
 def load_pocket_data():
     path = os.path.join(ROOT, "output", "pocket_detection_data.csv")
     df = pd.read_csv(path)
-    probs, coords = {}, {}
+    probs, coords, pred_types, min_plddt = {}, {}, {}, {}
     for _, row in df.iterrows():
         key = f"{row['File name'].replace('.pdb', '')}_pocket_{row['Pocket number']}"
         probs[key] = row["Pocket probability"]
         coords[key] = np.array(row["Pocket centroid coordinate (x y z)"].split(), dtype=float)
-    return probs, coords
+        pred_types[key] = row["Prediction type"]
+        if row["Prediction type"] in PLDDT_TYPES:
+            bfactors = [float(x) for x in str(row["B-factors"]).split()]
+            min_plddt[key] = round(min(bfactors), 1) if bfactors else None
+        else:
+            min_plddt[key] = None
+    return probs, coords, pred_types, min_plddt
+
+
+def load_gmqe(uniprot_ac, model_idx):
+    """Return GMQE from REMARK 3 of the raw Swiss-Model PDB, or None if not found."""
+    try:
+        entries = [e for e in os.listdir(SWISSMODEL_DIR) if uniprot_ac in e]
+    except FileNotFoundError:
+        return None
+    if not entries:
+        return None
+    pdb_path = os.path.join(SWISSMODEL_DIR, entries[0], "models", f"{model_idx + 1:02d}", "model.pdb")
+    if not os.path.isfile(pdb_path):
+        return None
+    with open(pdb_path) as fh:
+        for line in fh:
+            if line.startswith("REMARK   3  GMQE"):
+                try:
+                    return round(float(line.split()[-1]), 3)
+                except (ValueError, IndexError):
+                    return None
+    return None
 
 
 SOLVENT = {"HOH", "WAT", "DOD"}
@@ -131,21 +161,42 @@ def collect_rows(uniprot_ac, lib_paths):
         if os.path.isdir(results_dir):
             all_pockets.update(p for p in os.listdir(results_dir) if uniprot_ac in p)
 
-    pocket_probs, pocket_coords = load_pocket_data()
+    pocket_probs, pocket_coords, pred_types, pocket_min_plddt = load_pocket_data()
     pocket_domains = load_pocket_domains()
 
     # AlphaFill: run once per gene (uniprot_ac), keyed by pocket name
     gene_coords = {p: pocket_coords[p] for p in pocket_coords if uniprot_ac in p}
     af_ligands = alphafill_ligands(uniprot_ac, gene_coords)  # None if files missing
 
+    # GMQE cache: (uniprot_ac, model_idx) -> value
+    gmqe_cache = {}
+
     rows = []
     for pocket in sorted(all_pockets):
+        ptype = pred_types.get(pocket)
+
+        # GMQE: only for swissmodel structures
+        if ptype == "swissmodel":
+            structure_name = pocket.rsplit("_pocket_", 1)[0]
+            try:
+                model_idx = int(structure_name.split("_model_")[-1])
+            except (ValueError, IndexError):
+                model_idx = 0
+            cache_key = (uniprot_ac, model_idx)
+            if cache_key not in gmqe_cache:
+                gmqe_cache[cache_key] = load_gmqe(uniprot_ac, model_idx)
+            gmqe = gmqe_cache[cache_key]
+        else:
+            gmqe = None
+
         row = {
-            "pocket":    pocket,
-            "prob":      pocket_probs.get(pocket, None),
-            "coords":    pocket_coords.get(pocket, None),
-            "domain":    pocket_domains.get(pocket, "NA"),
-            "alphafill": af_ligands[pocket] if af_ligands is not None else "N/A",
+            "pocket":     pocket,
+            "prob":       pocket_probs.get(pocket, None),
+            "coords":     pocket_coords.get(pocket, None),
+            "domain":     pocket_domains.get(pocket, "NA"),
+            "alphafill":  af_ligands[pocket] if af_ligands is not None else "N/A",
+            "min_plddt":  pocket_min_plddt.get(pocket),
+            "gmqe":       gmqe,
         }
         for lib_name, results_dir in lib_paths.items():
             report = os.path.join(results_dir, pocket, "report.csv")
@@ -162,8 +213,8 @@ def collect_rows(uniprot_ac, lib_paths):
     return rows
 
 
-def fmt(val):
-    return str(val) if val is not None else "N/A"
+def fmt(val, default="N/A"):
+    return str(val) if val is not None else default
 
 
 def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
@@ -207,16 +258,20 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
     best_row = rows[0]
 
     # Column widths
-    col_pocket  = "Structure"
-    col_prob    = "Prob"
-    col_plab    = "Pocket"
-    col_domain  = "Domain"
+    col_pocket   = "Structure"
+    col_prob     = "Prob"
+    col_plab     = "Pocket"
+    col_domain   = "Domain"
     col_alphafill = "AlphaFill"
-    w_pocket    = max(len(col_pocket),    max(len(r["pocket"])           for r in rows))
-    w_prob      = max(len(col_prob),      max(len(fmt(r["prob"]))        for r in rows))
-    w_plab      = max(len(col_plab),      max(len(r["pocket_label"])     for r in rows))
-    w_domain    = max(len(col_domain),    max(len(fmt(r["domain"]))      for r in rows))
-    w_alphafill = max(len(col_alphafill), max(len(fmt(r["alphafill"]))   for r in rows))
+    col_plddt    = "Min pLDDT"
+    col_gmqe     = "GMQE"
+    w_pocket    = max(len(col_pocket),    max(len(r["pocket"])                    for r in rows))
+    w_prob      = max(len(col_prob),      max(len(fmt(r["prob"]))                 for r in rows))
+    w_plab      = max(len(col_plab),      max(len(r["pocket_label"])              for r in rows))
+    w_domain    = max(len(col_domain),    max(len(fmt(r["domain"]))               for r in rows))
+    w_alphafill = max(len(col_alphafill), max(len(fmt(r["alphafill"]))            for r in rows))
+    w_plddt     = max(len(col_plddt),     max(len(fmt(r["min_plddt"], "-"))       for r in rows))
+    w_gmqe      = max(len(col_gmqe),      max(len(fmt(r["gmqe"], "-"))            for r in rows))
     dist_cols   = [(f"dist_{lbl}", max(len(f"dist_{lbl}"), max(len(fmt(r[f"dist_{lbl}"])) for r in rows)))
                    for lbl, _ in pocket_reps]
 
@@ -229,8 +284,8 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
             (f"{lib} p1",     f"{lib}_p1",    max(len(f"{lib} p1"),    max(len(fmt(r[f"{lib}_p1"]))      for r in rows))),
         ]
 
-    sep_parts = [f"+-{'-'*w_pocket}-+-{'-'*w_prob}-+-{'-'*w_plab}-+-{'-'*w_domain}-+-{'-'*w_alphafill}-+"]
-    hdr_parts = [f"| {col_pocket:<{w_pocket}} | {col_prob:<{w_prob}} | {col_plab:<{w_plab}} | {col_domain:<{w_domain}} | {col_alphafill:<{w_alphafill}} |"]
+    sep_parts = [f"+-{'-'*w_pocket}-+-{'-'*w_prob}-+-{'-'*w_plab}-+-{'-'*w_domain}-+-{'-'*w_alphafill}-+-{'-'*w_plddt}-+-{'-'*w_gmqe}-+"]
+    hdr_parts = [f"| {col_pocket:<{w_pocket}} | {col_prob:<{w_prob}} | {col_plab:<{w_plab}} | {col_domain:<{w_domain}} | {col_alphafill:<{w_alphafill}} | {col_plddt:<{w_plddt}} | {col_gmqe:<{w_gmqe}} |"]
     for col, w in dist_cols:
         sep_parts.append(f"-{'-'*w}-+")
         hdr_parts.append(f" {col:<{w}} |")
@@ -249,7 +304,7 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
     print(sep)
 
     for r in rows:
-        parts = [f"| {r['pocket']:<{w_pocket}} | {fmt(r['prob']):<{w_prob}} | {r['pocket_label']:<{w_plab}} | {fmt(r['domain']):<{w_domain}} | {fmt(r['alphafill']):<{w_alphafill}} |"]
+        parts = [f"| {r['pocket']:<{w_pocket}} | {fmt(r['prob']):<{w_prob}} | {r['pocket_label']:<{w_plab}} | {fmt(r['domain']):<{w_domain}} | {fmt(r['alphafill']):<{w_alphafill}} | {fmt(r['min_plddt'], '-'):<{w_plddt}} | {fmt(r['gmqe'], '-'):<{w_gmqe}} |"]
         for col, w in dist_cols:
             parts.append(f" {fmt(r[col]):<{w}} |")
         for lib in lib_names:
@@ -263,7 +318,6 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
         n = next((r[f"{lib}_n"] for r in rows if r.get(f"{lib}_n") is not None), None)
         if n is not None:
             print(f"  {lib}: {n} compounds")
-    print(f"  Reference structure (highest prob): {best_row['pocket']}")
     # Consistency check: is the highest-prob pocket also the best scorer across all lib/percentile combos?
     consistent = all(
         best_row.get(f"{lib}_p{p}") == min((r[f"{lib}_p{p}"] for r in rows if r.get(f"{lib}_p{p}") is not None), default=None)
@@ -304,6 +358,10 @@ def main():
         vi, vi_lo, vi_hi = load_vulnerability(gene)
         print_table(rows, gene, lib_names, vi, vi_lo, vi_hi)
         print()
+
+    print("NOTE: manually define one reference pocket per tRNA synthetase and record it in")
+    print("  output/reference_pocket.csv  (columns: gene_name, pocket_name)")
+    print("This file will be used by script 48 to select the pocket for hit analysis.")
 
 
 if __name__ == "__main__":
