@@ -11,7 +11,7 @@ with cross-metric scaffold deduplication.
 
 Usage:
     python 49_docking_hits_selective.py --trna pheS,aspS,lysS,alaS --lib REAL
-    python 49_docking_hits_selective.py --trna pheS,aspS,lysS,alaS --lib REAL --smiles --profile
+    python 49_docking_hits_selective.py --trna pheS,aspS,lysS,alaS --lib REAL
 """
 
 import argparse
@@ -27,29 +27,23 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*converter.
 import numpy as np
 import pandas as pd
 from rdkit import Chem
-from rdkit.Chem import MolFromSmiles, rdMolDescriptors
-from rdkit.Chem.FilterCatalog import FilterCatalog, FilterCatalogParams
-from rdkit.Chem.QED import qed as calc_qed
 from rdkit.Chem.Scaffolds import MurckoScaffold
-from tqdm import tqdm
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.append(os.path.join(ROOT, "src"))
 from default import RANDOM_SEED
 from docking_utils import (
     LIBRARIES,
-    SMILES_COLS,
-    SMILES_PATHS,
-    SMILES_SEPS,
     build_matrix,
+    compute_properties,
     load_gene_map,
     load_reference_pockets,
     lookup_smiles,
+    plot_profiling,
+    sample_background_smiles,
 )
 
 BG_SAMPLE_SIZE = 10_000
-PROP_COLUMNS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings", "QED"]
-DISCRETE_PROPS = {"HBD", "HBA", "RotBonds", "AromaticRings"}
 
 
 def murcko_inchikey(smi):
@@ -71,103 +65,6 @@ def rank_transform(df):
     return pd.DataFrame(ranks, index=df.index, columns=df.columns)
 
 
-def sample_background_smiles(lib, exclude_ids, n, seed):
-    """Return {id: smiles} for n randomly sampled compounds not in exclude_ids."""
-    path = SMILES_PATHS[lib]
-    if not os.path.isfile(path):
-        print(f"  Warning: SMILES file not found at {path}, cannot sample background.")
-        return {}
-    id_col, smi_col = SMILES_COLS[lib]
-    sep = SMILES_SEPS[lib]
-    pool = {}
-    for chunk in pd.read_csv(path, sep=sep, usecols=[id_col, smi_col], chunksize=200_000):
-        cands = chunk[~chunk[id_col].isin(exclude_ids)]
-        pool.update(zip(cands[id_col], cands[smi_col]))
-    ids = list(pool.keys())
-    sampled = np.random.default_rng(seed).choice(ids, size=min(n, len(ids)), replace=False)
-    return {cid: pool[cid] for cid in sampled}
-
-
-def compute_properties(smiles_dict):
-    """Compute physicochemical properties for a {id: smiles} dict."""
-    params = FilterCatalogParams()
-    params.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS_A)
-    params.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS_B)
-    params.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS_C)
-    catalog = FilterCatalog(params)
-    records = []
-    for cid, smi in tqdm(smiles_dict.items(), desc="Computing properties", unit="mol"):
-        if not isinstance(smi, str):
-            continue
-        mol = MolFromSmiles(smi)
-        if mol is None:
-            continue
-        records.append({
-            "id": cid,
-            "MW":            rdMolDescriptors.CalcExactMolWt(mol),
-            "cLogP":         rdMolDescriptors.CalcCrippenDescriptors(mol)[0],
-            "TPSA":          rdMolDescriptors.CalcTPSA(mol),
-            "HBD":           rdMolDescriptors.CalcNumHBD(mol),
-            "HBA":           rdMolDescriptors.CalcNumHBA(mol),
-            "RotBonds":      rdMolDescriptors.CalcNumRotatableBonds(mol),
-            "AromaticRings": rdMolDescriptors.CalcNumAromaticRings(mol),
-            "QED":           calc_qed(mol),
-            "is_pains":      catalog.HasMatch(mol),
-        })
-    if not records:
-        return pd.DataFrame()
-    return pd.DataFrame(records).set_index("id")
-
-
-def plot_profiling(sel_props, bg_props, out_path):
-    """KDE (continuous) + overlaid bars (discrete) + PAINS bar."""
-    from scipy.stats import gaussian_kde
-    import stylia
-
-    stylia.set_format("slide")
-    stylia.set_style("ersilia")
-    nc = stylia.NamedColors()
-
-    pains_sel = 100 * sel_props["is_pains"].sum() / len(sel_props) if len(sel_props) > 0 else 0.0
-    pains_bg  = 100 * bg_props["is_pains"].sum()  / len(bg_props)  if len(bg_props)  > 0 else 0.0
-    print(f"  Selected  : {len(sel_props):,} compounds, {pains_sel:.1f}% PAINS")
-    print(f"  Background: {len(bg_props):,} compounds, {pains_bg:.1f}% PAINS")
-
-    fig, axs = stylia.create_figure(3, 3, width=1.3, height=0.8)
-
-    for prop in PROP_COLUMNS:
-        ax = axs.next()
-        bg_data  = bg_props[prop].dropna().values
-        sel_data = sel_props[prop].dropna().values
-        if prop in DISCRETE_PROPS:
-            vals = sorted(set(bg_data.astype(int)) | set(sel_data.astype(int)))
-            bg_freq  = pd.Series(bg_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
-            sel_freq = pd.Series(sel_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
-            ax.bar(vals, bg_freq.values,  color=nc.gray,   alpha=1,   label="Background")
-            ax.bar(vals, sel_freq.values, color=nc.purple, alpha=0.5, label="Selected")
-            stylia.label(ax, xlabel=prop, ylabel="Frequency")
-        else:
-            for data, color, label in [
-                (bg_data,  nc.gray,   "Background"),
-                (sel_data, nc.purple, "Selected"),
-            ]:
-                if len(data) < 2:
-                    continue
-                kde = gaussian_kde(data)
-                x = np.linspace(data.min(), data.max(), 300)
-                ax.plot(x, kde(x), color=color, label=label)
-            stylia.label(ax, xlabel=prop, ylabel="Density")
-        ax.legend()
-
-    ax = axs.next()
-    ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, nc.purple], alpha=0.8)
-    ax.set_xticks([0, 1])
-    ax.set_xticklabels(["Background", "Selected"])
-    stylia.label(ax, xlabel="", ylabel="PAINS (%)")
-
-    stylia.save_figure(out_path)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Rank-matrix selectivity analysis for tRNA synthetase docking hits."
@@ -176,10 +73,6 @@ def main():
                         help="Comma-separated gene name(s) (e.g. pheS,aspS,lysS,alaS)")
     parser.add_argument("--lib", choices=["DL", "REAL"], required=True,
                         help="Compound library: DL or REAL")
-    parser.add_argument("--smiles", action="store_true",
-                        help="Look up and include SMILES in the output CSV")
-    parser.add_argument("--profile", action="store_true",
-                        help=f"Physicochemical profiling of selected compounds vs {BG_SAMPLE_SIZE:,} background")
     args = parser.parse_args()
 
     genes = [g.strip() for g in args.trna.split(",")]
@@ -379,17 +272,12 @@ def main():
         results.loc[top_hits.index, "selected"] = metric
         _already_selected.update(top_hits.index)
         display = results.loc[top_hits.index[:10]].copy()
-        if args.smiles:
-            smiles_map = lookup_smiles(display.index.tolist(), args.lib)
-            if smiles_map:
-                display.insert(0, "smiles", display.index.map(smiles_map))
         print(f"\n— {metric}: {desc}")
         print(f"Passing filter: {len(hits):,} / {N:,}  ({len(hits_new):,} not yet selected in a prior metric)")
         print(display.to_string())
 
-    if args.smiles:
-        all_smiles = lookup_smiles(results.index.tolist(), args.lib)
-        results["smiles"] = results.index.map(all_smiles)
+    sel_smiles = lookup_smiles(list(_already_selected), args.lib)
+    results["smiles"] = results.index.map(sel_smiles)
 
     results.to_csv(out_path)
     print(f"\nSaved results to {out_path}")
@@ -407,20 +295,14 @@ def main():
             print(f"  {k}/{n_targets} targets: {tally.get(k, 0):>6,} compound(s)")
         print()
 
-    if args.profile:
-        print("\nPhysicochemical profiling...")
-        sel_smiles = (
-            {k: v for k, v in all_smiles.items() if k in _already_selected}
-            if args.smiles
-            else lookup_smiles(list(_already_selected), args.lib)
-        )
-        bg_smiles = sample_background_smiles(args.lib, _already_selected, BG_SAMPLE_SIZE, RANDOM_SEED)
-        print(f"  Computing properties for {len(sel_smiles):,} selected + {len(bg_smiles):,} background...")
-        sel_props = compute_properties(sel_smiles)
-        bg_props  = compute_properties(bg_smiles)
-        profiling_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_profiling.png")
-        plot_profiling(sel_props, bg_props, profiling_path)
-        print(f"  Saved profiling figure to {profiling_path}")
+    print("\nPhysicochemical profiling...")
+    bg_smiles = sample_background_smiles(args.lib, _already_selected, BG_SAMPLE_SIZE, RANDOM_SEED)
+    print(f"  Computing properties for {len(sel_smiles):,} selected + {len(bg_smiles):,} background...")
+    sel_props = compute_properties(sel_smiles)
+    bg_props  = compute_properties(bg_smiles)
+    profiling_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_profiling.png")
+    plot_profiling(sel_props, bg_props, profiling_path)
+    print(f"  Saved profiling figure to {profiling_path}")
 
 
 if __name__ == "__main__":

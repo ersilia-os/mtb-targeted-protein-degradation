@@ -2,7 +2,11 @@
 import os
 import sys
 
+import numpy as np
 import pandas as pd
+from rdkit.Chem import MolFromSmiles, rdMolDescriptors
+from rdkit.Chem.FilterCatalog import FilterCatalog, FilterCatalogParams
+from rdkit.Chem.QED import qed as calc_qed
 from tqdm import tqdm
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -85,3 +89,106 @@ def build_matrix(pocket_map, results_dir, label=""):
     if not series:
         return pd.DataFrame()
     return pd.concat(series, axis=1)
+
+
+# --- Physicochemical profiling ---
+
+PROP_COLUMNS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings", "QED"]
+DISCRETE_PROPS = {"HBD", "HBA", "RotBonds", "AromaticRings"}
+
+
+def sample_background_smiles(lib, exclude_ids, n, seed):
+    """Return {id: smiles} for n randomly sampled compounds not in exclude_ids."""
+    path = SMILES_PATHS[lib]
+    if not os.path.isfile(path):
+        print(f"  Warning: SMILES file not found at {path}, cannot sample background.")
+        return {}
+    id_col, smi_col = SMILES_COLS[lib]
+    sep = SMILES_SEPS[lib]
+    pool = {}
+    for chunk in pd.read_csv(path, sep=sep, usecols=[id_col, smi_col], chunksize=200_000):
+        cands = chunk[~chunk[id_col].isin(exclude_ids)]
+        pool.update(zip(cands[id_col], cands[smi_col]))
+    ids = list(pool.keys())
+    sampled = np.random.default_rng(seed).choice(ids, size=min(n, len(ids)), replace=False)
+    return {cid: pool[cid] for cid in sampled}
+
+
+def compute_properties(smiles_dict):
+    """Compute physicochemical properties for a {id: smiles} dict."""
+    params = FilterCatalogParams()
+    params.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS_A)
+    params.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS_B)
+    params.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS_C)
+    catalog = FilterCatalog(params)
+    records = []
+    for cid, smi in tqdm(smiles_dict.items(), desc="Computing properties", unit="mol"):
+        if not isinstance(smi, str):
+            continue
+        mol = MolFromSmiles(smi)
+        if mol is None:
+            continue
+        records.append({
+            "id": cid,
+            "MW":            rdMolDescriptors.CalcExactMolWt(mol),
+            "cLogP":         rdMolDescriptors.CalcCrippenDescriptors(mol)[0],
+            "TPSA":          rdMolDescriptors.CalcTPSA(mol),
+            "HBD":           rdMolDescriptors.CalcNumHBD(mol),
+            "HBA":           rdMolDescriptors.CalcNumHBA(mol),
+            "RotBonds":      rdMolDescriptors.CalcNumRotatableBonds(mol),
+            "AromaticRings": rdMolDescriptors.CalcNumAromaticRings(mol),
+            "QED":           calc_qed(mol),
+            "is_pains":      catalog.HasMatch(mol),
+        })
+    if not records:
+        return pd.DataFrame()
+    return pd.DataFrame(records).set_index("id")
+
+
+def plot_profiling(sel_props, bg_props, out_path):
+    """KDE (continuous) + overlaid bars (discrete) + PAINS bar."""
+    from scipy.stats import gaussian_kde
+    import stylia
+
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+
+    pains_sel = 100 * sel_props["is_pains"].sum() / len(sel_props) if len(sel_props) > 0 else 0.0
+    pains_bg  = 100 * bg_props["is_pains"].sum()  / len(bg_props)  if len(bg_props)  > 0 else 0.0
+    print(f"  Selected  : {len(sel_props):,} compounds, {pains_sel:.1f}% PAINS")
+    print(f"  Background: {len(bg_props):,} compounds, {pains_bg:.1f}% PAINS")
+
+    fig, axs = stylia.create_figure(3, 3, width=1.3, height=0.8)
+
+    for prop in PROP_COLUMNS:
+        ax = axs.next()
+        bg_data  = bg_props[prop].dropna().values
+        sel_data = sel_props[prop].dropna().values
+        if prop in DISCRETE_PROPS:
+            vals = sorted(set(bg_data.astype(int)) | set(sel_data.astype(int)))
+            bg_freq  = pd.Series(bg_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
+            sel_freq = pd.Series(sel_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
+            ax.bar(vals, bg_freq.values,  color=nc.gray,   alpha=1,   label="Background")
+            ax.bar(vals, sel_freq.values, color=nc.purple, alpha=0.5, label="Selected")
+            stylia.label(ax, xlabel=prop, ylabel="Frequency")
+        else:
+            for data, color, label in [
+                (bg_data,  nc.gray,   "Background"),
+                (sel_data, nc.purple, "Selected"),
+            ]:
+                if len(data) < 2:
+                    continue
+                kde = gaussian_kde(data)
+                x = np.linspace(data.min(), data.max(), 300)
+                ax.plot(x, kde(x), color=color, label=label)
+            stylia.label(ax, xlabel=prop, ylabel="Density")
+        ax.legend()
+
+    ax = axs.next()
+    ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, nc.purple], alpha=0.8)
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["Background", "Selected"])
+    stylia.label(ax, xlabel="", ylabel="PAINS (%)")
+
+    stylia.save_figure(out_path)

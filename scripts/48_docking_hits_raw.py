@@ -10,7 +10,6 @@ then reports:
 
 Usage:
     python 48_docking_hits_raw.py --trna pheS,aspS,lysS,alaS --lib REAL
-    python 48_docking_hits_raw.py --trna pheS,aspS,lysS,alaS --lib REAL --smiles
 """
 
 import argparse
@@ -23,6 +22,7 @@ from itertools import combinations
 import matplotlib
 matplotlib.use("Agg")
 warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*converter.*already registered.*")
+warnings.filterwarnings("ignore", category=FutureWarning, module="upsetplot")
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -30,15 +30,68 @@ from upsetplot import from_contents, plot as upset_plot
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.append(os.path.join(ROOT, "src"))
+from default import RANDOM_SEED
 from docking_utils import (
     LIBRARIES,
     build_matrix,
+    compute_properties,
     load_gene_map,
     load_reference_pockets,
     lookup_smiles,
+    plot_profiling,
+    sample_background_smiles,
 )
 
+BG_SAMPLE_SIZE = 10_000
 UPSET_THRESHOLDS = [100, 1_000]
+
+
+def simple_boxplot(ax, x, y, c, width):
+    lw = 0.3
+    ax.boxplot(y, positions=[x], widths=width, patch_artist=True, whis=[1, 99], showfliers=False,
+               boxprops=dict(facecolor=c, color='black', lw=lw),
+               medianprops=dict(color='black', lw=lw),
+               whiskerprops=dict(color='black', lw=lw),
+               capprops=dict(color='none', lw=lw))
+
+
+def plot_score_boxplots(scores1, multi_ids, genes, out_path):
+    """Paired boxplots of raw docking scores: background vs multi-target selected."""
+    import matplotlib.patches as mpatches
+    import stylia
+
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+
+    fig, axs = stylia.create_figure(1, 1, height=0.4, width=0.7)
+    ax = axs.next()
+
+    n_bg  = len(scores1)
+    n_sel = len(multi_ids)
+    width = 0.3
+    ticks, tick_labels = [], []
+    for i, gene in enumerate(genes):
+        if gene not in scores1.columns:
+            continue
+        x_bg  = 2 * i
+        x_sel = 2 * i + 0.4
+        bg_scores  = scores1[gene].dropna().values
+        sel_scores = scores1.loc[scores1.index.isin(multi_ids), gene].dropna().values
+        simple_boxplot(ax, x_bg,  bg_scores,  nc.gray,   width)
+        simple_boxplot(ax, x_sel, sel_scores, nc.purple, width)
+        ticks.append(2 * i + 0.2)
+        tick_labels.append(gene)
+
+    ax.set_xticks(ticks)
+    ax.set_xticklabels(tick_labels)
+    legend_handles = [
+        mpatches.Patch(facecolor=nc.gray,   label=f"Background (n={n_bg:,})"),
+        mpatches.Patch(facecolor=nc.purple, label=f"Multi-target ≥2 targets, top 1,000 (n={n_sel:,})"),
+    ]
+    ax.legend(handles=legend_handles)
+    stylia.label(ax, xlabel="", ylabel="Docking score")
+    stylia.save_figure(out_path)
 
 
 def save_upset(gene_top, top_n, output_dir, lib, trna_tag):
@@ -62,8 +115,6 @@ def main():
                         help="Comma-separated gene name(s) (e.g. pheS,aspS,lysS,alaS)")
     parser.add_argument("--lib", choices=["DL", "REAL"], required=True,
                         help="Compound library: DL or REAL")
-    parser.add_argument("--smiles", action="store_true",
-                        help="Include SMILES in the multi-target CSV report")
     args = parser.parse_args()
 
     genes = [g.strip() for g in args.trna.split(",")]
@@ -113,6 +164,7 @@ def main():
     print()
 
     # --- Multi-target binder counts ---
+    M = len(scores1)
     print("--- Multi-target binders ---")
     for top_n in [100, 1_000]:
         top_sets = {g: set(gene_top[g][:top_n]) for g in gene_top}
@@ -123,7 +175,8 @@ def main():
         )
         print(f"Top {top_n:,}:")
         for k in range(len(gene_top), 1, -1):
-            print(f"  {k}/{len(gene_top)} targets: {tally.get(k, 0):,} compound(s)")
+            expected = (top_n ** k) / (M ** (k - 1))
+            print(f"  {k}/{len(gene_top)} targets: {tally.get(k, 0):,} compound(s)  (expected {expected:.1f})")
     print()
 
     # --- Multi-target CSV report (≥2 targets at top 1,000) ---
@@ -151,12 +204,24 @@ def main():
         multi_df["_rank_sum"] = multi_df[rank_cols].sum(axis=1)
         multi_df = multi_df.sort_values(["n_targets", "_rank_sum"], ascending=[False, True])
         multi_df = multi_df.drop(columns=["_rank_sum"])
-        if args.smiles:
-            smi_map = lookup_smiles(multi_df.index.tolist(), args.lib)
-            multi_df.insert(0, "smiles", multi_df.index.map(smi_map))
+        sel_smiles = lookup_smiles(multi_df.index.tolist(), args.lib)
+        multi_df.insert(0, "smiles", multi_df.index.map(sel_smiles))
         multi_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_multi_target_top1000.csv")
         multi_df.to_csv(multi_path)
         print(f"Multi-target report: {len(multi_df):,} compounds → {multi_path}")
+
+        scores_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_scores.png")
+        plot_score_boxplots(scores1, set(multi_ids), genes, scores_path)
+        print(f"  Saved: {scores_path}")
+
+        print("\nPhysicochemical profiling...")
+        bg_smiles  = sample_background_smiles(args.lib, set(multi_ids), BG_SAMPLE_SIZE, RANDOM_SEED)
+        print(f"  Computing properties for {len(sel_smiles):,} selected + {len(bg_smiles):,} background...")
+        sel_props = compute_properties(sel_smiles)
+        bg_props  = compute_properties(bg_smiles)
+        profiling_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_profiling.png")
+        plot_profiling(sel_props, bg_props, profiling_path)
+        print(f"  Saved profiling figure to {profiling_path}")
 
 
 if __name__ == "__main__":
