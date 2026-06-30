@@ -155,7 +155,7 @@ def plot_profiling(sel_props, bg_props, out_path):
     nc = stylia.NamedColors()
 
     XLIMS = {
-        "MW":            (150, 700),
+        "MW":            (200, 500),
         "cLogP":         (-4, 8),
         "TPSA":          (0, 200),
         "QED":           (0, 1),
@@ -187,8 +187,8 @@ def plot_profiling(sel_props, bg_props, out_path):
             stylia.label(ax, xlabel=prop, ylabel="Frequency")
         else:
             for data, color, label in [
-                (bg_data,  nc.gray,   "Background"),
-                (sel_data, nc.purple, "Selected"),
+                (bg_data,  nc.gray,   f"Background (n={len(bg_props):,})"),
+                (sel_data, nc.purple, f"Selected (n={len(sel_props):,})"),
             ]:
                 if len(data) < 2:
                     continue
@@ -197,7 +197,8 @@ def plot_profiling(sel_props, bg_props, out_path):
                 ax.plot(x, kde(x), color=color, label=label)
             ax.set_xlim(lo, hi)
             stylia.label(ax, xlabel=prop, ylabel="Density")
-        ax.legend()
+            if prop == "cLogP":
+                ax.legend(loc="upper left")
 
     ax = axs.next()
     ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, nc.purple], alpha=0.8)
