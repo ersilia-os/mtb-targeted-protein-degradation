@@ -91,6 +91,56 @@ def build_matrix(pocket_map, results_dir, label=""):
     return pd.concat(series, axis=1)
 
 
+# --- Score boxplots ---
+
+def simple_boxplot(ax, x, y, c, width):
+    lw = 0.3
+    ax.boxplot(y, positions=[x], widths=width, patch_artist=True, whis=[1, 99], showfliers=False,
+               boxprops=dict(facecolor=c, color='black', lw=lw),
+               medianprops=dict(color='black', lw=lw),
+               whiskerprops=dict(color='black', lw=lw),
+               capprops=dict(color='none', lw=lw))
+
+
+def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected"):
+    """Paired boxplots of raw docking scores: background vs selected compounds."""
+    import matplotlib.patches as mpatches
+    import stylia
+
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+
+    fig, axs = stylia.create_figure(1, 1, height=0.4, width=0.7)
+    ax = axs.next()
+
+    n_bg  = len(scores1)
+    n_sel = len(sel_ids)
+    width = 0.3
+    ticks, tick_labels = [], []
+    for i, gene in enumerate(genes):
+        if gene not in scores1.columns:
+            continue
+        x_bg  = 2 * i
+        x_sel = 2 * i + 0.4
+        bg_scores  = scores1[gene].dropna().values
+        sel_scores = scores1.loc[scores1.index.isin(sel_ids), gene].dropna().values
+        simple_boxplot(ax, x_bg,  bg_scores,  nc.gray,   width)
+        simple_boxplot(ax, x_sel, sel_scores, nc.purple, width)
+        ticks.append(2 * i + 0.2)
+        tick_labels.append(gene)
+
+    ax.set_xticks(ticks)
+    ax.set_xticklabels(tick_labels)
+    legend_handles = [
+        mpatches.Patch(facecolor=nc.gray,   label=f"Background (n={n_bg:,})"),
+        mpatches.Patch(facecolor=nc.purple, label=f"{sel_label} (n={n_sel:,})"),
+    ]
+    ax.legend(handles=legend_handles)
+    stylia.label(ax, xlabel="", ylabel="Docking score")
+    stylia.save_figure(out_path)
+
+
 # --- Physicochemical profiling ---
 
 PROP_COLUMNS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings", "QED"]

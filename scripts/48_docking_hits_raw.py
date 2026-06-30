@@ -39,59 +39,12 @@ from docking_utils import (
     load_reference_pockets,
     lookup_smiles,
     plot_profiling,
+    plot_score_boxplots,
     sample_background_smiles,
 )
 
-BG_SAMPLE_SIZE = 10_000
+BG_SAMPLE_SIZE = 25_000
 UPSET_THRESHOLDS = [100, 1_000]
-
-
-def simple_boxplot(ax, x, y, c, width):
-    lw = 0.3
-    ax.boxplot(y, positions=[x], widths=width, patch_artist=True, whis=[1, 99], showfliers=False,
-               boxprops=dict(facecolor=c, color='black', lw=lw),
-               medianprops=dict(color='black', lw=lw),
-               whiskerprops=dict(color='black', lw=lw),
-               capprops=dict(color='none', lw=lw))
-
-
-def plot_score_boxplots(scores1, multi_ids, genes, out_path):
-    """Paired boxplots of raw docking scores: background vs multi-target selected."""
-    import matplotlib.patches as mpatches
-    import stylia
-
-    stylia.set_format("slide")
-    stylia.set_style("ersilia")
-    nc = stylia.NamedColors()
-
-    fig, axs = stylia.create_figure(1, 1, height=0.4, width=0.7)
-    ax = axs.next()
-
-    n_bg  = len(scores1)
-    n_sel = len(multi_ids)
-    width = 0.3
-    ticks, tick_labels = [], []
-    for i, gene in enumerate(genes):
-        if gene not in scores1.columns:
-            continue
-        x_bg  = 2 * i
-        x_sel = 2 * i + 0.4
-        bg_scores  = scores1[gene].dropna().values
-        sel_scores = scores1.loc[scores1.index.isin(multi_ids), gene].dropna().values
-        simple_boxplot(ax, x_bg,  bg_scores,  nc.gray,   width)
-        simple_boxplot(ax, x_sel, sel_scores, nc.purple, width)
-        ticks.append(2 * i + 0.2)
-        tick_labels.append(gene)
-
-    ax.set_xticks(ticks)
-    ax.set_xticklabels(tick_labels)
-    legend_handles = [
-        mpatches.Patch(facecolor=nc.gray,   label=f"Background (n={n_bg:,})"),
-        mpatches.Patch(facecolor=nc.purple, label=f"Multi-target ≥2 targets, top 1,000 (n={n_sel:,})"),
-    ]
-    ax.legend(handles=legend_handles)
-    stylia.label(ax, xlabel="", ylabel="Docking score")
-    stylia.save_figure(out_path)
 
 
 def save_upset(gene_top, top_n, output_dir, lib, trna_tag):
@@ -214,7 +167,8 @@ def main():
         print(f"Multi-target report: {len(multi_df):,} compounds → {multi_path}")
 
         scores_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_scores.png")
-        plot_score_boxplots(scores1, set(multi_ids), genes, scores_path)
+        plot_score_boxplots(scores1, set(multi_ids), genes, scores_path,
+                            sel_label="Multi-target ≥2 targets, top 1,000")
         print(f"  Saved: {scores_path}")
 
         print("\nPhysicochemical profiling...")
