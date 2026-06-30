@@ -278,9 +278,12 @@ def main():
 
     sel_smiles = lookup_smiles(list(_already_selected), args.lib)
     results["smiles"] = results.index.map(sel_smiles)
+    print(f"\n  Computing properties for {len(sel_smiles):,} selected...")
+    sel_props = compute_properties(sel_smiles)
+    results = results.join(sel_props, how="left")
 
     results.to_csv(out_path)
-    print(f"\nSaved results to {out_path}")
+    print(f"Saved results to {out_path}")
 
     # --- Target coverage among selected compounds ---
     print(f"\nTarget coverage among selected compounds ({len(_already_selected)} total):")
@@ -297,8 +300,7 @@ def main():
 
     print("\nPhysicochemical profiling...")
     bg_smiles = sample_background_smiles(args.lib, _already_selected, BG_SAMPLE_SIZE, RANDOM_SEED)
-    print(f"  Computing properties for {len(sel_smiles):,} selected + {len(bg_smiles):,} background...")
-    sel_props = compute_properties(sel_smiles)
+    print(f"  Background: {len(bg_smiles):,} compounds...")
     bg_props  = compute_properties(bg_smiles)
     profiling_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_profiling.png")
     plot_profiling(sel_props, bg_props, profiling_path)

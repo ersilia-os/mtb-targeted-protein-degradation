@@ -154,6 +154,17 @@ def plot_profiling(sel_props, bg_props, out_path):
     stylia.set_style("ersilia")
     nc = stylia.NamedColors()
 
+    XLIMS = {
+        "MW":            (150, 700),
+        "cLogP":         (-4, 8),
+        "TPSA":          (0, 200),
+        "QED":           (0, 1),
+        "HBD":           (0, 7),
+        "HBA":           (0, 13),
+        "RotBonds":      (0, 13),
+        "AromaticRings": (0, 8),
+    }
+
     pains_sel = 100 * sel_props["is_pains"].sum() / len(sel_props) if len(sel_props) > 0 else 0.0
     pains_bg  = 100 * bg_props["is_pains"].sum()  / len(bg_props)  if len(bg_props)  > 0 else 0.0
     print(f"  Selected  : {len(sel_props):,} compounds, {pains_sel:.1f}% PAINS")
@@ -165,12 +176,14 @@ def plot_profiling(sel_props, bg_props, out_path):
         ax = axs.next()
         bg_data  = bg_props[prop].dropna().values
         sel_data = sel_props[prop].dropna().values
+        lo, hi = XLIMS[prop]
         if prop in DISCRETE_PROPS:
             vals = sorted(set(bg_data.astype(int)) | set(sel_data.astype(int)))
             bg_freq  = pd.Series(bg_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
             sel_freq = pd.Series(sel_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
             ax.bar(vals, bg_freq.values,  color=nc.gray,   alpha=1,   label="Background")
             ax.bar(vals, sel_freq.values, color=nc.purple, alpha=0.5, label="Selected")
+            ax.set_xlim(lo - 0.5, hi + 0.5)
             stylia.label(ax, xlabel=prop, ylabel="Frequency")
         else:
             for data, color, label in [
@@ -180,8 +193,9 @@ def plot_profiling(sel_props, bg_props, out_path):
                 if len(data) < 2:
                     continue
                 kde = gaussian_kde(data)
-                x = np.linspace(data.min(), data.max(), 300)
+                x = np.linspace(lo, hi, 300)
                 ax.plot(x, kde(x), color=color, label=label)
+            ax.set_xlim(lo, hi)
             stylia.label(ax, xlabel=prop, ylabel="Density")
         ax.legend()
 
@@ -189,6 +203,7 @@ def plot_profiling(sel_props, bg_props, out_path):
     ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, nc.purple], alpha=0.8)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["Background", "Selected"])
+    ax.set_ylim(0, 10)
     stylia.label(ax, xlabel="", ylabel="PAINS (%)")
 
     stylia.save_figure(out_path)
