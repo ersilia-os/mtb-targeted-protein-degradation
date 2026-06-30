@@ -262,7 +262,7 @@ def main():
         print(display.to_string())
 
     sel_smiles = lookup_smiles(list(_already_selected), args.lib)
-    results["smiles"] = results.index.map(sel_smiles)
+    results.insert(0, "smiles", results.index.map(sel_smiles))
     print(f"\n  Computing properties for {len(sel_smiles):,} selected...")
     sel_props = compute_properties(sel_smiles)
     results = results.join(sel_props, how="left")
@@ -282,6 +282,21 @@ def main():
     profiling_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_profiling.png")
     plot_profiling(sel_props, bg_props, profiling_path, sel_color="orange")
     print(f"  Saved profiling figure to {profiling_path}")
+
+    # --- Overlap with script 48 multi-target binders ---
+    raw_path = os.path.join(ROOT, "output", "48_docking_hits_raw",
+                            f"{trna_tag}_{args.lib}_multi_target_top1000.csv")
+    if os.path.isfile(raw_path):
+        raw_ids = set(pd.read_csv(raw_path, index_col=0).index)
+        overlap = _already_selected & raw_ids
+        print(f"\nOverlap with script 48 multi-target binders (top 1,000):")
+        print(f"  Script 48 selected : {len(raw_ids):,} compounds")
+        print(f"  Script 49 selected : {len(_already_selected):,} compounds")
+        print(f"  Overlap            : {len(overlap):,} compounds "
+              f"({100 * len(overlap) / len(_already_selected):.1f}% of script 49 selection)")
+    else:
+        print(f"\nSkipping overlap with script 48: {raw_path} not found.")
+        print("  Run script 48 first with the same --trna and --lib arguments.")
 
 
 if __name__ == "__main__":
