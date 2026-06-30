@@ -102,7 +102,7 @@ def simple_boxplot(ax, x, y, c, width):
                capprops=dict(color='none', lw=lw))
 
 
-def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected"):
+def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected", sel_color="purple"):
     """Paired boxplots of raw docking scores: background vs selected compounds."""
     import matplotlib.patches as mpatches
     import stylia
@@ -110,6 +110,7 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected")
     stylia.set_format("slide")
     stylia.set_style("ersilia")
     nc = stylia.NamedColors()
+    c_sel = getattr(nc, sel_color)
 
     fig, axs = stylia.create_figure(1, 1, height=0.4, width=0.7)
     ax = axs.next()
@@ -125,16 +126,16 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected")
         x_sel = 2 * i + 0.4
         bg_scores  = scores1[gene].dropna().values
         sel_scores = scores1.loc[scores1.index.isin(sel_ids), gene].dropna().values
-        simple_boxplot(ax, x_bg,  bg_scores,  nc.gray,   width)
-        simple_boxplot(ax, x_sel, sel_scores, nc.purple, width)
+        simple_boxplot(ax, x_bg,  bg_scores,  nc.gray, width)
+        simple_boxplot(ax, x_sel, sel_scores, c_sel,   width)
         ticks.append(2 * i + 0.2)
         tick_labels.append(gene)
 
     ax.set_xticks(ticks)
     ax.set_xticklabels(tick_labels)
     legend_handles = [
-        mpatches.Patch(facecolor=nc.gray,   label=f"Background (n={n_bg:,})"),
-        mpatches.Patch(facecolor=nc.purple, label=f"{sel_label} (n={n_sel:,})"),
+        mpatches.Patch(facecolor=nc.gray, label=f"Background (n={n_bg:,})"),
+        mpatches.Patch(facecolor=c_sel,   label=f"{sel_label} (n={n_sel:,})"),
     ]
     ax.legend(handles=legend_handles)
     stylia.label(ax, xlabel="", ylabel="Docking score")
@@ -195,7 +196,7 @@ def compute_properties(smiles_dict):
     return pd.DataFrame(records).set_index("id")
 
 
-def plot_profiling(sel_props, bg_props, out_path):
+def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
     """KDE (continuous) + overlaid bars (discrete) + PAINS bar."""
     from scipy.stats import gaussian_kde
     import stylia
@@ -203,6 +204,7 @@ def plot_profiling(sel_props, bg_props, out_path):
     stylia.set_format("slide")
     stylia.set_style("ersilia")
     nc = stylia.NamedColors()
+    c_sel = getattr(nc, sel_color)
 
     XLIMS = {
         "MW":            (200, 500),
@@ -232,13 +234,13 @@ def plot_profiling(sel_props, bg_props, out_path):
             bg_freq  = pd.Series(bg_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
             sel_freq = pd.Series(sel_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
             ax.bar(vals, bg_freq.values,  color=nc.gray,   alpha=1,   label="Background")
-            ax.bar(vals, sel_freq.values, color=nc.purple, alpha=0.5, label="Selected")
+            ax.bar(vals, sel_freq.values, color=c_sel, alpha=0.5, label="Selected")
             ax.set_xlim(lo - 0.5, hi + 0.5)
             stylia.label(ax, xlabel=prop, ylabel="Frequency")
         else:
             for data, color, label in [
                 (bg_data,  nc.gray,   f"Background (n={len(bg_props):,})"),
-                (sel_data, nc.purple, f"Selected (n={len(sel_props):,})"),
+                (sel_data, c_sel, f"Selected (n={len(sel_props):,})"),
             ]:
                 if len(data) < 2:
                     continue
@@ -251,7 +253,7 @@ def plot_profiling(sel_props, bg_props, out_path):
                 ax.legend(loc="upper left")
 
     ax = axs.next()
-    ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, nc.purple], alpha=0.8)
+    ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, c_sel], alpha=0.8)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["Background", "Selected"])
     ax.set_ylim(0, 10)

@@ -18,7 +18,6 @@ import argparse
 import os
 import sys
 import warnings
-from collections import Counter
 
 import matplotlib
 matplotlib.use("Agg")
@@ -95,7 +94,7 @@ def main():
 
     target_uniprot_acs = {gene_map[g] for g in genes}
 
-    output_dir = os.path.join(ROOT, "output", "48_docking_hits")
+    output_dir = os.path.join(ROOT, "output", "49_docking_hits_selective")
     os.makedirs(output_dir, exist_ok=True)
     trna_tag = "_".join(genes)
 
@@ -238,21 +237,6 @@ def main():
         .astype(pd.Int64Dtype())
     )
 
-    # --- Target coverage at top-N thresholds ---
-    THRESHOLDS = [100, 1000, 10_000]
-    n_targets = len(genes)
-    M = len(ranks1)
-    for top_n in THRESHOLDS:
-        top_sets = {g: set(ranks1[g].nsmallest(top_n).index) for g in genes}
-        tally = Counter(
-            sum(1 for g in genes if cid in top_sets[g])
-            for cid in set().union(*top_sets.values())
-        )
-        print(f"\nTop {top_n:,}:")
-        for k in range(n_targets, 1, -1):
-            expected = (top_n ** k) / (M ** (k - 1))
-            print(f"  {k}/{n_targets} targets: {tally.get(k, 0):>6,} compound(s)  (expected {expected:.1f})")
-        print()
 
     out_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}.csv")
     results["selected"] = pd.NA
@@ -286,21 +270,9 @@ def main():
     results.to_csv(out_path)
     print(f"Saved results to {out_path}")
 
-    # --- Target coverage among selected compounds ---
-    print(f"\nTarget coverage among selected compounds ({len(_already_selected)} total):")
-    for top_n in THRESHOLDS:
-        top_sets = {g: set(ranks1[g].nsmallest(top_n).index) for g in genes}
-        tally = Counter(
-            sum(1 for g in genes if cid in top_sets[g])
-            for cid in _already_selected
-        )
-        print(f"Top {top_n:,}:")
-        for k in range(n_targets, 1, -1):
-            print(f"  {k}/{n_targets} targets: {tally.get(k, 0):>6,} compound(s)")
-        print()
-
     scores_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_scores.png")
-    plot_score_boxplots(scores1, _already_selected, genes, scores_path, sel_label="Selected (m1–m5)")
+    plot_score_boxplots(scores1, _already_selected, genes, scores_path,
+                        sel_label="Selected (m1–m5)", sel_color="orange")
     print(f"Saved score boxplots to {scores_path}")
 
     print("\nPhysicochemical profiling...")
@@ -308,7 +280,7 @@ def main():
     print(f"  Background: {len(bg_smiles):,} compounds...")
     bg_props  = compute_properties(bg_smiles)
     profiling_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_profiling.png")
-    plot_profiling(sel_props, bg_props, profiling_path)
+    plot_profiling(sel_props, bg_props, profiling_path, sel_color="orange")
     print(f"  Saved profiling figure to {profiling_path}")
 
 

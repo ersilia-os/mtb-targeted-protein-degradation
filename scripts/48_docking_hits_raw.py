@@ -87,7 +87,7 @@ def main():
         print(f"Error: no reference pocket defined for: {', '.join(missing_ref)}")
         sys.exit(1)
 
-    output_dir = os.path.join(ROOT, "output", "48_docking_hits")
+    output_dir = os.path.join(ROOT, "output", "48_docking_hits_raw")
     os.makedirs(output_dir, exist_ok=True)
     trna_tag = "_".join(genes)
 
