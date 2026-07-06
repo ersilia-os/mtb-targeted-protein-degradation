@@ -113,6 +113,26 @@ def build_matrix(pocket_map, results_dir, label=""):
     return pd.concat(series, axis=1)
 
 
+# --- UpSet plots ---
+
+def save_upset(gene_top, top_n, output_dir, lib, trna_tag):
+    """UpSet plot of top-N hit overlap across target genes."""
+    import warnings
+    import matplotlib.pyplot as plt
+    from upsetplot import from_contents, plot as upset_plot
+    warnings.filterwarnings("ignore", category=FutureWarning, module="upsetplot")
+
+    top_sets = {g: set(ids[:top_n]) for g, ids in gene_top.items()}
+    data = from_contents(top_sets)
+    upset_plot(data)
+    plt.suptitle(f"{lib} — top {top_n:,}")
+    fname = f"{trna_tag}_{lib}_upset_top{top_n}.png"
+    path = os.path.join(output_dir, fname)
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close("all")
+    print(f"  Saved: {path}")
+
+
 # --- Score boxplots ---
 
 def simple_boxplot(ax, x, y, c, width):
@@ -163,7 +183,7 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected",
             simple_boxplot(ax, base + offsets[0], dl_scores[gene].dropna().values, nc.mint, width)
         if real_negative_scores is not None and gene in real_negative_scores:
             simple_boxplot(ax, base + offsets[1], real_negative_scores[gene].dropna().values, nc.blue, width)
-        simple_boxplot(ax, base + offsets[2], bg_scores,  nc.gray, width)
+        simple_boxplot(ax, base + offsets[2], bg_scores,  nc.yellow, width)
         simple_boxplot(ax, base + offsets[3], sel_scores, c_sel,   width)
         ticks.append(base + sum(offsets) / len(offsets))
         tick_labels.append(gene)
@@ -175,7 +195,7 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected",
         legend_handles.append(mpatches.Patch(facecolor=nc.mint, label=f"Enamine DL (n={n_dl:,})"))
     if real_negative_scores is not None:
         legend_handles.append(mpatches.Patch(facecolor=nc.blue, label=f"Enamine REAL negative set (n={n_rn:,})"))
-    legend_handles.append(mpatches.Patch(facecolor=nc.gray, label=f"Pre-screened (n={n_bg:,})"))
+    legend_handles.append(mpatches.Patch(facecolor=nc.yellow, label=f"Pre-screened (n={n_bg:,})"))
     legend_handles.append(mpatches.Patch(facecolor=c_sel,   label=f"{sel_label} (n={n_sel:,})"))
     ax.legend(handles=legend_handles)
     stylia.label(ax, xlabel="", ylabel="Docking score")

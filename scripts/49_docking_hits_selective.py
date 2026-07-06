@@ -18,6 +18,8 @@ import argparse
 import os
 import sys
 import warnings
+from collections import Counter
+from itertools import combinations
 
 import matplotlib
 matplotlib.use("Agg")
@@ -42,9 +44,11 @@ from docking_utils import (
     plot_profiling,
     plot_score_boxplots,
     sample_prescreened_smiles,
+    save_upset,
 )
 
-BG_SAMPLE_SIZE = 1_000
+BG_SAMPLE_SIZE = 10_000
+UPSET_THRESHOLDS = [100, 1_000, 10_000]
 
 
 def murcko_inchikey(smi):
@@ -131,6 +135,9 @@ def main():
             errors_found = True
     if errors_found:
         sys.exit(1)
+
+    # Per-gene compound ranking, reused below (after selection) for the UpSet plot.
+    gene_top = {g: scores1[g].sort_values().index.tolist() for g in genes if g in scores1.columns}
 
     ranks1 = rank_transform(scores1)
     ranks2 = rank_transform(scores2).reindex(ranks1.index)
@@ -260,6 +267,40 @@ def main():
         print(f"Passing filter: {len(hits):,} / {N:,}  ({len(hits_new):,} not yet selected in a prior metric)")
         print(display.to_string())
 
+    # --- UpSet plots: target membership (top 100 / 1,000 / 10,000, as in script 48) among selected ---
+    # Slice each gene's GLOBAL ranking to top_n first, then intersect with the selected set —
+    # NOT the other way around (filtering to selected first would make the top_n slice a no-op,
+    # since the selected set is smaller than every threshold here).
+    if len(gene_top) >= 2:
+        for top_n in UPSET_THRESHOLDS:
+            gene_top_selected = {
+                g: [cid for cid in ids[:top_n] if cid in _already_selected]
+                for g, ids in gene_top.items()
+            }
+            top_sets = {g: set(ids) for g, ids in gene_top_selected.items()}
+            print(f"\nShared hits among the {len(_already_selected):,} selected compounds "
+                  f"— top {top_n:,}:")
+            for r in range(2, len(gene_top_selected) + 1):
+                for combo in combinations(sorted(gene_top_selected), r):
+                    shared = len(set.intersection(*(top_sets[g] for g in combo)))
+                    print(f"  {' & '.join(combo)}: {shared:,}")
+
+            # Multi-target binder counts (exactly k targets), same format as script 48.
+            # No "expected by chance" figure here (unlike script 48): that estimate assumes a
+            # random draw from the full ~M-compound population, but these counts are already
+            # capped at len(_already_selected) — a pre-filtered "good binder" pool, not a random
+            # sample — so a full-population chance expectation isn't a meaningful comparison.
+            all_in_top = set.union(*top_sets.values()) if any(top_sets.values()) else set()
+            tally = Counter(
+                sum(1 for g in gene_top_selected if cid in top_sets[g])
+                for cid in all_in_top
+            )
+            for k in range(len(gene_top_selected), 1, -1):
+                print(f"  {k}/{len(gene_top_selected)} targets: {tally.get(k, 0):,} compound(s)")
+
+            save_upset(gene_top_selected, top_n, output_dir, args.lib, trna_tag)
+        print()
+
     sel_smiles = lookup_smiles(list(_already_selected), args.lib)
     results.insert(0, "smiles", results.index.map(sel_smiles))
     print(f"\n  Computing properties for {len(sel_smiles):,} selected...")
@@ -276,7 +317,7 @@ def main():
 
     scores_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_scores.png")
     plot_score_boxplots(scores1, _already_selected, genes, scores_path,
-                        sel_label="Selected (m1–m5)",
+                        sel_label="Selected selective", sel_color="orange",
                         dl_scores=dl_scores, real_negative_scores=real_negative_scores)
     print(f"Saved score boxplots to {scores_path}")
 

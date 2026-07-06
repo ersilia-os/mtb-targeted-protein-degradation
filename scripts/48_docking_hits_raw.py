@@ -22,11 +22,8 @@ from itertools import combinations
 import matplotlib
 matplotlib.use("Agg")
 warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*converter.*already registered.*")
-warnings.filterwarnings("ignore", category=FutureWarning, module="upsetplot")
 
-import matplotlib.pyplot as plt
 import pandas as pd
-from upsetplot import from_contents, plot as upset_plot
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.append(os.path.join(ROOT, "src"))
@@ -42,23 +39,11 @@ from docking_utils import (
     plot_profiling,
     plot_score_boxplots,
     sample_prescreened_smiles,
+    save_upset,
 )
 
-BG_SAMPLE_SIZE = 1_000
+BG_SAMPLE_SIZE = 10_000
 UPSET_THRESHOLDS = [100, 1_000]
-
-
-def save_upset(gene_top, top_n, output_dir, lib, trna_tag):
-    """UpSet plot of top-N hit overlap across target genes."""
-    top_sets = {g: set(ids[:top_n]) for g, ids in gene_top.items()}
-    data = from_contents(top_sets)
-    upset_plot(data)
-    plt.suptitle(f"{lib} — top {top_n:,}")
-    fname = f"{trna_tag}_{lib}_upset_top{top_n}.png"
-    path = os.path.join(output_dir, fname)
-    plt.savefig(path, dpi=150, bbox_inches="tight")
-    plt.close("all")
-    print(f"  Saved: {path}")
 
 
 def main():
