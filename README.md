@@ -45,6 +45,8 @@ In addition, the following tools are required:
 * [PocketVec](https://github.com/sbnb-irb/pocketvec) for pocket characterization.
 * [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) for protein-small molecule flexible docking.
 * [LazyQSAR](https://github.com/ersilia-os/lazy-qsar) for ML bioactivity modelling. 
+* [BitBirch](https://github.com/mqcomplab/bitbirch) (`bblean` package) for fingerprint clustering.
+* [Ersilia Model Hub](https://github.com/ersilia-os/ersilia) CLI for running pre-trained ADMET/property prediction models (e.g. NSPS, cytotoxicity).
 
 
 To run P2Rank, Java is required. Additionally, Openbabel needs to be installed for file format conversion:
@@ -275,10 +277,82 @@ For each pocket structure (x276) a Naive Bayes Classifier was trained using Morg
 
 ### Characterization, screening and prioritization of Enamine REAL 10B compounds
 
-The characterization of Enamine REAL 10B compounds was performed in a [related repository](https://github.com/ersilia-os/ready-to-screen-enamine-real/tree/main).
+The characterization of Enamine REAL 10B compounds (ECFP6 fingerprints for the full library) was performed in a [related repository](https://github.com/ersilia-os/ready-to-screen-enamine-real/tree/main).
 
-The screening of Enamine REAL 10B compounds was performed in a [related repository](https://github.com/ersilia-os/gcadda4tb-enamine-real-screening). 
+The screening of Enamine REAL 10B compounds was performed in a [related repository](https://github.com/ersilia-os/gcadda4tb-enamine-real-screening), applying the surrogate models trained in the previous step (x276 pocket structures) to the full 10 billion-compound library, split into 994 chunks. Per-chunk, per-pocket top-1% inference results are the starting point for the hit reduction steps below.
 
+#### Hit overlap diagnostics
+
+Before reducing the 10B screening output to a manageable set, we checked whether compounds shared between pockets' top-1% hits reflect genuine multi-target/multi-protein binding or are simply an artifact of overlapping pocket geometry. For each chunk, shared hits between pocket pairs are classified as `SAME_POCKET` (centroid distance < 6.14 Å, i.e. effectively the same physical site detected twice), `SAME_PROTEIN` (different pocket, same protein) or `DIFF_PROTEIN`, see `scripts/38_summarize_screening_results.py`. Results are stored per chunk in `processed/unidock_REAL_docking/inference_10B/shared_compounds/`.
+
+#### Reducing 10B hits to a candidate pool
+
+Given the scale of the 10B library, we reduced screening hits to a manageable candidate pool using two complementary selection strategies, computed both at the pocket level (276 pockets) and at the protein level (21 proteins, pockets collapsed), see `scripts/39_reduce_n_hits_I.py` (per-chunk selection) and `scripts/40_reduce_n_hits_II.py` (cross-chunk aggregation). A compound "hits" a target (pocket, or protein when any of its pockets hits) if it falls in the top 1% of surrogate-model-predicted scores for that target, computed independently within its 10M-compound chunk (994 chunks make up the 10B library) — i.e. a per-chunk, per-pocket relative cutoff, not a global rank or a fixed absolute score.
+
+* **Condition A ("promiscuous")**: compounds ranked by total number of targets hit, keeping the top 10,000 per chunk and reducing to the top **250,000** globally (both pocket- and protein-level sets).
+* **Condition B ("selective"\*)**: compounds must first clear a promiscuity floor — hitting at least 50 pockets (pocket-level) or 2 proteins (protein-level) among their top-100 hits. Within that already-promiscuous eligible pool, the compounds with the *fewest additional* target hits are kept: 1,000 per pocket (**276,000** total) and 13,000 per protein (**273,000** total). \*The "selective" label here means "least promiscuous among an already-promiscuous pool," not "hits few targets" — it follows the naming used in the pipeline scripts themselves, which flag the term with an asterisk.
+
+A fixed random seed (42) is used for tie-breaking throughout. Final sets are stored as `A_pockets.csv`, `B_pockets.csv`, `A_proteins.csv` and `B_proteins.csv` in `processed/unidock_REAL_docking/inference_10B/`.
+
+#### SMILES mapping
+
+Since the full 10B-compound SMILES mapping is too large to store locally, `scripts/41_download_and_map.py` downloads the per-chunk ID→SMILES files from a shared Google Drive folder (via a Google service account), merges the four selection sets above (deduplicating overlaps) and maps each selected compound to its SMILES string. Results are stored per chunk in `processed/unidock_REAL_docking/inference_10B/selected_compounds/`.
+
+#### Drug-likeness filtering
+
+We computed physicochemical descriptors (MW, LogP, QED) with RDKit and merged in a natural-product/synthetic-likeness score (NSPS) from the [Ersilia Model Hub](https://github.com/ersilia-os/ersilia) model `eos12x7`, then filtered the selected compounds to a drug-like chemical space: MW in [250, 450], LogP in [−1, 5], QED > 0.4, NSPS in [10, 40], see `scripts/42_annotate_and_filter.py`. Filtered compounds (~965k) are stored in `processed/unidock_REAL_docking/inference_10B/filtered_compounds.csv`.
+
+#### Clustering to a final validation set
+
+To bring the filtered set down to a size suitable for a second docking round, `notebooks/43_clustering.ipynb` first applies a synthon-diversity cap (max 3 occurrences per synthon, analogous to `scripts/33_enamine_REAL_selection.py`), then clusters the remaining compounds' ECFP6 fingerprints with [BitBirch](https://github.com/mqcomplab/bitbirch) (`bblean` package, similarity threshold 0.3, branching factor 50, 5 recluster iterations), keeping one representative per cluster. This reduces the ~965k filtered compounds to a final set of **~99k** compounds, stored in `processed/unidock_REAL_docking/inference_10B/clustered_compounds.csv`.
+
+## Final validation docking and hit selection 🎯
+
+### Docking the final ~99k compound set
+
+#### Ligands
+
+3D conformations for the ~99k clustered compounds were generated using the ETKDGv3 protocol with UFF energy minimization (see `scripts/44_generate_conformations.py`, conformations stored in `processed/unidock_REAL_docking_2/conformations/`), then prepared for docking using the `ligandprep` functionality of `unidocktools` (see `scripts/45_unidock_REAL_2_ligandprep.py`, executed in `norrsken-gpu-wsl` with a `unidock` conda environment). Prepared ligands are stored in `processed/unidock_REAL_docking_2/conformations_prepared/`.
+
+#### Uni-Dock docking (III)
+
+Protein-small molecule docking was performed with [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) with search mode _fast_ and _vina_ scoring function using Ersilia's NVIDIA GeForce RTX 4090 (276 pocket structures x ~99k compounds, see `scripts/46_unidock_REAL_2_docking.py`). Docking results are stored in `processed/unidock_REAL_docking_2/docking_results`, one `report.csv` of docking scores per pocket.
+
+### Docking summary and reference pocket selection
+
+`scripts/47_docking_summary.py` is a reporting tool (per gene, printed to the console) summarizing, for every candidate pocket of a given tRNA synthetase: P2Rank pocket probability, InterPro domain annotation, AlphaFill co-crystallized-ligand evidence, structural confidence (minimum pLDDT for AF2/AF3/Chai-1 models or GMQE for SwissModel models) and docking score percentiles (0.01%, 0.1%, 1%) from both docking libraries (100k Enamine DL and the ~99k Enamine REAL set). This summary is used to manually curate one reference pocket per tRNA synthetase, recorded in `output/reference_pocket.csv`, which is consumed by the hit-selection scripts below.
+
+### Raw multi-target hit analysis
+
+Using each gene's reference pocket, `scripts/48_docking_hits_raw.py` quantifies raw overlap between genes' top-100 and top-1,000 docking hits (visualized as UpSet plots) and compares observed vs. expected-by-chance multi-target binder counts. Compounds hitting at least 2 targets within the top 1,000 are collected into a CSV with per-gene scores/ranks and physicochemical properties (MW, cLogP, TPSA, HBD, HBA, rotatable bonds, aromatic rings, QED, PAINS flag), benchmarked against a 25,000-compound random background. Outputs are stored in `output/48_docking_hits_raw/`.
+
+### Selectivity-driven hit selection
+
+`scripts/49_docking_hits_selective.py` builds on the same reference pockets to select a final set of up to **500** compounds balancing potency against selectivity, using five complementary ranking metrics (m1–m5, each contributing up to 50 compounds unless otherwise capped):
+
+* **m1** — max potency, low selectivity: top target rank, excluding compounds whose non-target 50th-percentile rank falls below 20,000.
+* **m2** — max potency, high selectivity: same as m1, but requiring a non-target 50th-percentile rank of at least 50,000.
+* **m3** — high potency, selectivity gap: ranked by the gap between the non-target 10th-percentile rank and the top target rank (target rank ≤ 20,000, non-target 50th-percentile rank ≥ 20,000).
+* **m4** — high potency, max selectivity: ranked by the non-target 1st-percentile rank (target rank ≤ 20,000).
+* **m5** — diversity rescue: compounds binding at least 2 targets well (2nd-best target rank ≤ 20,000, non-target 50th-percentile rank ≥ 50,000) and not already selected by m1–m4, deduplicated by Murcko scaffold, topping the total selection up to 500.
+
+Outputs (per-compound metric table, score/profiling plots) are stored in `output/49_docking_hits_selective/`.
+
+### Cytotoxicity prediction and final filtering
+
+SMILES from scripts 48 and 49 are merged and deduplicated, then run through the [Ersilia Model Hub](https://github.com/ersilia-os/ersilia) model `eos42ez` (HepG2, HSkMC and IMR90 cytotoxicity prediction) via the Ersilia CLI, see `scripts/50_ersilia_eos42ez.sh`. Predictions are stored in `output/50_ersilia_eos42ez/eos42ez.csv`.
+
+Finally, `scripts/51_filter_hits.py` applies a sequential filter to the combined raw and selective hit sets: QED > 0.5, then exclusion of PAINS structural alerts, then all three cytotoxicity scores < 0.3, printing the number of compounds surviving each stage. The final shortlist is stored in `output/51_filtered_hits/filtered_hits.csv`, with the following columns:
+
+| **Field**              | **Description**                                                  |
+|-------------------------|--------------------------------------------------------------------|
+| `key`                   | Compound identifier                                               |
+| `smiles`                | Compound SMILES string                                            |
+| `cytotoxicity_hepg2`    | Predicted HepG2 cytotoxicity score (Ersilia model `eos42ez`)       |
+| `cytotoxicity_hskmc`    | Predicted HSkMC cytotoxicity score (Ersilia model `eos42ez`)       |
+| `cytotoxicity_imr90`    | Predicted IMR90 cytotoxicity score (Ersilia model `eos42ez`)       |
+| `QED`                   | Quantitative Estimate of Drug-likeness (RDKit)                    |
+| `is_pains`              | Whether the compound matches a PAINS structural alert (RDKit)     |
 
 ## TL;DR ⏱️
 
@@ -295,13 +369,18 @@ We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthet
 5. Surrogate modelling (I) to prioritize compounds from Enamine REAL 9.56M
 6. Docking with Uni-dock (II): 276 pocket structures against 113k compounds (per pocket) from Enamine REAL 9.56M
 7. Surrogate modelling (II) to prioritize compounds from Enamine REAL 10B
+8. Screening Enamine REAL 10B compounds and reducing hits to a candidate pool (promiscuous + selective selection, ~1M compounds)
+9. Drug-likeness filtering and BitBirch clustering to a final ~99k validation set
+10. Docking with Uni-dock (III): 276 pocket structures against the ~99k compound set
+11. Multi-target and selectivity-driven hit selection against curated reference pockets
+12. Cytotoxicity prediction (Ersilia `eos42ez`) and final QED/PAINS/cytotoxicity filtering to a shortlist for experimental validation
 
 
 
 ## Related repositories
 
 1. [ready-to-screen-enamine-real](https://github.com/ersilia-os/ready-to-screen-enamine-real/tree/main): The Enamine REAL 10 billion space characterized using ECFP6s. 
-2. [gcadda4tb-enamine-real-screening](https://github.com/ersilia-os/gcadda4tb-enamine-real-screening):
+2. [gcadda4tb-enamine-real-screening](https://github.com/ersilia-os/gcadda4tb-enamine-real-screening): Surrogate-model screening of the Enamine REAL 10 billion compound space against the 276 pocket structures.
 
 
 ## About the Ersilia Open Source Initiative 🌍❤️

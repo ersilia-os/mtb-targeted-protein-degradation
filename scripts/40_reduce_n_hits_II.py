@@ -51,7 +51,6 @@ del df, A_pockets
 
 
 print(f"Getting TOP 276k most selective* compounds (by pocket structure)")
-print(f"Getting 99,400 compounds per pocket")
 df = []
 for split in tqdm(SPLITS):
     df_ = pd.read_csv(os.path.join(os.path.join(PATH_TO_OUTPUT, "B_pockets", f"{split}.csv")))
@@ -98,15 +97,14 @@ A_proteins.to_csv(os.path.join(PATH_TO_OUTPUT, "A_proteins.csv"), index=False)
 del df, A_proteins
 
 
-print(f"Getting TOP 276k most selective* compounds (by protein)")
-print(f"Getting 99,400 compounds per protein")
+print(f"Getting TOP 273k most selective* compounds (by protein)")
 df = []
 for split in tqdm(SPLITS):
     df_ = pd.read_csv(os.path.join(os.path.join(PATH_TO_OUTPUT, "B_proteins", f"{split}.csv")))
     df.append(df_)
 df = pd.concat(df, ignore_index=True)
 
-print(f"Getting only 1,000 compounds per protein")
+print(f"Getting only 13,000 compounds per protein")
 numb_splits = []
 B_proteins = []
 for c, protein in tqdm(enumerate(PROTEINS)):

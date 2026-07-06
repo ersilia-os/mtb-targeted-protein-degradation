@@ -184,26 +184,29 @@ def main():
     results.insert(1, "top2_rank", _top2.astype(int))
 
     # m5: diversity rescue
-    _M_SORT = {"m1": True, "m2": True, "m3": False, "m4": False}
-    _union_ids = set()
-    for _m, _asc in _M_SORT.items():
-        _top50 = results[results[_m].notna()].sort_values(_m, ascending=_asc).head(50)
-        _union_ids.update(_top50.index)
-    _union_smiles = lookup_smiles(list(_union_ids), args.lib)
-    _union_scaffold_set = {
-        ik for ik in (murcko_inchikey(smi) for smi in _union_smiles.values())
+    # Sequential m1–m4 selection (same order/logic as the METRIC_CONFIGS loop below) —
+    # used here to know which compounds/scaffolds m5 must treat as "already selected".
+    _dedup_m1_m4 = set()
+    for _m, _asc in [("m1", True), ("m2", True), ("m3", False), ("m4", False)]:
+        _h = results[results[_m].notna()].sort_values(_m, ascending=_asc)
+        _dedup_m1_m4.update(_h[~_h.index.isin(_dedup_m1_m4)].head(50).index)
+    _m5_cap = 500 - len(_dedup_m1_m4)
+
+    _dedup_smiles = lookup_smiles(list(_dedup_m1_m4), args.lib)
+    _dedup_scaffold_set = {
+        ik for ik in (murcko_inchikey(smi) for smi in _dedup_smiles.values())
         if ik is not None
     }
-    print(f"\nUnion (top-50 × m1–m4): {len(_union_ids):,} compounds, "
-          f"{len(_union_scaffold_set):,} unique Murcko scaffolds")
+    print(f"\nm1–m4 selection: {len(_dedup_m1_m4):,} compounds, "
+          f"{len(_dedup_scaffold_set):,} unique Murcko scaffolds")
 
     _c1 = results[results["top2_rank"] <= 20_000]
     _c2 = _c1[_c1["nontarget_p50"] >= 50_000]
-    _rescue = _c2[~_c2.index.isin(_union_ids)].sort_values("top2_rank", ascending=True).copy()
+    _rescue = _c2[~_c2.index.isin(_dedup_m1_m4)].sort_values("top2_rank", ascending=True).copy()
     print(f"Rescue pool funnel:")
     print(f"  top2_rank ≤ 20k              : {len(_c1):,}")
     print(f"  + nontarget_p50 ≥ 50k        : {len(_c2):,}")
-    print(f"  + not in union ({len(_union_ids)} compounds): {len(_rescue):,}")
+    print(f"  + not in m1-m4 ({len(_dedup_m1_m4)} compounds): {len(_rescue):,}")
 
     _rescue_smiles = lookup_smiles(_rescue.index.tolist(), args.lib)
     _rescue["_smiles"] = _rescue.index.map(_rescue_smiles)
@@ -215,15 +218,10 @@ def main():
           + (f"  ({_n_no_smiles} SMILES not found, {_n_bad_scaffold} invalid scaffold)"
              if _n_no_smiles or _n_bad_scaffold else ""))
 
-    _dedup_m1_m4 = set()
-    for _m, _asc in [("m1", True), ("m2", True), ("m3", False), ("m4", False)]:
-        _h = results[results[_m].notna()].sort_values(_m, ascending=_asc)
-        _dedup_m1_m4.update(_h[~_h.index.isin(_dedup_m1_m4)].head(50).index)
-    _m5_cap = 500 - len(_dedup_m1_m4)
-    _novel = _valid_rescue[~_valid_rescue["_scaffold_ik"].isin(_union_scaffold_set)]
+    _novel = _valid_rescue[~_valid_rescue["_scaffold_ik"].isin(_dedup_scaffold_set)]
     _m5 = _novel.drop_duplicates(subset="_scaffold_ik")
-    print(f"  + scaffold not in union          : {len(_novel):,}"
-          + (f"  ({len(_valid_rescue) - len(_novel)} scaffold(s) already covered by union)"
+    print(f"  + scaffold not in m1-m4          : {len(_novel):,}"
+          + (f"  ({len(_valid_rescue) - len(_novel)} scaffold(s) already covered by m1-m4)"
              if len(_valid_rescue) > len(_novel) else ""))
     print(f"  + one per scaffold (dedup)       : {len(_m5):,}"
           + (f"  ({len(_novel) - len(_m5)} duplicate scaffold(s) dropped)"
