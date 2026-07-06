@@ -40,10 +40,10 @@ from docking_utils import (
     lookup_smiles,
     plot_profiling,
     plot_score_boxplots,
-    sample_background_smiles,
+    sample_prescreened_smiles,
 )
 
-BG_SAMPLE_SIZE = 25_000
+BG_SAMPLE_SIZE = 1_000
 
 
 def murcko_inchikey(smi):
@@ -274,8 +274,8 @@ def main():
     print(f"Saved score boxplots to {scores_path}")
 
     print("\nPhysicochemical profiling...")
-    bg_smiles = sample_background_smiles(args.lib, _already_selected, BG_SAMPLE_SIZE, RANDOM_SEED)
-    print(f"  Background: {len(bg_smiles):,} compounds...")
+    bg_smiles = sample_prescreened_smiles(args.lib, _already_selected, BG_SAMPLE_SIZE, RANDOM_SEED)
+    print(f"  Pre-screened: {len(bg_smiles):,} compounds...")
     bg_props  = compute_properties(bg_smiles)
     profiling_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_profiling.png")
     plot_profiling(sel_props, bg_props, profiling_path, sel_color="orange")

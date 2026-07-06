@@ -103,7 +103,7 @@ def simple_boxplot(ax, x, y, c, width):
 
 
 def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected", sel_color="purple"):
-    """Paired boxplots of raw docking scores: background vs selected compounds."""
+    """Paired boxplots of raw docking scores: prescreened vs selected compounds."""
     import matplotlib.patches as mpatches
     import stylia
 
@@ -134,7 +134,7 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected",
     ax.set_xticks(ticks)
     ax.set_xticklabels(tick_labels)
     legend_handles = [
-        mpatches.Patch(facecolor=nc.gray, label=f"Background (n={n_bg:,})"),
+        mpatches.Patch(facecolor=nc.gray, label=f"Pre-screened (n={n_bg:,})"),
         mpatches.Patch(facecolor=c_sel,   label=f"{sel_label} (n={n_sel:,})"),
     ]
     ax.legend(handles=legend_handles)
@@ -148,11 +148,11 @@ PROP_COLUMNS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings"
 DISCRETE_PROPS = {"HBD", "HBA", "RotBonds", "AromaticRings"}
 
 
-def sample_background_smiles(lib, exclude_ids, n, seed):
+def sample_prescreened_smiles(lib, exclude_ids, n, seed):
     """Return {id: smiles} for n randomly sampled compounds not in exclude_ids."""
     path = SMILES_PATHS[lib]
     if not os.path.isfile(path):
-        print(f"  Warning: SMILES file not found at {path}, cannot sample background.")
+        print(f"  Warning: SMILES file not found at {path}, cannot sample pre-screened compounds.")
         return {}
     id_col, smi_col = SMILES_COLS[lib]
     sep = SMILES_SEPS[lib]
@@ -220,7 +220,7 @@ def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
     pains_sel = 100 * sel_props["is_pains"].sum() / len(sel_props) if len(sel_props) > 0 else 0.0
     pains_bg  = 100 * bg_props["is_pains"].sum()  / len(bg_props)  if len(bg_props)  > 0 else 0.0
     print(f"  Selected  : {len(sel_props):,} compounds, {pains_sel:.1f}% PAINS")
-    print(f"  Background: {len(bg_props):,} compounds, {pains_bg:.1f}% PAINS")
+    print(f"  Pre-screened: {len(bg_props):,} compounds, {pains_bg:.1f}% PAINS")
 
     fig, axs = stylia.create_figure(3, 3, width=1.3, height=0.8)
 
@@ -233,13 +233,13 @@ def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
             vals = sorted(set(bg_data.astype(int)) | set(sel_data.astype(int)))
             bg_freq  = pd.Series(bg_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
             sel_freq = pd.Series(sel_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
-            ax.bar(vals, bg_freq.values,  color=nc.gray,   alpha=1,   label="Background")
+            ax.bar(vals, bg_freq.values,  color=nc.gray,   alpha=1,   label="Pre-screened")
             ax.bar(vals, sel_freq.values, color=c_sel, alpha=0.5, label="Selected")
             ax.set_xlim(lo - 0.5, hi + 0.5)
             stylia.label(ax, xlabel=prop, ylabel="Frequency")
         else:
             for data, color, label in [
-                (bg_data,  nc.gray,   f"Background (n={len(bg_props):,})"),
+                (bg_data,  nc.gray,   f"Pre-screened (n={len(bg_props):,})"),
                 (sel_data, c_sel, f"Selected (n={len(sel_props):,})"),
             ]:
                 if len(data) < 2:
@@ -255,7 +255,7 @@ def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
     ax = axs.next()
     ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, c_sel], alpha=0.8)
     ax.set_xticks([0, 1])
-    ax.set_xticklabels(["Background", "Selected"])
+    ax.set_xticklabels(["Pre-screened", "Selected"])
     ax.set_ylim(0, 10)
     stylia.label(ax, xlabel="", ylabel="PAINS (%)")
 
