@@ -2,9 +2,12 @@
 """
 PyMOL visualization of the manually-curated reference pocket for a gene.
 
-Loads ONLY the reference structure (output/aligned_relaxed_structures/<uniprot_ac>/<structure>.pdb)
-recorded for the gene in output/reference_pocket.csv, and highlights ONLY that gene's
-reference pocket (exact P2Rank residues + centroid spheres). Saves a .pse session for
+Loads the reference structure (output/aligned_relaxed_structures/<uniprot_ac>/<structure>.pdb)
+recorded for the gene in output/reference_pocket.csv and highlights that gene's reference
+pocket (exact P2Rank residues + centroid spheres). On top of it, overlays the top-10
+best-scoring REAL-library docked poses, every experimental ligand from PDB structures
+cross-referenced in UniProt for that protein (each POI chain aligned locally on the
+pocket residues), and any AlphaFill-transplanted ligands. Saves a .pse session for
 visual QC of the curation done via scripts/47_docking_summary.py.
 
 Usage:
@@ -68,6 +71,26 @@ def color_ligand(selection, carbon_color, color_name):
     cmd.util.cbag(selection)
     cmd.set_color(color_name, carbon_color)
     cmd.color(color_name, f"{selection} and elem C")
+
+
+def add_hbond_dashes(receptor_sel, ligand_sel, dash_name, cutoff=3.5, angle=45):
+    """Detect donor/acceptor H-bond contacts between ligand_sel and receptor_sel within
+    `cutoff` Angstrom / `angle` degrees (same criteria as notebooks/46_docking_exploration_IIa.ipynb
+    and IIb.ipynb), drawn as a black dashed-line object. Returns the number of contacts found."""
+    nearby = f"({receptor_sel} within 6 of {ligand_sel}) and not solvent"
+    pairs = []
+    pairs += cmd.find_pairs(f"{ligand_sel} and donor", f"{nearby} and acceptor", mode=1, cutoff=cutoff, angle=angle)
+    pairs += cmd.find_pairs(f"{ligand_sel} and acceptor", f"{nearby} and donor", mode=1, cutoff=cutoff, angle=angle)
+    pairs = list(dict.fromkeys(pairs))
+    if not pairs:
+        return 0
+    cmd.delete(dash_name)
+    for a1, a2 in pairs:
+        cmd.distance(dash_name, a1, a2)
+    cmd.hide("labels", dash_name)
+    cmd.color("black", dash_name)
+    cmd.set("dash_width", 2, dash_name)
+    return len(pairs)
 
 
 def get_pdb_structures(uniprot_ac):
@@ -221,6 +244,8 @@ def load_top_ligands(pocket_name):
     for this pocket as PyMOL objects named "top_<rank>_<compound_id>" (rank 1 = best),
     colored by element with orange carbons (distinct from the magenta used for
     PDB-derived experimental ligands, so the two sources are easy to tell apart).
+    Each ligand's H-bond contacts with the pocket_residues object (see add_hbond_dashes)
+    are drawn as a "hbonds_<object>" dashed-line object.
     Returns the list of loaded object names."""
     results_dir = os.path.join(LIBRARIES["REAL"], pocket_name)
 
@@ -252,12 +277,16 @@ def load_top_ligands(pocket_name):
             cmd.show("sticks", obj_name)
             cmd.hide("lines", obj_name)
             color_ligand(obj_name, COLOR_LIGAND_DOCKED, "ligC_docked")
+            cmd.h_add(obj_name)
+            n_hbonds = add_hbond_dashes("pocket_residues", obj_name, f"hbonds_{obj_name}")
+            print(f"    {obj_name}: {n_hbonds} H-bond(s) with pocket_residues")
             loaded.append(obj_name)
             if len(loaded) == len(wanted):
                 break
 
     if len(loaded) < len(top_ids):
         print(f"  Warning: only found {len(loaded)}/{len(top_ids)} top ligand poses in {tar_path}.")
+    cmd.hide("everything", "hydro")
     return loaded
 
 
@@ -317,11 +346,10 @@ def build_session(gene, uniprot_ac, pocket_name, pocket_data, pdb_refs):
     cmd.load(structure_path, "structure")
     cmd.set_color("structure_color", COLOR_STRUCTURE)
     cmd.color("structure_color", "structure")
-    cmd.show("surface", "structure")
+    cmd.hide("surface", "structure")
     cmd.hide("cartoon", "structure")
     cmd.hide("lines", "structure")
     cmd.hide("sticks", "structure")
-    cmd.set("transparency", 0.3, "structure")
 
     # Per-protein color (same tab20/tab20b convention as the 46_*.ipynb notebooks),
     # used for both the pocket centroid spheres and the pocket residues below.
@@ -335,14 +363,19 @@ def build_session(gene, uniprot_ac, pocket_name, pocket_data, pdb_refs):
     cmd.set("sphere_transparency", 0.4, "pocket")
     cmd.set("sphere_scale", 6, "pocket")
 
-    # Exact P2Rank residues for this pocket
+    # Exact P2Rank residues for this pocket, copied into their own object so coloring,
+    # the lines representation, and hydrogen addition (for add_hbond_dashes below) are
+    # all isolated from "structure" itself.
     selection_str = " or ".join(
         f"resi {res.split('_')[1]} and chain {res.split('_')[0]} and structure"
         for res in pocket_residues
     )
-    cmd.select("pocket_residues", selection_str)
-    cmd.color("pocket_color", "pocket_residues")
-    cmd.delete("pocket_residues")
+    cmd.select("_pocket_residues_sel", selection_str)
+    cmd.create("pocket_residues", "_pocket_residues_sel")
+    cmd.delete("_pocket_residues_sel")
+    cmd.h_add("pocket_residues")
+    color_ligand("pocket_residues", gene_color, "pocket_color")
+    cmd.show("lines", "pocket_residues")
 
     # Residue numbers of the pocket itself, used below to align experimental structures
     # on the pocket's local domain only (this protein is multi-domain; a whole-chain fit
