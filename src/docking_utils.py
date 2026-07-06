@@ -16,6 +16,13 @@ LIBRARIES = {
     "REAL": os.path.join(ROOT, "output", "unidock_REAL_docking_2", "docking_results"),
 }
 
+# Enamine REAL 10M round-1 screening (distinct from LIBRARIES["REAL"], which is round 2 / 10B).
+# Each pocket's input_ligands file lists the prioritized ("active") compounds first, followed
+# by the rest of the screened 10M library (the "negative set") — see notebooks/46_docking_exploration_I.ipynb.
+REAL_ROUND1_RESULTS_DIR = os.path.join(ROOT, "output", "unidock_REAL_docking", "docking_results")
+REAL_ROUND1_INPUT_LIGANDS_DIR = os.path.join(ROOT, "output", "unidock_REAL_docking", "input_ligands")
+REAL_ROUND1_N_ACTIVES = 100_000
+
 REFERENCE_POCKET_CSV = os.path.join(ROOT, "output", "reference_pocket.csv")
 
 SMILES_PATHS = {
@@ -74,6 +81,21 @@ def load_scores(pocket_path):
     return df.set_index("compound")["score"]
 
 
+def load_real_negative_scores(pocket_name):
+    """Return a pd.Series of docking scores for the Enamine REAL 10M round-1 screening's
+    negative set (compounds not among the top REAL_ROUND1_N_ACTIVES prioritized for this pocket).
+    Empty Series if the round-1 files aren't available for this pocket."""
+    input_ligands_path = os.path.join(REAL_ROUND1_INPUT_LIGANDS_DIR, f"input_ligands_{pocket_name}.txt")
+    report_path = os.path.join(REAL_ROUND1_RESULTS_DIR, pocket_name, "report.csv")
+    if not os.path.isfile(input_ligands_path) or not os.path.isfile(report_path):
+        return pd.Series(dtype=float)
+    with open(input_ligands_path) as f:
+        compound_ids = [line.strip().replace(".sdf", "").split("/")[-1] for line in f]
+    negative_ids = set(compound_ids[REAL_ROUND1_N_ACTIVES:])
+    scores = load_scores(report_path)
+    return scores[scores.index.isin(negative_ids)]
+
+
 def build_matrix(pocket_map, results_dir, label=""):
     """
     Build a raw-score DataFrame from a dict {column_label: pocket_name}.
@@ -102,8 +124,13 @@ def simple_boxplot(ax, x, y, c, width):
                capprops=dict(color='none', lw=lw))
 
 
-def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected", sel_color="purple"):
-    """Paired boxplots of raw docking scores: prescreened vs selected compounds."""
+def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected", sel_color="purple",
+                         dl_scores=None, real_negative_scores=None):
+    """Boxplots of raw docking scores per gene: pre-screened vs selected, optionally alongside
+    two external reference distributions for the same reference pockets:
+      dl_scores            — gene-column DataFrame (same shape as scores1) of Enamine DL scores
+      real_negative_scores — {gene: pd.Series} of Enamine REAL 10M round-1 negative-set scores
+    """
     import matplotlib.patches as mpatches
     import stylia
 
@@ -115,28 +142,41 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected",
     fig, axs = stylia.create_figure(1, 1, height=0.4, width=0.7)
     ax = axs.next()
 
-    n_bg  = len(scores1)
+    n_bg = len(scores1)
     n_sel = len(sel_ids)
-    width = 0.3
+    n_dl = len(dl_scores) if dl_scores is not None else 0
+    n_rn = len(next(iter(real_negative_scores.values()))) if real_negative_scores else 0
+
+    width = 0.25
+    gap = 0.3
+    group_spacing = 1.5
+    offsets = [0, gap, 2 * gap, 3 * gap]  # DL, REAL negative set, pre-screened, selected
+
     ticks, tick_labels = [], []
     for i, gene in enumerate(genes):
         if gene not in scores1.columns:
             continue
-        x_bg  = 2 * i
-        x_sel = 2 * i + 0.4
+        base = group_spacing * i
         bg_scores  = scores1[gene].dropna().values
         sel_scores = scores1.loc[scores1.index.isin(sel_ids), gene].dropna().values
-        simple_boxplot(ax, x_bg,  bg_scores,  nc.gray, width)
-        simple_boxplot(ax, x_sel, sel_scores, c_sel,   width)
-        ticks.append(2 * i + 0.2)
+        if dl_scores is not None and gene in dl_scores.columns:
+            simple_boxplot(ax, base + offsets[0], dl_scores[gene].dropna().values, nc.mint, width)
+        if real_negative_scores is not None and gene in real_negative_scores:
+            simple_boxplot(ax, base + offsets[1], real_negative_scores[gene].dropna().values, nc.blue, width)
+        simple_boxplot(ax, base + offsets[2], bg_scores,  nc.gray, width)
+        simple_boxplot(ax, base + offsets[3], sel_scores, c_sel,   width)
+        ticks.append(base + sum(offsets) / len(offsets))
         tick_labels.append(gene)
 
     ax.set_xticks(ticks)
     ax.set_xticklabels(tick_labels)
-    legend_handles = [
-        mpatches.Patch(facecolor=nc.gray, label=f"Pre-screened (n={n_bg:,})"),
-        mpatches.Patch(facecolor=c_sel,   label=f"{sel_label} (n={n_sel:,})"),
-    ]
+    legend_handles = []
+    if dl_scores is not None:
+        legend_handles.append(mpatches.Patch(facecolor=nc.mint, label=f"Enamine DL (n={n_dl:,})"))
+    if real_negative_scores is not None:
+        legend_handles.append(mpatches.Patch(facecolor=nc.blue, label=f"Enamine REAL negative set (n={n_rn:,})"))
+    legend_handles.append(mpatches.Patch(facecolor=nc.gray, label=f"Pre-screened (n={n_bg:,})"))
+    legend_handles.append(mpatches.Patch(facecolor=c_sel,   label=f"{sel_label} (n={n_sel:,})"))
     ax.legend(handles=legend_handles)
     stylia.label(ax, xlabel="", ylabel="Docking score")
     stylia.save_figure(out_path)

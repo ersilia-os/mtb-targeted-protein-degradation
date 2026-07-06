@@ -36,6 +36,7 @@ from docking_utils import (
     build_matrix,
     compute_properties,
     load_gene_map,
+    load_real_negative_scores,
     load_reference_pockets,
     lookup_smiles,
     plot_profiling,
@@ -268,9 +269,15 @@ def main():
     results.to_csv(out_path)
     print(f"Saved results to {out_path}")
 
+    print("Loading Enamine DL reference scores...")
+    dl_scores = build_matrix(target_pocket_map, LIBRARIES["DL"], label="DL reference")
+    print("Loading Enamine REAL 10M round-1 negative-set reference scores...")
+    real_negative_scores = {g: load_real_negative_scores(target_pocket_map[g]) for g in genes}
+
     scores_path = os.path.join(output_dir, f"{trna_tag}_{args.lib}_scores.png")
     plot_score_boxplots(scores1, _already_selected, genes, scores_path,
-                        sel_label="Selected (m1–m5)", sel_color="orange")
+                        sel_label="Selected (m1–m5)",
+                        dl_scores=dl_scores, real_negative_scores=real_negative_scores)
     print(f"Saved score boxplots to {scores_path}")
 
     print("\nPhysicochemical profiling...")
