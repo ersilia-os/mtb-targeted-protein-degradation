@@ -6,6 +6,7 @@ Usage:
     python 47_docking_summary.py --trna pheS
     python 47_docking_summary.py --trna pheS,aspS --lib DL
     python 47_docking_summary.py --trna pheS --lib REAL
+    python 47_docking_summary.py --trna pheS --pymol
 """
 
 import argparse
@@ -16,6 +17,14 @@ import pandas as pd
 from Bio.PDB import MMCIFParser, PDBParser, Superimposer
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+# Same structure color as scripts/47b_reference_pocket_visualization.py, for visual
+# consistency across the project's PyMOL outputs.
+COLOR_STRUCTURE = [0.7804, 0.8275, 0.8667]
+COLOR_POCKET = [1.0, 0.0, 1.0]  # magenta, for pocket centroid spheres
+ALIGNED_DIR = os.path.join(ROOT, "output", "aligned_relaxed_structures")
+DETECTED_POCKETS_DIR = os.path.join(ROOT, "output", "detected_pockets")
+PYMOL_OUTPUT_DIR = os.path.join(ROOT, "output", "47_docking_summary")
 
 LIBRARIES = {
     "DL":   os.path.join(ROOT, "output", "unidock_docking",        "docking_results"),
@@ -192,7 +201,6 @@ def collect_rows(uniprot_ac, lib_paths):
         row = {
             "pocket":     pocket,
             "prob":       pocket_probs.get(pocket, None),
-            "coords":     pocket_coords.get(pocket, None),
             "domain":     pocket_domains.get(pocket, "NA"),
             "alphafill":  af_ligands[pocket] if af_ligands is not None else "N/A",
             "min_plddt":  pocket_min_plddt.get(pocket),
@@ -224,56 +232,21 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
 
     rows = sorted(rows, key=lambda r: r["prob"] if r["prob"] is not None else 0, reverse=True)
 
-    # Assign pocket labels (A, B, C, ...) by greedy 6 Å clustering in prob-descending order
-    POCKET_THR = 6.0
-    LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    pocket_reps = []  # list of (label, coords)
-    for r in rows:
-        if r["coords"] is None:
-            r["pocket_label"] = "?"
-            continue
-        if not pocket_reps:
-            pocket_reps.append((LABELS[0], r["coords"]))
-            r["pocket_label"] = LABELS[0]
-        else:
-            dists = [float(np.linalg.norm(r["coords"] - c)) for _, c in pocket_reps]
-            nearest_idx = int(np.argmin(dists))
-            if dists[nearest_idx] > POCKET_THR:
-                lbl = LABELS[len(pocket_reps)] if len(pocket_reps) < len(LABELS) else "?"
-                pocket_reps.append((lbl, r["coords"]))
-                r["pocket_label"] = lbl
-            else:
-                r["pocket_label"] = pocket_reps[nearest_idx][0]
-    n_pockets = len(pocket_reps)
-
-    # Distance from each structure to each pocket representative
-    for r in rows:
-        for lbl, rep_coords in pocket_reps:
-            key = f"dist_{lbl}"
-            if r["coords"] is not None:
-                r[key] = round(float(np.linalg.norm(r["coords"] - rep_coords)), 2)
-            else:
-                r[key] = None
-
     best_row = rows[0]
 
     # Column widths
     col_pocket   = "Structure"
     col_prob     = "Prob"
-    col_plab     = "Pocket"
     col_domain   = "Domain"
     col_alphafill = "AlphaFill"
     col_plddt    = "Min pLDDT"
     col_gmqe     = "GMQE"
     w_pocket    = max(len(col_pocket),    max(len(r["pocket"])                    for r in rows))
     w_prob      = max(len(col_prob),      max(len(fmt(r["prob"]))                 for r in rows))
-    w_plab      = max(len(col_plab),      max(len(r["pocket_label"])              for r in rows))
     w_domain    = max(len(col_domain),    max(len(fmt(r["domain"]))               for r in rows))
     w_alphafill = max(len(col_alphafill), max(len(fmt(r["alphafill"]))            for r in rows))
     w_plddt     = max(len(col_plddt),     max(len(fmt(r["min_plddt"], "-"))       for r in rows))
     w_gmqe      = max(len(col_gmqe),      max(len(fmt(r["gmqe"], "-"))            for r in rows))
-    dist_cols   = [(f"dist_{lbl}", max(len(f"dist_{lbl}"), max(len(fmt(r[f"dist_{lbl}"])) for r in rows)))
-                   for lbl, _ in pocket_reps]
 
     # Per-library column specs: (header, field, width) — N excluded from table
     lib_spec = {}
@@ -284,11 +257,8 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
             (f"{lib} p1",     f"{lib}_p1",    max(len(f"{lib} p1"),    max(len(fmt(r[f"{lib}_p1"]))      for r in rows))),
         ]
 
-    sep_parts = [f"+-{'-'*w_pocket}-+-{'-'*w_prob}-+-{'-'*w_plab}-+-{'-'*w_domain}-+-{'-'*w_alphafill}-+-{'-'*w_plddt}-+-{'-'*w_gmqe}-+"]
-    hdr_parts = [f"| {col_pocket:<{w_pocket}} | {col_prob:<{w_prob}} | {col_plab:<{w_plab}} | {col_domain:<{w_domain}} | {col_alphafill:<{w_alphafill}} | {col_plddt:<{w_plddt}} | {col_gmqe:<{w_gmqe}} |"]
-    for col, w in dist_cols:
-        sep_parts.append(f"-{'-'*w}-+")
-        hdr_parts.append(f" {col:<{w}} |")
+    sep_parts = [f"+-{'-'*w_pocket}-+-{'-'*w_prob}-+-{'-'*w_domain}-+-{'-'*w_alphafill}-+-{'-'*w_plddt}-+-{'-'*w_gmqe}-+"]
+    hdr_parts = [f"| {col_pocket:<{w_pocket}} | {col_prob:<{w_prob}} | {col_domain:<{w_domain}} | {col_alphafill:<{w_alphafill}} | {col_plddt:<{w_plddt}} | {col_gmqe:<{w_gmqe}} |"]
     for lib in lib_names:
         for lbl, _, w in lib_spec[lib]:
             sep_parts.append(f"-{'-'*w}-+")
@@ -304,16 +274,14 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
     print(sep)
 
     for r in rows:
-        parts = [f"| {r['pocket']:<{w_pocket}} | {fmt(r['prob']):<{w_prob}} | {r['pocket_label']:<{w_plab}} | {fmt(r['domain']):<{w_domain}} | {fmt(r['alphafill']):<{w_alphafill}} | {fmt(r['min_plddt'], '-'):<{w_plddt}} | {fmt(r['gmqe'], '-'):<{w_gmqe}} |"]
-        for col, w in dist_cols:
-            parts.append(f" {fmt(r[col]):<{w}} |")
+        parts = [f"| {r['pocket']:<{w_pocket}} | {fmt(r['prob']):<{w_prob}} | {fmt(r['domain']):<{w_domain}} | {fmt(r['alphafill']):<{w_alphafill}} | {fmt(r['min_plddt'], '-'):<{w_plddt}} | {fmt(r['gmqe'], '-'):<{w_gmqe}} |"]
         for lib in lib_names:
             for _, field, w in lib_spec[lib]:
                 parts.append(f" {fmt(r[field]):<{w}} |")
         print("".join(parts))
 
     print(sep)
-    print(f"  {len(rows)} structures | {n_pockets} pocket(s): {', '.join(LABELS[:n_pockets])}")
+    print(f"  {len(rows)} structures")
     for lib in lib_names:
         n = next((r[f"{lib}_n"] for r in rows if r.get(f"{lib}_n") is not None), None)
         if n is not None:
@@ -329,6 +297,73 @@ def print_table(rows, gene, lib_names, vi=None, vi_lo=None, vi_hi=None):
         print(f"  Vulnerability Index: {round(vi, 3)} [{round(vi_lo, 3)}, {round(vi_hi, 3)}]")
 
 
+def build_pocket_overview_session(gene, uniprot_ac, rows):
+    """Build a PyMOL session with one merged object per POCKET — a copy of that pocket's
+    structure cartoon plus its own centroid sphere, combined into a single object named
+    after the pocket (e.g. "swissmodel_P9WFU3_model_0_pocket_1"). A structure with multiple
+    reported pockets is loaded once and copied per pocket, so the structure is intentionally
+    duplicated across pockets rather than shared by a single merged object."""
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*converter.*already registered.*")
+    import pymol
+    from pymol import cmd
+
+    os.makedirs(PYMOL_OUTPUT_DIR, exist_ok=True)
+
+    pymol.finish_launching(["pymol", "-cq"])
+    cmd.reinitialize()
+    cmd.feedback("disable", "executive", "actions")  # silence "Executive: object X created." spam from cmd.copy
+    cmd.set_color("structure_color", COLOR_STRUCTURE)
+    cmd.set_color("pocket_color", COLOR_POCKET)
+
+    cached_structures = set()
+
+    for r in rows:
+        pocket_name = r["pocket"]
+        structure_name, pocket_number = pocket_name.rsplit("_pocket_", 1)
+
+        structure_path = os.path.join(ALIGNED_DIR, uniprot_ac, f"{structure_name}.pdb")
+        if not os.path.isfile(structure_path):
+            print(f"  Warning: structure file not found: {structure_path}, skipping.")
+            continue
+        pocket_pdb_path = os.path.join(
+            DETECTED_POCKETS_DIR, uniprot_ac, structure_name, "pockets", f"pocket_{pocket_number}.pdb"
+        )
+        if not os.path.isfile(pocket_pdb_path):
+            print(f"  Warning: pocket file not found: {pocket_pdb_path}, skipping.")
+            continue
+
+        cache_name = f"_cache_{structure_name}"
+        if cache_name not in cached_structures:
+            cmd.load(structure_path, cache_name)
+            cached_structures.add(cache_name)
+        struct_part = f"_tmp_struct_{pocket_name}"
+        cmd.copy(struct_part, cache_name)
+        cmd.show("cartoon", struct_part)
+        cmd.color("structure_color", struct_part)
+        cmd.set("transparency", 0.3, struct_part)
+
+        pocket_part = f"_tmp_pocket_{pocket_name}"
+        cmd.load(pocket_pdb_path, pocket_part)
+        cmd.color("pocket_color", pocket_part)
+        cmd.show("spheres", pocket_part)
+        cmd.set("sphere_transparency", 0.4, pocket_part)
+        cmd.set("sphere_scale", 6, pocket_part)
+
+        cmd.create(pocket_name, f"{struct_part} or {pocket_part}")
+        cmd.delete(struct_part)
+        cmd.delete(pocket_part)
+
+    for cache_name in cached_structures:
+        cmd.delete(cache_name)
+
+    cmd.bg_color("white")
+    cmd.set("internal_gui_width", 400)  # wide enough for full object names, e.g. alphafold3_P9WFU3_model_2
+    out_path = os.path.join(PYMOL_OUTPUT_DIR, f"session_{uniprot_ac}_{gene}.pse")
+    cmd.save(out_path)
+    print(f"  Saved pocket overview session: {out_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Docking score table by gene.")
     parser.add_argument("--trna", required=True,
@@ -339,6 +374,10 @@ def main():
         default="both",
         help="Library to show: DL, REAL, or both (default: both)",
     )
+    parser.add_argument("--pymol", action="store_true",
+                        help="Also build a PyMOL session (output/47_docking_summary/session_<AC>_<gene>.pse) "
+                             "with one merged object per structure (cartoon + its own pocket spheres) "
+                             "for every reported structure/pocket.")
     args = parser.parse_args()
 
     genes = [g.strip() for g in args.trna.split(",")]
@@ -357,11 +396,15 @@ def main():
         rows = collect_rows(uniprot_ac, lib_paths)
         vi, vi_lo, vi_hi = load_vulnerability(gene)
         print_table(rows, gene, lib_names, vi, vi_lo, vi_hi)
+        if args.pymol:
+            build_pocket_overview_session(gene, uniprot_ac, rows)
         print()
 
-    print("NOTE: manually define one reference pocket per tRNA synthetase and record it in")
-    print("  output/reference_pocket.csv  (columns: gene_name, pocket_name)")
-    print("This file will be used by scripts 47b, 48 and 49 to select the pocket for hit analysis/visualization.")
+    print("NOTE: manually define one CATALYTIC and (optionally) one NON-CATALYTIC reference pocket")
+    print("  per tRNA synthetase and record them in:")
+    print("    output/reference_pocket_catalytic.csv     (columns: gene_name, pocket_name)")
+    print("    output/reference_pocket_noncatalytic.csv  (columns: gene_name, pocket_name)")
+    print("Script 47b automatically visualizes whichever of the two is defined for each gene.")
 
 
 if __name__ == "__main__":
