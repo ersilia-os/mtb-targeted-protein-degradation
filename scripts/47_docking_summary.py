@@ -361,7 +361,7 @@ def main():
 
     print("NOTE: manually define one reference pocket per tRNA synthetase and record it in")
     print("  output/reference_pocket.csv  (columns: gene_name, pocket_name)")
-    print("This file will be used by script 48 to select the pocket for hit analysis.")
+    print("This file will be used by scripts 47b, 48 and 49 to select the pocket for hit analysis/visualization.")
 
 
 if __name__ == "__main__":
