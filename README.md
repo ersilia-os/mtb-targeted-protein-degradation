@@ -7,6 +7,7 @@ Discovery of potential degraders (BacPROTACS) for essential tRNA synthetases in 
 - [Progress reporting](#progress-reporting-)
   - [Sequence and structure annotation](#sequence-and-structure-annotation-of-trna-synthetases-)
     - [Pocket detection](#pocket-detection-)
+    - [Pocket detection in experimental multimeric structures](#pocket-detection-in-experimental-multimeric-structures-)
     - [Pymol visualization](#pymol-visualization-)
     - [Data organization](#data-organization-)
     - [Additional analyses](#additional-analyses-)
@@ -135,6 +136,36 @@ A summary file containing one row per detected pocket and structure is available
 | `Pocket centroid coordinate (x y z)` | The (x, y, z) coordinates of the pocket’s centroid               |
 | `Pocket residues (chain_resn)`      | List of residues forming the pocket, with chain and residue number |
 | `B-factors`                         | Confidence measures: pLDDT (AF2, AF3, Chai) or QSQE (SM)           |
+
+#### Pocket detection in experimental multimeric structures 🧬
+
+`scripts/48_detect_pocket_multimers.py` complements the UniProt-AC-keyed, single-chain pipeline above with a standalone script keyed by PDB code, meant to characterize pockets in real, potentially multi-chain experimental structures (e.g. to check whether a candidate pocket sits at a subunit interface). It is invoked as `python 48_detect_pocket_multimers.py --pdb-codes 6XYZ,7ABC` and, for each PDB code:
+
+- Downloads the RCSB-annotated **biological assembly** (not just the as-deposited asymmetric unit) live from `files.rcsb.org`, falling back to the asymmetric unit if no assembly is annotated. Because RCSB entries and their annotations can be revised, the aggregate report below records the access date per row.
+- Strips ligands, waters and other heteroatoms while keeping **all** protein chains (unlike script 02, which reduces structures to a single chosen chain).
+- Detects pockets with P2Rank, as `scripts/08_detect_pockets.py` does, but using P2Rank's **default** config instead of `-c alphafold` (these are experimental, not AlphaFold-predicted, structures), and applying only the P2Rank probability/rank filter (probability ≥ 0.2 or Top-3, per the [authors' recommendations](https://github.com/rdk/p2rank/issues/76), unchanged from script 08). Script 08's additional per-residue B-factor/pLDDT confidence gate is **not** applied here: the PDB B-factor column encodes crystallographic atomic displacement, not a prediction-confidence score, so that gate's semantics don't transfer to experimental structures.
+
+Unlike script 04, this script does **not** run PDB2PQR protonation or PyRosetta relaxation: experimental structures are already validated against experimental data by crystallographic/cryo-EM refinement, so an unconstrained relax risks moving pocket residues away from their observed conformation rather than improving them. Pocket detection runs directly on the ligand-stripped structure.
+
+Outputs are stored under `output/48_detect_pocket_multimers/`. The aggregate `pocket_detection_data.csv` contains one row per detected pocket:
+
+| **Field** | **Description** |
+|-----------|------------------|
+| `PDB code` | RCSB identifier |
+| `File name` | Stripped structure file name |
+| `Full path` | Path to the structure used for pocket detection |
+| `Chains` | Protein chain IDs kept after stripping (multimer composition) |
+| `Pocket number` | P2Rank rank |
+| `Pocket score` | P2Rank score |
+| `Pocket probability` | P2Rank probability |
+| `Pocket centroid coordinate (x y z)` | Centroid coordinates |
+| `Pocket residues (chain_resn)` | Residues forming the pocket, with chain and residue number |
+| `Experimental method` | From the RCSB entry API |
+| `Resolution (A)` | From the RCSB entry API |
+| `Biological assembly info` | Oligomeric state and author/software provenance, from the RCSB assembly API |
+| `RCSB access date` | Date the structure/annotations were fetched |
+
+Verified on three real PDB codes spanning a homodimer (1HXW), a heterotetramer (7K98) and a monomer (5W25): ligand/water stripping, multi-chain retention, cross-chain interface pocket detection and RCSB metadata all behaved as expected, and re-running the script is a no-op on already-completed stages.
 
 #### Pymol visualization 👀
 
