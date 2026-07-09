@@ -1,6 +1,9 @@
 """Shared constants and helpers for docking hit analysis scripts (48_docking_hits_raw, 49_docking_hits_selective)."""
 import os
 import sys
+import warnings
+
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*converter.*already registered.*")
 
 import numpy as np
 import pandas as pd
@@ -144,15 +147,29 @@ def simple_boxplot(ax, x, y, c, width):
                capprops=dict(color='none', lw=lw))
 
 
+def _safe_import_stylia():
+    """Imports stylia, first ensuring matplotlib's cache dir exists - stylia's own __init__.py
+    unconditionally runs shutil.rmtree(mpl.get_cachedir()), which raises FileNotFoundError if that
+    directory doesn't already exist (e.g. right after a previous stylia import just deleted it, or
+    on a machine/user account where matplotlib has never built its cache yet)."""
+    import matplotlib as mpl
+    os.makedirs(mpl.get_cachedir(), exist_ok=True)
+    import stylia
+    return stylia
+
+
 def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected", sel_color="purple",
-                         dl_scores=None, real_negative_scores=None):
+                         dl_scores=None, real_negative_scores=None, xtick_rotation=0):
     """Boxplots of raw docking scores per gene: pre-screened vs selected, optionally alongside
     two external reference distributions for the same reference pockets:
       dl_scores            — gene-column DataFrame (same shape as scores1) of Enamine DL scores
       real_negative_scores — {gene: pd.Series} of Enamine REAL 10M round-1 negative-set scores
+      xtick_rotation       — degrees to rotate x-tick labels (0 = horizontal, unrotated); use e.g.
+                             45 when "genes" are actually long pocket names (script 53's NON-CAT
+                             per-pocket columns), left at 0 for short gene-name labels (script 52).
     """
     import matplotlib.patches as mpatches
-    import stylia
+    stylia = _safe_import_stylia()
 
     stylia.set_format("slide")
     stylia.set_style("ersilia")
@@ -189,7 +206,10 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected",
         tick_labels.append(gene)
 
     ax.set_xticks(ticks)
-    ax.set_xticklabels(tick_labels)
+    if xtick_rotation:
+        ax.set_xticklabels(tick_labels, rotation=xtick_rotation, ha="right")
+    else:
+        ax.set_xticklabels(tick_labels)
     legend_handles = []
     if dl_scores is not None:
         legend_handles.append(mpatches.Patch(facecolor=nc.mint, label=f"Enamine DL (n={n_dl:,})"))
@@ -256,10 +276,57 @@ def compute_properties(smiles_dict):
     return pd.DataFrame(records).set_index("id")
 
 
+def plot_tsne(sel_smiles, bg_smiles, out_path, seed, sel_color="purple"):
+    """
+    t-SNE projection of ECFP4 (Morgan, radius=2, 2048 bits) fingerprints for a selected compound
+    set vs. a background set - background plotted first (gray) so the selected set (colored)
+    draws on top and stays visible. {id: smiles} dicts in, one scatter plot out.
+    """
+    import numpy as np
+    from rdkit import Chem
+    from rdkit.Chem import rdFingerprintGenerator
+    from sklearn.manifold import TSNE
+    stylia = _safe_import_stylia()
+
+    # Format: slide | Style: ersilia - change with stylia.set_format() / stylia.set_style()
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+    c_sel = getattr(nc, sel_color)
+
+    morgan_gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
+
+    def to_fp(smi):
+        mol = Chem.MolFromSmiles(smi)
+        if mol is None:
+            return None
+        return morgan_gen.GetFingerprintAsNumPy(mol)
+
+    groups, fps = [], []
+    for group, smiles_dict in [("bg", bg_smiles), ("sel", sel_smiles)]:
+        for smi in smiles_dict.values():
+            fp = to_fp(smi)
+            if fp is None:
+                continue
+            fps.append(fp)
+            groups.append(group)
+    groups = np.array(groups)
+    coords = TSNE(n_components=2, random_state=seed, init="random").fit_transform(np.array(fps))
+
+    fig, axs = stylia.create_figure(1, 1, width=0.5, height=0.5)
+    ax = axs.next()
+    is_bg = groups == "bg"
+    ax.scatter(coords[is_bg, 0], coords[is_bg, 1], color=nc.gray, label=f"Pre-screened (n={is_bg.sum():,})")
+    ax.scatter(coords[~is_bg, 0], coords[~is_bg, 1], color=c_sel, label=f"Selected (n={(~is_bg).sum():,})")
+    ax.legend()
+    stylia.label(ax, xlabel="t-SNE 1", ylabel="t-SNE 2")
+    stylia.save_figure(out_path)
+
+
 def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
     """KDE (continuous) + overlaid bars (discrete) + PAINS bar."""
     from scipy.stats import gaussian_kde
-    import stylia
+    stylia = _safe_import_stylia()
 
     stylia.set_format("slide")
     stylia.set_style("ersilia")
