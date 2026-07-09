@@ -2,9 +2,12 @@
 """
 Detect pockets in experimental, potentially multimeric PDB structures.
 
-For each given PDB code: downloads the RCSB-annotated biological assembly (falling back to the
-as-deposited asymmetric unit if no assembly is annotated), strips ligands/waters/ions while
-keeping all protein chains, and detects pockets with P2Rank (as in
+For each given PDB code: downloads the RCSB-annotated biological assembly with the most chains
+among the entry's candidate assemblies (falling back to the as-deposited asymmetric unit if none
+is annotated) - RCSB does not order candidate assemblies by biological relevance, so picking the
+first one can silently return a partial assembly (e.g. 5W25 lists two monomeric author-defined
+assemblies ahead of the dimeric PISA-defined one covering both chains) - strips ligands/waters/
+ions while keeping all protein chains, and detects pockets with P2Rank (as in
 scripts/08_detect_pockets.py), using P2Rank's default config instead of "-c alphafold" and
 without script 08's per-residue B-factor/pLDDT confidence gate, since crystallographic B-factors
 are not a prediction-confidence score and that gate's semantics don't transfer to experimental
@@ -25,7 +28,6 @@ Usage:
 import argparse
 import os
 import subprocess
-import sys
 from datetime import date
 
 import pandas as pd
@@ -34,10 +36,8 @@ import requests
 from pymol import cmd
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-sys.path.append(os.path.join(ROOT, "src"))
 
 OUTPUT_ROOT = os.path.join(ROOT, "output", "48_detect_pocket_multimers")
-ASSEMBLIES_DIR = os.path.join(OUTPUT_ROOT, "biological_assemblies")
 STRIPPED_DIR = os.path.join(OUTPUT_ROOT, "stripped_structures")
 POCKETS_DIR = os.path.join(OUTPUT_ROOT, "detected_pockets")
 REPORT_CSV = os.path.join(OUTPUT_ROOT, "pocket_detection_data.csv")
@@ -79,22 +79,40 @@ def get_rcsb_entry_info(pdb_id):
     return {"assembly_ids": assembly_ids, "method": method, "resolution": resolution}
 
 
-def get_biological_assembly_info(pdb_id, assembly_id):
+def select_best_assembly(pdb_id, assembly_ids):
     """
-    Queries the RCSB assembly API for the oligomeric state of a given PDB ID/assembly ID pair.
-    Returns a human-readable summary string (e.g. "heterotetrameric (4 chains),
-    author_and_software_defined_assembly"), or "N/A" on any error/missing data. The "details"
+    Among an entry's candidate assemblies, selects the one with the most chains
+    (oligomeric_count). RCSB does not order assembly_ids by biological relevance - e.g. 5W25
+    lists two monomeric author-defined assemblies (one per crystallographically independent
+    chain) ahead of a dimeric PISA-defined assembly covering both chains together, even though
+    the dimer is the more complete biological unit. Picking the largest candidate avoids
+    silently defaulting to a partial assembly.
+
+    Returns (best_assembly_id, best_assembly_dict), or (None, None) if no assembly info could
+    be retrieved for any candidate.
+    """
+    best_id, best_asm, best_count = None, None, -1
+    for assembly_id in assembly_ids:
+        try:
+            resp = requests.get(RCSB_ASSEMBLY_API_URL.format(pdb_id, assembly_id), timeout=15)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Warning: could not query RCSB assembly API for {pdb_id}/{assembly_id} ({e}).")
+            continue
+        asm = resp.json().get("pdbx_struct_assembly", {})
+        count = asm.get("oligomeric_count") or 0
+        if count > best_count:
+            best_id, best_asm, best_count = assembly_id, asm, count
+    return best_id, best_asm
+
+
+def format_assembly_info(asm):
+    """
+    Formats an RCSB pdbx_struct_assembly dict into a human-readable oligomeric-state summary
+    (e.g. "heterotetrameric (4 chains), author_and_software_defined_assembly"). The "details"
     field distinguishes author-confirmed assemblies from software-only (PISA) predictions, so it
     is reported verbatim rather than collapsed into a yes/no verdict.
     """
-    try:
-        resp = requests.get(RCSB_ASSEMBLY_API_URL.format(pdb_id, assembly_id), timeout=15)
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        print(f"Warning: could not query RCSB assembly API for {pdb_id}/{assembly_id} ({e}).")
-        return "N/A"
-
-    asm = resp.json().get("pdbx_struct_assembly", {})
     oligomeric = asm.get("oligomeric_details", "unknown oligomeric state")
     count = asm.get("oligomeric_count")
     count_str = f" ({count} chains)" if count else ""
@@ -134,21 +152,19 @@ def download_asymmetric_unit(pdb_code, output_cif):
     return True
 
 
-def download_structure(pdb_code, output_cif, entry_info):
+def download_structure(pdb_code, output_cif, assembly_id):
     """
-    Downloads the RCSB biological assembly for a PDB code if one is annotated in entry_info,
-    otherwise falls back to the as-deposited asymmetric unit. Returns (success, assembly_id_used),
-    where assembly_id_used is None if the asymmetric-unit fallback was used.
+    Downloads the RCSB biological assembly for a PDB code if assembly_id is given (already
+    resolved by select_best_assembly), otherwise falls back to the as-deposited asymmetric unit.
+    Returns True on success, False on any download error.
     """
-    assembly_ids = entry_info["assembly_ids"] if entry_info else []
-    if assembly_ids:
-        assembly_id = assembly_ids[0]
+    if assembly_id is not None:
         if download_biological_assembly(pdb_code, output_cif, assembly_id):
-            return True, assembly_id
+            return True
         print(f"Warning: falling back to asymmetric unit for {pdb_code}.")
     else:
         print(f"Warning: no annotated biological assembly for {pdb_code}, using asymmetric unit.")
-    return download_asymmetric_unit(pdb_code, output_cif), None
+    return download_asymmetric_unit(pdb_code, output_cif)
 
 
 def convert_cif_to_pdb(input_cif, output_pdb):
@@ -228,22 +244,40 @@ def extract_pocket_residues(csv_file):
     return {int(row["rank"]): row["residue_ids"].split() for _, row in df.iterrows()}
 
 
-def write_pocket_pdbs(pockets_to_consider, pocket_dict, output_dir):
+def write_pocket_pdbs(pdb_code, pockets_to_consider, pocket_dict, structure_file, output_dir):
     """
-    Creates a separate PDB file per detected pocket, with a single HETATM pseudo-atom at the
-    pocket centroid. Verbatim from scripts/08_detect_pockets.py.
+    Creates two PDB files per kept pocket in output_dir:
+      - "<pdb_code>_pocket<N>.pdb": the full stripped structure plus a single pseudo-atom
+        (resn LIG) marking the pocket centroid, so the pocket can be visualized directly in its
+        structural context without loading two separate files.
+      - "pocket_<N>.pdb": just the centroid pseudo-atom on its own, same minimal format as
+        scripts/08_detect_pockets.py's write_pocket_pdbs.
     """
     os.makedirs(output_dir, exist_ok=True)
     for pocket_number, (x, y, z) in pocket_dict.items():
-        if pocket_number in pockets_to_consider:
-            pdb_filename = os.path.join(output_dir, f"pocket_{pocket_number}.pdb")
-            with open(pdb_filename, "w") as pdb_file:
-                pdb_file.write(f"HEADER    Pocket {pocket_number} Centroid\n")
-                pdb_file.write(
-                    f"HETATM{pocket_number:5d} C   LIG A{pocket_number:4d}    "
-                    f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00          C\n"
-                )
-                pdb_file.write("END\n")
+        if pocket_number not in pockets_to_consider:
+            continue
+
+        # Coordinate-only file, same minimal format as scripts/08_detect_pockets.py.
+        coord_only_file = os.path.join(output_dir, f"pocket_{pocket_number}.pdb")
+        with open(coord_only_file, "w") as pdb_file:
+            pdb_file.write(f"HEADER    Pocket {pocket_number} Centroid\n")
+            pdb_file.write(
+                f"HETATM{pocket_number:5d} C   LIG A{pocket_number:4d}    "
+                f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00          C\n"
+            )
+            pdb_file.write("END\n")
+
+        # Combined file: full stripped structure plus the centroid pseudo-atom.
+        cmd.load(structure_file, "structure")
+        # Pick a chain letter not already used by the real structure, so the pocket marker
+        # can't be confused with (or silently merged into) an actual protein chain.
+        existing_chains = set(cmd.get_chains("structure"))
+        pocket_chain = next(c for c in "ZYXWVUTSRQPONMLKJIHGFEDCBA0123456789" if c not in existing_chains)
+        cmd.pseudoatom("structure", pos=[x, y, z], resn="LIG", resi=str(pocket_number), chain=pocket_chain, name="C", elem="C")
+        combined_file = os.path.join(output_dir, f"{pdb_code}_pocket{pocket_number}.pdb")
+        cmd.save(combined_file, "structure")
+        cmd.delete("all")
 
 
 def main():
@@ -258,7 +292,7 @@ def main():
 
     pdb_codes = [c.strip().upper() for c in args.pdb_codes.split(",") if c.strip()]
 
-    for d in (ASSEMBLIES_DIR, STRIPPED_DIR, POCKETS_DIR, TMP_DIR):
+    for d in (STRIPPED_DIR, POCKETS_DIR, TMP_DIR):
         os.makedirs(d, exist_ok=True)
 
     pymol.finish_launching(["pymol", "-cq"])
@@ -271,35 +305,34 @@ def main():
         print(f"Processing {pdb_code}...")
         try:
             entry_info = get_rcsb_entry_info(pdb_code)
-
-            # 1. Download biological assembly, falling back to the asymmetric unit (idempotent)
-            assembly_cif = os.path.join(ASSEMBLIES_DIR, f"{pdb_code}.cif")
-            if not os.path.exists(assembly_cif):
-                success, assembly_id = download_structure(pdb_code, assembly_cif, entry_info)
-                if not success:
-                    print(f"Warning: could not obtain a structure for {pdb_code}. Skipping.")
-                    continue
-            else:
-                print(f"Structure for {pdb_code} already downloaded. Skipping download.")
-                assembly_id = entry_info["assembly_ids"][0] if entry_info and entry_info["assembly_ids"] else None
-
+            assembly_ids = entry_info["assembly_ids"] if entry_info else []
+            assembly_id, assembly_asm = select_best_assembly(pdb_code, assembly_ids) if assembly_ids else (None, None)
             assembly_info = (
-                get_biological_assembly_info(pdb_code, assembly_id)
-                if assembly_id is not None
+                format_assembly_info(assembly_asm)
+                if assembly_asm is not None
                 else "N/A (asymmetric unit used, no annotated assembly)"
             )
 
-            # 2. Convert to PDB and strip heteroatoms, keeping all protein chains (idempotent)
+            # 1. Download and strip heteroatoms, keeping all protein chains (idempotent on the
+            # stripped structure - the raw download is transient and not kept as a separate
+            # output, since it and the stripped structure would otherwise duplicate storage of
+            # essentially the same structure).
             stripped_pdb = os.path.join(STRIPPED_DIR, f"{pdb_code}.pdb")
             if not os.path.exists(stripped_pdb):
+                tmp_cif = os.path.join(TMP_DIR, f"{pdb_code}.cif")
+                success = download_structure(pdb_code, tmp_cif, assembly_id)
+                if not success:
+                    print(f"Warning: could not obtain a structure for {pdb_code}. Skipping.")
+                    continue
                 tmp_full = os.path.join(TMP_DIR, f"{pdb_code}_full.pdb")
-                convert_cif_to_pdb(assembly_cif, tmp_full)
+                convert_cif_to_pdb(tmp_cif, tmp_full)
                 strip_heteroatoms_all_chains(tmp_full, stripped_pdb)
+                os.remove(tmp_cif)
                 os.remove(tmp_full)
             else:
-                print(f"Stripped structure for {pdb_code} already exists. Skipping stripping.")
+                print(f"Stripped structure for {pdb_code} already exists. Skipping download and stripping.")
 
-            # 3. Detect pockets (idempotent)
+            # 2. Detect pockets (idempotent)
             pocket_dir = os.path.join(POCKETS_DIR, pdb_code)
             os.makedirs(pocket_dir, exist_ok=True)
             predictions_csv = os.path.join(pocket_dir, f"{pdb_code}.pdb_predictions.csv")
@@ -329,7 +362,7 @@ def main():
                 if i < POCKET_TOP_K or pocket_probabilities[i] >= POCKET_PROBABILITY_THRESHOLD
             )
 
-            write_pocket_pdbs(pockets_to_consider, pocket_centroids, os.path.join(pocket_dir, "pockets"))
+            write_pocket_pdbs(pdb_code, pockets_to_consider, pocket_centroids, stripped_pdb, os.path.join(pocket_dir, "pockets"))
 
             chains = get_chain_ids(stripped_pdb)
 
