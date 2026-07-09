@@ -29,18 +29,21 @@ REAL_ROUND1_N_ACTIVES = 100_000
 REFERENCE_POCKET_CSV = os.path.join(ROOT, "output", "reference_pocket.csv")
 
 SMILES_PATHS = {
-    "DL":   os.path.join(ROOT, "data", "Enamine", "Enamine_Hit_Locator_Library_100K_Set_plated_100160cmpds_20250629.smiles"),
-    "REAL": os.path.join(ROOT, "output", "unidock_REAL_docking", "inference_10B", "clustered_compounds.csv"),
+    "DL":          os.path.join(ROOT, "data", "Enamine", "Enamine_Hit_Locator_Library_100K_Set_plated_100160cmpds_20250629.smiles"),
+    "REAL":        os.path.join(ROOT, "output", "unidock_REAL_docking", "inference_10B", "clustered_compounds.csv"),
+    "REAL_ROUND1": os.path.join(ROOT, "output", "enamine_REAL_characterization", "enamine_REAL.tsv"),
 }
 
 SMILES_SEPS = {
-    "DL":   "\t",
-    "REAL": ",",
+    "DL":          "\t",
+    "REAL":        ",",
+    "REAL_ROUND1": "\t",
 }
 
 SMILES_COLS = {
-    "DL":   ("Catalog ID", "SMILES"),
-    "REAL": ("id",         "smiles"),
+    "DL":          ("Catalog ID", "SMILES"),
+    "REAL":        ("id",         "smiles"),
+    "REAL_ROUND1": ("id",         "smiles"),
 }
 
 
