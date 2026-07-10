@@ -4,12 +4,9 @@ Multi-target hit-overlap analysis restricted to the 4 catalytic (CAT) pockets - 
 alaS (pheT has no CAT entry) - against the second Enamine REAL screening
 (output/unidock_REAL_docking_2, ~99,105 compounds).
 
-Reuses scripts/XX_docking_hits_raw.py's approach via the shared helpers in src/docking_utils.py,
-but that script's own pocket loader (load_reference_pockets, hardwired to output/reference_pocket.csv)
-is broken - that file no longer exists, having been split into output/reference_pocket_catalytic.csv
-/ _noncatalytic.csv. This script loads output/reference_pocket_catalytic.csv directly instead, and
-generalizes from the old script's top-100/1,000 (UpSet only) + top-1,000-only CSV export to
-top-100/1,000/10,000 for both.
+Uses the shared helpers in src/docking_utils.py. Reference pockets are loaded directly from
+output/reference_pocket_catalytic.csv (output/reference_pocket.csv no longer exists, having been
+split into output/reference_pocket_catalytic.csv / _noncatalytic.csv).
 
 For each of top-100, top-1,000, top-10,000:
   - an UpSet plot of hit overlap across the 4 genes (docking_utils.save_upset)
@@ -57,6 +54,7 @@ TOP_NS = [100, 1_000, 10_000]
 PROFILING_TOP_N = 1_000
 PROFILING_MIN_TARGETS = 2
 BG_SAMPLE_SIZE = 20_000
+BOXPLOT_GENE_ORDER = ["pheS", "aspS", "lysS", "alaS"]
 
 PROP_COLUMNS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings", "QED", "is_pains"]
 
@@ -133,7 +131,7 @@ def main():
     dl_scores = build_matrix(pocket_map, LIBRARIES["DL"], label="Loading DL (100k) scores")
     real_negative_scores = {g: load_real_negative_scores(pocket_map[g]) for g in genes}
     scores_path = os.path.join(OUTPUT_DIR, f"{trna_tag}_{LIB}_CAT_scores.png")
-    plot_score_boxplots(scores1, sel_ids, genes, scores_path, dl_scores=dl_scores, real_negative_scores=real_negative_scores)
+    plot_score_boxplots(scores1, sel_ids, BOXPLOT_GENE_ORDER, scores_path, dl_scores=dl_scores, real_negative_scores=real_negative_scores)
     print(f"Saved: {scores_path}")
 
     print("\n--- Physchem profiling ---")
