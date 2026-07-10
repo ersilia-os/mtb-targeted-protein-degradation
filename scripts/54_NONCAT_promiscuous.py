@@ -2,7 +2,7 @@
 """
 Multi-target hit-overlap analysis for the NON-CAT pockets against the second Enamine REAL
 screening (output/unidock_REAL_docking_2, ~99,105 compounds) - the NON-CAT counterpart of
-scripts/52_CAT_hit_overlap.py.
+scripts/52_CAT_promiscuous.py.
 
 Structurally more complex than CAT: output/selected_pockets.csv has 8 NON-CAT pocket rows, and
 pheS and pheT (subunits of the same PheRS heterodimer) are combined into a single target unit
@@ -24,19 +24,30 @@ specific combination of targets uses each target's ACTUAL observed S_target, not
 expected(combo) = product(S_t for t in combo) / M**(len(combo) - 1)
 reported per exact combination (not a k-level aggregate), since S_target varies by target.
 
-For each of top-100, top-1,000, top-10,000:
+For each of top-100 and top-1,000 (top-10,000 is not run), the final selected/saved compound set
+is: >=2 of the 4 NON-CAT targets hit, AND NOT CAT-promiscuous - using one threshold level up from
+the NON-CAT pass on script 52's CAT multi-target lists (NON-CAT top-100 excludes CAT-promiscuous-
+at-top-1,000; NON-CAT top-1,000 excludes CAT-promiscuous-at-top-10,000, ~10,900 compounds). A
+NON-CAT multi-target compound that merely binds ONE CAT pocket well is not concerning on its own;
+only ALSO being CAT-promiscuous (>=2 CAT targets, suggesting a non-specific, dock-well-everywhere
+artifact rather than genuine site selectivity) triggers exclusion.
+
+For each of top-100 and top-1,000:
   - per-target hit-set sizes (S_target)
   - an UpSet plot of hit overlap across the 4 targets
   - observed vs. expected-by-chance for every combination of 2, 3, or 4 targets
-  - a CSV of every compound hitting >=2 of the 4 targets, with per-POCKET (not per-target) score/
-    rank for all 8 pockets, target-level n_targets/targets_hit, SMILES and physchem properties
+  - a console count of the CAT-promiscuous exclusion actually applied (see criterion above), plus
+    an overlap count vs. script 53's ~500 CAT-selective compounds, purely informational
+  - a CSV of the final selected compounds (per the criterion above), with per-POCKET (not
+    per-target) score/rank for all 8 pockets, target-level n_targets/targets_hit, SMILES and
+    physchem properties
 
-Then, for the >=2-target compounds from the top-1,000 CSV vs. a random 10,000-compound REAL
+Then, for the >=2-target compounds from the top-1,000 CSV vs. a random 20,000-compound REAL
 background: score boxplots (per pocket, vs. DL/REAL-round-1-negative-set references), physchem
 profiling, and a t-SNE (ECFP4) plot.
 
 Usage:
-    python 53_NONCAT_hit_overlap.py
+    python 54_NONCAT_promiscuous.py
 """
 import os
 import sys
@@ -55,19 +66,25 @@ from docking_utils import (
 )
 
 SELECTED_POCKETS_CSV = os.path.join(ROOT, "output", "selected_pockets.csv")
-OUTPUT_DIR = os.path.join(ROOT, "output", "53_NONCAT_hit_overlap")
+OUTPUT_DIR = os.path.join(ROOT, "output", "54_NONCAT_promiscuous")
 MULTIMER_DOCKING_DIR = os.path.join(ROOT, "output", "50_unidock_docking_multimers")
 CAT_MULTI_TARGET_TOP1000_CSV = os.path.join(
-    ROOT, "output", "52_CAT_hit_overlap", "alaS_aspS_lysS_pheS_REAL_CAT_multi_target_top1000.csv"
+    ROOT, "output", "52_CAT_promiscuous", "alaS_aspS_lysS_pheS_REAL_CAT_multi_target_top1000.csv"
 )
 CAT_MULTI_TARGET_TOP10000_CSV = os.path.join(
-    ROOT, "output", "52_CAT_hit_overlap", "alaS_aspS_lysS_pheS_REAL_CAT_multi_target_top10000.csv"
+    ROOT, "output", "52_CAT_promiscuous", "alaS_aspS_lysS_pheS_REAL_CAT_multi_target_top10000.csv"
+)
+CAT_SELECTIVE_CSV = os.path.join(
+    ROOT, "output", "53_CAT_selective", "alaS_aspS_lysS_pheS_REAL_CAT.csv"
 )
 
 LIB = "REAL"
-TOP_NS = [100, 1_000, 10_000]
+TOP_NS = [100, 1_000]
+# NON-CAT top_n -> the CAT-promiscuous reference threshold used to exclude likely artifacts,
+# one level up (NON-CAT top-100 checked against CAT top-1,000; NON-CAT top-1,000 against CAT
+# top-10,000). CAT_EXCLUSION_CSV maps each to the corresponding script-52 output path.
+CAT_EXCLUSION_CSV = {100: CAT_MULTI_TARGET_TOP1000_CSV, 1_000: CAT_MULTI_TARGET_TOP10000_CSV}
 PROFILING_TOP_N = 1_000
-PROFILING_MIN_TARGETS = 2
 BG_SAMPLE_SIZE = 20_000
 
 PROP_COLUMNS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings", "QED", "is_pains"]
@@ -177,14 +194,14 @@ def main():
     pocket_top = {p: s.sort_values(ascending=True).index.tolist() for p, s in pocket_scores.items()}
     pocket_rank = {p: {cid: i + 1 for i, cid in enumerate(ids)} for p, ids in pocket_top.items()}
 
-    def load_cat_multi_ids(path):
+    def load_cat_ids(path):
         if os.path.isfile(path):
             return set(pd.read_csv(path)["compound"])
-        print(f"  Warning: {path} not found, can't exclude those CAT hits.")
+        print(f"  Warning: {path} not found, can't cross-check against it.")
         return set()
 
-    cat_multi_ids_top1000 = load_cat_multi_ids(CAT_MULTI_TARGET_TOP1000_CSV)
-    cat_multi_ids_top10000 = load_cat_multi_ids(CAT_MULTI_TARGET_TOP10000_CSV)
+    cat_exclusion_ids = {top_n: load_cat_ids(path) for top_n, path in CAT_EXCLUSION_CSV.items()}
+    cat_selective_ids = load_cat_ids(CAT_SELECTIVE_CSV)
 
     multi_target_dfs = {}
     for top_n in TOP_NS:
@@ -206,23 +223,29 @@ def main():
                 print(f"    {'+'.join(combo)}: observed={observed:,}  expected={expected:.2f}")
 
         multi_df = build_multi_target_table(targets, target_pockets, hit_sets, pocket_rank, pocket_scores, all_pockets)
-        not_in_cat_top1000 = ~multi_df["compound"].isin(cat_multi_ids_top1000)
-        not_in_cat_top10000 = ~multi_df["compound"].isin(cat_multi_ids_top10000)
-        print("  Compounds by number of targets hit (excluding those also >=2-target hits in the "
-              "CAT top-1,000 analysis) (same, excluding CAT top-10,000):")
+        cat_excl_top_n = {100: 1_000, 1_000: 10_000}[top_n]
+        in_cat_exclusion = multi_df["compound"].isin(cat_exclusion_ids[top_n])
+        in_cat_selective = multi_df["compound"].isin(cat_selective_ids)
+        print(f"  Compounds by number of targets hit, after excluding likely artifacts\n"
+              f"  (also CAT-promiscuous at top-{cat_excl_top_n:,}); "
+              f"CAT-selective overlap is informational, not an exclusion:")
         for k in range(2, len(targets) + 1):
             at_k = multi_df["n_targets"] == k
-            print(f"    {k}/{len(targets)} targets: {at_k.sum():,} "
-                  f"({(at_k & not_in_cat_top1000).sum():,}) ({(at_k & not_in_cat_top10000).sum():,})")
+            print(f"    {k}/{len(targets)} targets: {at_k.sum():,} total"
+                  f" | excl. CAT-promiscuous top-{cat_excl_top_n:,}: {(at_k & ~in_cat_exclusion).sum():,}"
+                  f" | overlap w/ 500 CAT-selective: {(at_k & in_cat_selective).sum():,}")
+
+        # Actual selection: >=2 targets (already guaranteed by build_multi_target_table) AND not
+        # CAT-promiscuous at the paired threshold (one level up from this NON-CAT top_n).
+        multi_df = multi_df[~in_cat_exclusion].copy()
 
         out_csv = os.path.join(OUTPUT_DIR, f"{trna_tag}_{LIB}_NONCAT_multi_target_top{top_n}.csv")
         multi_df = multi_df.sort_values("n_targets", ascending=False)
         multi_df.to_csv(out_csv, index=False)
-        print(f"  Saved: {out_csv}")
+        print(f"  Saved: {out_csv} ({len(multi_df):,} selected)")
         multi_target_dfs[top_n] = multi_df
 
     sel_df = multi_target_dfs[PROFILING_TOP_N]
-    sel_df = sel_df[sel_df["n_targets"] >= PROFILING_MIN_TARGETS]
     sel_ids = set(sel_df["compound"])
 
     print("\n--- Score boxplots ---")
