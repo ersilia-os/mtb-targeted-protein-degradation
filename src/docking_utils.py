@@ -102,6 +102,21 @@ def load_real_negative_scores(pocket_name):
     return scores[scores.index.isin(negative_ids)]
 
 
+def load_real_positive_scores(pocket_name):
+    """Return a pd.Series of docking scores for the Enamine REAL 10M round-1 screening's
+    positive set (the top REAL_ROUND1_N_ACTIVES prioritized compounds for this pocket).
+    Empty Series if the round-1 files aren't available for this pocket."""
+    input_ligands_path = os.path.join(REAL_ROUND1_INPUT_LIGANDS_DIR, f"input_ligands_{pocket_name}.txt")
+    report_path = os.path.join(REAL_ROUND1_RESULTS_DIR, pocket_name, "report.csv")
+    if not os.path.isfile(input_ligands_path) or not os.path.isfile(report_path):
+        return pd.Series(dtype=float)
+    with open(input_ligands_path) as f:
+        compound_ids = [line.strip().replace(".sdf", "").split("/")[-1] for line in f]
+    positive_ids = set(compound_ids[:REAL_ROUND1_N_ACTIVES])
+    scores = load_scores(report_path)
+    return scores[scores.index.isin(positive_ids)]
+
+
 def build_matrix(pocket_map, results_dir, label=""):
     """
     Build a raw-score DataFrame from a dict {column_label: pocket_name}.
@@ -220,6 +235,73 @@ def plot_score_boxplots(scores1, sel_ids, genes, out_path, sel_label="Selected",
         legend_handles.append(mpatches.Patch(facecolor=nc.blue, label=f"Enamine REAL negative set (n={n_rn:,})"))
     legend_handles.append(mpatches.Patch(facecolor=nc.yellow, label=f"Pre-screened (n={n_bg:,})"))
     legend_handles.append(mpatches.Patch(facecolor=c_sel,   label=f"{sel_label} (n={n_sel:,})"))
+    ax.legend(handles=legend_handles)
+    stylia.label(ax, xlabel="", ylabel="Docking score")
+    stylia.save_figure(out_path)
+
+
+def plot_score_boxplots_multi(pockets, score_sources, out_path, xtick_rotation=45):
+    """Boxplots of raw docking scores per pocket, for an arbitrary ordered list of independent
+    score distributions (unlike plot_score_boxplots, does not assume any one source is a subset
+    of another - e.g. a "selected" set drawn from a different screening round than a "pre-screened"
+    reference).
+
+    pockets       — ordered list of pocket names (x-axis groups)
+    score_sources — ordered list of (label, color_name, {pocket: pd.Series}, common) tuples, one
+                    box per pocket group per source, in the given order. `common` marks whether
+                    this source is the SAME set of compounds re-scored against every pocket (e.g.
+                    Hit Locator, REAL 2 - all, and REAL 1 - negatives, which is a single fixed
+                    ~12,958-compound background sample shared by every pocket's input_ligands
+                    file - confirmed identical across pockets) vs. a genuinely per-pocket-specific
+                    set (e.g. REAL 1 - positives, each pocket's own top-100k surrogate ranking; or
+                    a per-pocket top-N selection). This only affects how the legend's n is
+                    reported (one representative count vs. a per-pocket count), not the boxes.
+    xtick_rotation — degrees to rotate the (typically long) pocket-name x-tick labels
+    """
+    import matplotlib.patches as mpatches
+    stylia = _safe_import_stylia()
+
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+
+    fig, axs = stylia.create_figure(1, 1, height=0.4, width=0.7)
+    ax = axs.next()
+
+    n_sources = len(score_sources)
+    width = 0.25
+    gap = 0.3
+    group_spacing = (n_sources + 1) * gap
+    offsets = [i * gap for i in range(n_sources)]
+
+    ticks, tick_labels = [], []
+    for i, pocket in enumerate(pockets):
+        base = group_spacing * i
+        for (label, color_name, pocket_scores, common), offset in zip(score_sources, offsets):
+            scores = pocket_scores.get(pocket)
+            if scores is None or len(scores) == 0:
+                continue
+            simple_boxplot(ax, base + offset, np.asarray(scores), getattr(nc, color_name), width)
+        ticks.append(base + sum(offsets) / len(offsets))
+        tick_labels.append(pocket)
+
+    ax.set_xticks(ticks)
+    if xtick_rotation:
+        ax.set_xticklabels(tick_labels, rotation=xtick_rotation, ha="right")
+    else:
+        ax.set_xticklabels(tick_labels)
+
+    legend_handles = []
+    for label, color_name, pocket_scores, common in score_sources:
+        lens = [len(s) for s in pocket_scores.values()]
+        if common:
+            # same compound set scored against every pocket - report one representative count
+            legend_label = f"{label} (n={max(lens):,}, common)"
+        elif len(set(lens)) == 1:
+            legend_label = f"{label} (n={lens[0]:,}/pocket)"
+        else:
+            legend_label = f"{label} (n≈{round(sum(lens) / len(lens)):,}/pocket)"
+        legend_handles.append(mpatches.Patch(facecolor=getattr(nc, color_name), label=legend_label))
     ax.legend(handles=legend_handles)
     stylia.label(ax, xlabel="", ylabel="Docking score")
     stylia.save_figure(out_path)
