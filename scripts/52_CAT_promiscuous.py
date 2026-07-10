@@ -47,7 +47,7 @@ from docking_utils import (
 )
 
 CAT_POCKETS_CSV = os.path.join(ROOT, "output", "reference_pocket_catalytic.csv")
-OUTPUT_DIR = os.path.join(ROOT, "output", "52_CAT_hit_overlap")
+OUTPUT_DIR = os.path.join(ROOT, "output", "52_CAT_promiscuous")
 
 LIB = "REAL"
 TOP_NS = [100, 1_000, 10_000]
