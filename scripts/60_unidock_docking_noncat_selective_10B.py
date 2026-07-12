@@ -45,7 +45,7 @@ from default import RANDOM_SEED
 SELECTED_POCKETS_CSV = os.path.join(ROOT, "output", "selected_pockets.csv")
 POCKET_DETECTION_DATA_CSV = os.path.join(ROOT, "output", "pocket_detection_data.csv")
 MERGED_SELECTIVE_HITS_CSV = os.path.join(ROOT, "output", "58_generate_conformations_noncat_selective_10B", "merged_selective_hits.csv")
-CONFORMATIONS_PREPARED_DIR = os.path.join(ROOT, "processed", "59_unidock_ligandprep_noncat_selective_10B", "conformations_prepared")
+CONFORMATIONS_PREPARED_DIR = os.path.join(ROOT, "output", "59_unidock_ligandprep_noncat_selective_10B", "conformations_prepared")
 REAL2_DOCKING_RESULTS_DIR = os.path.join(ROOT, "output", "unidock_REAL_docking_2", "docking_results")
 ALIGNED_RELAXED_STRUCTURES_DIR = os.path.join(ROOT, "output", "aligned_relaxed_structures")
 

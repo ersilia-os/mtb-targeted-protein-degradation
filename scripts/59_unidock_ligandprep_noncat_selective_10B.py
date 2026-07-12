@@ -4,7 +4,7 @@
 ### using the in-site unidocktools
 """
 Prepare script 58's deduplicated conformations
-(processed/58_generate_conformations_noncat_selective_10B/conformations/) for Uni-Dock docking, via
+(output/58_generate_conformations_noncat_selective_10B/conformations/) for Uni-Dock docking, via
 unidocktools ligandprep. Mirrors scripts/45_unidock_REAL_2_ligandprep.py /
 scripts/XX_unidock_ligandprep_noncat_top10k.py.
 
@@ -22,8 +22,8 @@ import subprocess
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
-CONFORMATIONS_DIR = os.path.join(ROOT, "processed", "58_generate_conformations_noncat_selective_10B", "conformations")
-OUTPUT_DIR = os.path.join(ROOT, "processed", "59_unidock_ligandprep_noncat_selective_10B")
+CONFORMATIONS_DIR = os.path.join(ROOT, "output", "58_generate_conformations_noncat_selective_10B", "conformations")
+OUTPUT_DIR = os.path.join(ROOT, "output", "59_unidock_ligandprep_noncat_selective_10B")
 CONFORMATIONS_PREPARED_DIR = os.path.join(OUTPUT_DIR, "conformations_prepared")
 os.makedirs(CONFORMATIONS_PREPARED_DIR, exist_ok=True)
 
