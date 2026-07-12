@@ -23,8 +23,13 @@ GDRIVE_FOLDER_ID = "1FBELagBf9hlKVgvkaZ8YF60jKRAmsHPo"
 
 
 def download_file(outfile):
+    """Downloads to a {outfile}.part sibling first, then renames onto outfile only once fully
+    written - so a killed/interrupted run never leaves a truncated file sitting at the expected
+    path (which a later run would otherwise trust as already-downloaded and fail on, since callers
+    only check os.path.exists, not file validity)."""
     service_file = os.path.join(ROOT, "service.json")
     file = os.path.basename(outfile)
+    part_file = outfile + ".part"
     creds = Credentials.from_service_account_file(service_file, scopes=["https://www.googleapis.com/auth/drive.readonly"])
     for attempt in range(10):
         try:
@@ -45,21 +50,27 @@ def download_file(outfile):
         raise RuntimeError(f"Multiple files named '{file}' are found...")
     file_id = files[0]["id"]
     request = service.files().get_media(fileId=file_id, supportsAllDrives=True)
-    with io.FileIO(outfile, "wb") as fh:
-        downloader = MediaIoBaseDownload(fh, request, chunksize=100 * 1024 * 1024)
-        done = False
-        retries = 0
-        while not done:
-            try:
-                status, done = downloader.next_chunk()
-                if status:
-                    print(f"Download {int(status.progress() * 100)}%\n")
-            except (HttpError, OSError):
-                retries += 1
-                print(f"Error found when downloading file. Trying again...[{retries}/10]")
-                if retries >= 10:
-                    raise
-                time.sleep(10)
+    try:
+        with io.FileIO(part_file, "wb") as fh:
+            downloader = MediaIoBaseDownload(fh, request, chunksize=100 * 1024 * 1024)
+            done = False
+            retries = 0
+            while not done:
+                try:
+                    status, done = downloader.next_chunk()
+                    if status:
+                        print(f"Download {int(status.progress() * 100)}%\n")
+                except (HttpError, OSError):
+                    retries += 1
+                    print(f"Error found when downloading file. Trying again...[{retries}/10]")
+                    if retries >= 10:
+                        raise
+                    time.sleep(10)
+        os.replace(part_file, outfile)
+    except BaseException:
+        if os.path.exists(part_file):
+            os.remove(part_file)
+        raise
 
 
 def get_pocket_to_ac():
