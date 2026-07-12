@@ -10,19 +10,17 @@ probabilities, see src/screening_10b_utils.py) - so any per-pocket downsampling 
 this script otherwise mirrors the structure of).
 
 Steps:
-  1. Gather - for each of the 7 NON-CAT pockets (output/selected_pockets.csv, excl. the dimer
-     pocket 7K98_pocket_6, same filter as script 57's load_noncat_targets), concatenate every
-     {chunk}.csv under output/57_NONCAT_selective_10B/{gene}_{pocket}/.
-  2. Per-pocket cap - if a pocket's gathered row count exceeds MAX_PER_POCKET, randomly sample
-     down to MAX_PER_POCKET (seeded via RANDOM_SEED); otherwise keep all rows.
-  3. Merge - concatenate the 7 (possibly capped) per-pocket tables as-is, WITHOUT deduplicating
-     (a compound selective for >1 pocket - possible via the pheS<->pheT partner exemption, or
-     aspS/alaS each having 2 of their own NON-CAT pockets - appears once per pocket, same
-     convention as the old merge script). Saved to merged_selective_hits.csv.
-  4. Dedup + conformers - drop_duplicates(subset="compound_id") (dedup happens here, not at merge
-     time), then one 3D conformer per unique compound: RDKit ETKDGv3 + UFF, same approach as
-     scripts/44_generate_conformations.py / scripts/XX_generate_conformations_noncat_top10k.py,
-     parallelized via multiprocessing.Pool. One .sdf per successfully-embedded compound.
+  1. Gather - for each of the 7 NON-CAT pockets, concatenate every {chunk}.csv under
+     output/57_NONCAT_selective_10B/{gene}_{pocket}/, then dedup by compound_id WITHIN that
+     pocket's own set - script 57's 994 chunks are 3 overlapping families (LeadLike/
+     NaturalProducts/Sample), so the same compound can appear more than once for one pocket.
+  2. Per-pocket cap - random sample down to MAX_PER_POCKET if exceeded (seeded via RANDOM_SEED).
+  3. Merge - concatenate the 7 capped tables, then drop any compound selective for more than one
+     distinct pocket entirely (not considered for any pocket - possible via the pheS<->pheT
+     partner exemption, or aspS/alaS's own 2 pockets each). Saved to merged_selective_hits.csv.
+  4. Dedup + conformers - drop_duplicates(subset="compound_id") (a no-op after step 3's exclusion,
+     kept as a safety net), then one 3D conformer per unique compound (RDKit ETKDGv3 + UFF,
+     matching scripts/44_generate_conformations.py), parallelized.
 
 Usage:
     python 58_generate_conformations_noncat_selective_10B.py
@@ -44,12 +42,12 @@ from default import RANDOM_SEED
 SELECTED_POCKETS_CSV = os.path.join(ROOT, "output", "selected_pockets.csv")
 SCRIPT57_OUTPUT_DIR = os.path.join(ROOT, "output", "57_NONCAT_selective_10B")
 OUTPUT_DIR = os.path.join(ROOT, "output", "58_generate_conformations_noncat_selective_10B")
-CONFORMATIONS_DIR = os.path.join(ROOT, "processed", "58_generate_conformations_noncat_selective_10B", "conformations")
+CONFORMATIONS_DIR = os.path.join(OUTPUT_DIR, "conformations")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(CONFORMATIONS_DIR, exist_ok=True)
 
 DIMER_POCKET = "7K98_pocket_6"
-MAX_PER_POCKET = 10_000
+MAX_PER_POCKET = 100_000
 N_WORKERS = 16
 
 
@@ -64,7 +62,10 @@ def load_noncat_targets():
 def gather_pocket_hits(gene, pocket):
     chunk_files = sorted(glob.glob(os.path.join(SCRIPT57_OUTPUT_DIR, f"{gene}_{pocket}", "*.csv")))
     dfs = [pd.read_csv(f) for f in chunk_files]
-    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    if not dfs:
+        return pd.DataFrame()
+    df = pd.concat(dfs, ignore_index=True)
+    return df.drop_duplicates(subset="compound_id")
 
 
 def generate_3d_conformer(input_list):
@@ -96,33 +97,36 @@ def main():
         capped_dfs.append(df)
 
     merged = pd.concat(capped_dfs, ignore_index=True)
+
+    pockets_per_compound = merged.groupby("compound_id")["pocket_name"].nunique()
+    multi_pocket_ids = pockets_per_compound[pockets_per_compound > 1].index
+    n_excluded_rows = merged["compound_id"].isin(multi_pocket_ids).sum()
+    print(f"\nExcluding {len(multi_pocket_ids):,} compounds selective for more than one distinct "
+          f"pocket ({n_excluded_rows:,} rows removed) - not considered for any pocket")
+    merged = merged[~merged["compound_id"].isin(multi_pocket_ids)].reset_index(drop=True)
+
     merged_path = os.path.join(OUTPUT_DIR, "merged_selective_hits.csv")
     merged.to_csv(merged_path, index=False)
-    print(f"\nMerged: {len(merged):,} rows across {len(targets)} pockets")
+    print(f"\nMerged (after exclusion): {len(merged):,} rows across {len(targets)} pockets")
+    print(f"Unique compounds: {merged['compound_id'].nunique():,} (one pocket each, by construction)")
     print(f"Saved: {merged_path}")
-
-    n_unique = merged["compound_id"].nunique()
-    pockets_per_compound = merged["compound_id"].value_counts()
-    n_duplicated = (pockets_per_compound > 1).sum()
-    print(f"\nUnique compounds: {n_unique:,} / {len(merged):,} rows "
-          f"({n_duplicated:,} compounds hit more than one pocket)")
-    print("Compounds by number of pockets hit:")
-    print(pockets_per_compound.value_counts().sort_index().rename_axis("n_pockets").rename("n_compounds"))
 
     unique_df = merged.drop_duplicates(subset="compound_id")
     IDs = unique_df["compound_id"].tolist()
     ID_TO_SMILES = dict(zip(unique_df["compound_id"], unique_df["smiles"]))
-    print(f"\nGenerating 3D conformations for {len(IDs):,} unique compounds...")
 
-    input_list = [[ID, ID_TO_SMILES[ID]] for ID in IDs]
-    with Pool(N_WORKERS) as pool:
-        mols = list(tqdm(pool.imap(generate_3d_conformer, input_list), total=len(input_list)))
+    already_done = {f[:-len(".sdf")] for f in os.listdir(CONFORMATIONS_DIR) if f.endswith(".sdf")}
+    todo_ids = [ID for ID in IDs if ID not in already_done]
+    print(f"\n{len(already_done):,} / {len(IDs):,} already have a conformation on disk "
+          f"(from a prior run) - generating the remaining {len(todo_ids):,}...")
 
-    print("Creating individual files...")
+    input_list = [[ID, ID_TO_SMILES[ID]] for ID in todo_ids]
     processed_molecules = 0
-    for mol in mols:
-        if mol is not None:
-            ID, mol = mol
+    with Pool(N_WORKERS) as pool:
+        for result in tqdm(pool.imap_unordered(generate_3d_conformer, input_list), total=len(input_list)):
+            if result is None:
+                continue
+            ID, mol = result
             mol.SetProp("_Name", ID)
             mol.SetProp("_ID", ID)
             molblock = Chem.MolToV2KMolBlock(mol)
@@ -131,10 +135,12 @@ def main():
                 f.write(molblock)
                 f.write(f">  <_ID>\n{ID}\n\n")
                 f.write("$$$$\n")
-                processed_molecules += 1
+            processed_molecules += 1
 
-    print(f"\nInitial number of molecules: {len(IDs)}")
-    print(f"Processed number of molecules: {processed_molecules}")
+    print(f"\nInitial number of unique molecules: {len(IDs):,}")
+    print(f"Already done (skipped): {len(already_done):,}")
+    print(f"Newly processed this run: {processed_molecules:,}")
+    print(f"Total now on disk: {len(already_done) + processed_molecules:,}")
 
 
 if __name__ == "__main__":
