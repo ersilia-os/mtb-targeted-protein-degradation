@@ -115,7 +115,11 @@ def main():
     IDs = unique_df["compound_id"].tolist()
     ID_TO_SMILES = dict(zip(unique_df["compound_id"], unique_df["smiles"]))
 
-    already_done = {f[:-len(".sdf")] for f in os.listdir(CONFORMATIONS_DIR) if f.endswith(".sdf")}
+    # Skip 0-byte files too - a killed run can leave a truncated file at the final path.
+    already_done = {
+        f[:-len(".sdf")] for f in os.listdir(CONFORMATIONS_DIR)
+        if f.endswith(".sdf") and os.path.getsize(os.path.join(CONFORMATIONS_DIR, f)) > 0
+    }
     todo_ids = [ID for ID in IDs if ID not in already_done]
     print(f"\n{len(already_done):,} / {len(IDs):,} already have a conformation on disk "
           f"(from a prior run) - generating the remaining {len(todo_ids):,}...")
@@ -131,10 +135,12 @@ def main():
             mol.SetProp("_ID", ID)
             molblock = Chem.MolToV2KMolBlock(mol)
             out_path = os.path.join(CONFORMATIONS_DIR, ID + ".sdf")
-            with open(out_path, "w") as f:
+            part_path = out_path + ".part"
+            with open(part_path, "w") as f:
                 f.write(molblock)
                 f.write(f">  <_ID>\n{ID}\n\n")
                 f.write("$$$$\n")
+            os.replace(part_path, out_path)
             processed_molecules += 1
 
     print(f"\nInitial number of unique molecules: {len(IDs):,}")
