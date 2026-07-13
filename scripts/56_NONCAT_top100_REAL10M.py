@@ -26,15 +26,15 @@ choice - a final count of such cross-pocket duplicates is printed, not an error)
 
 Also produces a boxplot (per pocket) of raw docking scores across 5 reference distributions:
 Hit Locator (Enamine DL 100k), REAL 1 - negatives (~13k, round-1 background), REAL 1 - positives
-(~100k, round-1 surrogate-prioritized set), REAL 2 - all (~99,105, the pre-screened synthon-diverse
+(~100k, round-1 surrogate-prioritized set), REAL 2 - pre-screened (~99,105, the synthon-diverse
 redocked set), and REAL 1 - selected (this script's own top-100/pocket). Uses the new
 docking_utils.plot_score_boxplots_multi rather than plot_score_boxplots (used by scripts 52-54),
-since "REAL 1 - selected" here is drawn from round 1 while "REAL 2 - all" is a separately
+since "REAL 1 - selected" here is drawn from round 1 while "REAL 2 - pre-screened" is a separately
 synthon-deduped round-2 selection - they are not nested, unlike scripts 52-54's selected-subset-of-
 pre-screened assumption.
 
 Usage:
-    python 56_NONCAT_top100_selection.py
+    python 56_NONCAT_top100_REAL10M.py
 """
 import os
 import sys
@@ -120,19 +120,19 @@ def main():
                  for pocket in pockets}
     real1_neg_scores = {pocket: load_real_negative_scores(pocket) for pocket in pockets}
     real1_pos_scores = {pocket: load_real_positive_scores(pocket) for pocket in pockets}
-    real2_all_scores = {pocket: load_scores(os.path.join(LIBRARIES["REAL"], pocket, "report.csv"))
-                         for pocket in pockets}
+    real2_prescreened_scores = {pocket: load_scores(os.path.join(LIBRARIES["REAL"], pocket, "report.csv"))
+                                 for pocket in pockets}
 
-    # common=True: same compound set scored against every pocket (Hit Locator, REAL 2 - all, and
-    # REAL 1 - negatives, which is a single fixed ~12,958-compound background sample shared by
-    # every pocket - confirmed identical across pockets). common=False: genuinely per-pocket
-    # (REAL 1 - positives is each pocket's own top-100k surrogate ranking; REAL 1 - selected is
-    # each pocket's own top-100 post-filter picks).
+    # common=True: same compound set scored against every pocket (Hit Locator, REAL 2 -
+    # pre-screened, and REAL 1 - negatives, which is a single fixed ~12,958-compound background
+    # sample shared by every pocket - confirmed identical across pockets). common=False: genuinely
+    # per-pocket (REAL 1 - positives is each pocket's own top-100k surrogate ranking; REAL 1 -
+    # selected is each pocket's own top-100 post-filter picks).
     score_sources = [
         ("Hit Locator", "mint", dl_scores, True),
         ("REAL 1 - negatives", "blue", real1_neg_scores, True),
         ("REAL 1 - positives", "orange", real1_pos_scores, False),
-        ("REAL 2 - all", "yellow", real2_all_scores, True),
+        ("REAL 2 - pre-screened", "yellow", real2_prescreened_scores, True),
         ("REAL 1 - selected", "purple", selected_scores, False),
     ]
     plot_path = os.path.join(OUTPUT_DIR, "noncat_score_boxplots.png")

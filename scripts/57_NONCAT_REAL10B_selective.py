@@ -14,7 +14,7 @@ below) means this stays safe to point at a smaller N_CHUNKS or a partially-downl
 PATH_TO_RESULTS in the future - only newly available chunks get processed.
 
 The 7 targets are read from output/selected_pockets.csv (site_type == "NON-CAT"), excluding the
-dimer-interface pocket 7K98_pocket_6 - same filter scripts/56_NONCAT_top100_selection.py applies:
+dimer-interface pocket 7K98_pocket_6 - same filter scripts/56_NONCAT_top100_REAL10M.py applies:
   pheS: alphafold3_P9WFU3_model_2_pocket_2
   pheT: alphafold2_P9WFU1_model_0_pocket_1
   aspS: alphafold3_P9WFW3_model_3_pocket_2, chai1_P9WFW3_model_0_pocket_2
@@ -46,7 +46,7 @@ The end-of-run "Totals" summary is therefore cumulative - it reads every {chunk}
 disk per pocket, not just chunks processed in this particular invocation.
 
 Usage:
-    python 57_NONCAT_selective_10B.py
+    python 57_NONCAT_REAL10B_selective.py
 """
 import glob
 import os

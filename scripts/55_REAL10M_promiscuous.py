@@ -38,7 +38,7 @@ Outputs (output/55_identify_promiscuous_enamine_REAL/):
     filtered compounds, for reuse by downstream scripts without recomputing the full matrix
 
 Usage:
-    python 55_identify_promiscuous_enamine_REAL.py
+    python 55_REAL10M_promiscuous.py
 """
 import os
 import pickle

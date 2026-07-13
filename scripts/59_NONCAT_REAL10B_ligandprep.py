@@ -10,12 +10,12 @@ scripts/XX_unidock_ligandprep_noncat_top10k.py.
 
 Ligand preparation is a property of the molecule alone, not the pocket, so this runs once over ALL
 conformations regardless of which of the 7 NON-CAT pockets they'll later be docked against in
-scripts/60_unidock_docking_noncat_selective_10B.py - that script builds its own, separate, per-pocket
+scripts/60_NONCAT_REAL10B_docking.py - that script builds its own, separate, per-pocket
 ligand index files from this script's prepared output; this script's input_ligands.txt is global.
 
 Usage:
     conda activate unidock_tools
-    python 59_unidock_ligandprep_noncat_selective_10B.py
+    python 59_NONCAT_REAL10B_ligandprep.py
 """
 import os
 import subprocess

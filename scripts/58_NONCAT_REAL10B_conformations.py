@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Merge scripts/57_NONCAT_selective_10B.py's per-chunk-per-pocket selective-hit CSVs into one
+Merge scripts/57_NONCAT_REAL10B_selective.py's per-chunk-per-pocket selective-hit CSVs into one
 combined table, then generate 3D conformations for the selected compounds.
 
 Script 57's data has no continuous score to rank by - only top-1% SET MEMBERSHIP survives from the
@@ -23,7 +23,7 @@ Steps:
      matching scripts/44_generate_conformations.py), parallelized.
 
 Usage:
-    python 58_generate_conformations_noncat_selective_10B.py
+    python 58_NONCAT_REAL10B_conformations.py
 """
 import glob
 import os

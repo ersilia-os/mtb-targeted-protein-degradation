@@ -5,7 +5,7 @@
 """
 Dock script 59's prepared ligands against each of the 7 NON-CAT reference pockets independently -
 per-compound subset docking (each pocket only docks the compounds it was itself selective for, per
-scripts/57_NONCAT_selective_10B.py + scripts/58_generate_conformations_noncat_selective_10B.py's
+scripts/57_NONCAT_REAL10B_selective.py + scripts/58_NONCAT_REAL10B_conformations.py's
 merged_selective_hits.csv), NOT a full cross-matrix of every compound against every pocket.
 
 run_unidock/extract_score_from_sdf/generate_report are reused verbatim from
@@ -21,13 +21,13 @@ output/aligned_relaxed_structures/{Uniprot AC}/{File name} (same approach as
 scripts/21_unidock_proteinprep.py - no separate PDB2PQR step needed for these monomeric structures).
 
 Docking box center is each pocket's centroid from output/pocket_detection_data.csv (same lookup used
-in scripts/39_reduce_n_hits_I.py / 57_NONCAT_selective_10B.py). search_mode="fast" matches script
+in scripts/39_reduce_n_hits_I.py / 57_NONCAT_REAL10B_selective.py). search_mode="fast" matches script
 46's round-2 REAL docking exactly, keeping this round comparable to the existing REAL-1/REAL-2/DL
-score distributions scripts/56_NONCAT_top100_selection.py already plots for these same 7 pockets.
+score distributions scripts/56_NONCAT_top100_REAL10M.py already plots for these same 7 pockets.
 
 Usage:
     conda activate unidock_tools
-    python 60_unidock_docking_noncat_selective_10B.py
+    python 60_NONCAT_REAL10B_docking.py
 """
 import csv
 import os
