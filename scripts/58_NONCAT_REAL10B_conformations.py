@@ -1,26 +1,11 @@
 #!/usr/bin/env python3
 """
-Merge scripts/57_NONCAT_REAL10B_selective.py's per-chunk-per-pocket selective-hit CSVs into one
-combined table, then generate 3D conformations for the selected compounds.
+Merge script 57's per-chunk-per-pocket selective-hit CSVs, cap each pocket at MAX_PER_POCKET
+(random sample - no score to rank by), drop compounds selective for more than one pocket, then
+generate a 3D conformer per unique compound (RDKit ETKDGv3 + UFF, matching script 44).
 
-Script 57's data has no continuous score to rank by - only top-1% SET MEMBERSHIP survives from the
-external screening repo (ersilia-os/gcadda4tb-enamine-real-screening never persists per-compound
-probabilities, see src/screening_10b_utils.py) - so any per-pocket downsampling here is random, not
-"top-N by score" (unlike the old docking-score-based scripts/XX_merge_scores_select_hits.py, which
-this script otherwise mirrors the structure of).
-
-Steps:
-  1. Gather - for each of the 7 NON-CAT pockets, concatenate every {chunk}.csv under
-     output/57_NONCAT_selective_10B/{gene}_{pocket}/, then dedup by compound_id WITHIN that
-     pocket's own set - script 57's 994 chunks are 3 overlapping families (LeadLike/
-     NaturalProducts/Sample), so the same compound can appear more than once for one pocket.
-  2. Per-pocket cap - random sample down to MAX_PER_POCKET if exceeded (seeded via RANDOM_SEED).
-  3. Merge - concatenate the 7 capped tables, then drop any compound selective for more than one
-     distinct pocket entirely (not considered for any pocket - possible via the pheS<->pheT
-     partner exemption, or aspS/alaS's own 2 pockets each). Saved to merged_selective_hits.csv.
-  4. Dedup + conformers - drop_duplicates(subset="compound_id") (a no-op after step 3's exclusion,
-     kept as a safety net), then one 3D conformer per unique compound (RDKit ETKDGv3 + UFF,
-     matching scripts/44_generate_conformations.py), parallelized.
+Script 57's 994 chunks are 3 overlapping Enamine families, so dedup by compound_id happens
+per-pocket before capping, not just at the end.
 
 Usage:
     python 58_NONCAT_REAL10B_conformations.py

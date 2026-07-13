@@ -3,27 +3,13 @@
 ### WITHIN THE unidock_tools CONDA ENVIRONMENT (on nebula)
 ### IN A GPU MACHINE FOR MASSIVE PARALLELIZATION
 """
-Dock script 59's prepared ligands against each of the 7 NON-CAT reference pockets independently -
-per-compound subset docking (each pocket only docks the compounds it was itself selective for, per
-scripts/57_NONCAT_REAL10B_selective.py + scripts/58_NONCAT_REAL10B_conformations.py's
-merged_selective_hits.csv), NOT a full cross-matrix of every compound against every pocket.
+Dock script 59's prepared ligands against each of the 7 NON-CAT pockets - per-compound subset
+docking (each pocket only docks the compounds it was itself selective for), not a full cross-matrix.
+run_unidock/extract_score_from_sdf/generate_report reused verbatim from script 46.
 
-run_unidock/extract_score_from_sdf/generate_report are reused verbatim from
-scripts/46_unidock_REAL_2_docking.py (seed now sourced from src/default.RANDOM_SEED instead of a
-hardcoded 42 - same value).
-
-Receptor structures: 5 of the 7 pockets already have a prepared receptor .pdbqt sitting in
-output/unidock_REAL_docking_2/docking_results/{pocket}/{structure}.pdbqt from the prior REAL-2
-docking round - reused directly. The other 2 (as of this session: pheT's
-alphafold2_P9WFU1_model_0_pocket_1 and alaS's swissmodel_P9WFW7_model_0_pocket_2) get a fresh
-unidocktools proteinprep from the already-relaxed/protonated raw PDB in
-output/aligned_relaxed_structures/{Uniprot AC}/{File name} (same approach as
-scripts/21_unidock_proteinprep.py - no separate PDB2PQR step needed for these monomeric structures).
-
-Docking box center is each pocket's centroid from output/pocket_detection_data.csv (same lookup used
-in scripts/39_reduce_n_hits_I.py / 57_NONCAT_REAL10B_selective.py). search_mode="fast" matches script
-46's round-2 REAL docking exactly, keeping this round comparable to the existing REAL-1/REAL-2/DL
-score distributions scripts/56_NONCAT_top100_REAL10M.py already plots for these same 7 pockets.
+Receptor .pdbqt reused from the prior REAL-2 docking round where available, else freshly prepared
+via unidocktools proteinprep (mirrors script 21). Box center from pocket_detection_data.csv;
+search_mode="fast" matches script 46's round-2 REAL docking.
 
 Usage:
     conda activate unidock_tools

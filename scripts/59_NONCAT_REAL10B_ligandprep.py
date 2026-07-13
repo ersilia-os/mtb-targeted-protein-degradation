@@ -3,15 +3,9 @@
 ### WITHIN THE unidock_tools CONDA ENVIRONMENT (on nebula)
 ### using the in-site unidocktools
 """
-Prepare script 58's deduplicated conformations
-(output/58_generate_conformations_noncat_selective_10B/conformations/) for Uni-Dock docking, via
-unidocktools ligandprep. Mirrors scripts/45_unidock_REAL_2_ligandprep.py /
-scripts/XX_unidock_ligandprep_noncat_top10k.py.
-
-Ligand preparation is a property of the molecule alone, not the pocket, so this runs once over ALL
-conformations regardless of which of the 7 NON-CAT pockets they'll later be docked against in
-scripts/60_NONCAT_REAL10B_docking.py - that script builds its own, separate, per-pocket
-ligand index files from this script's prepared output; this script's input_ligands.txt is global.
+Prepare script 58's conformations for docking via unidocktools ligandprep (mirrors script 45).
+Runs once over all conformers regardless of pocket - script 60 builds its own per-pocket ligand
+index from this output.
 
 Usage:
     conda activate unidock_tools

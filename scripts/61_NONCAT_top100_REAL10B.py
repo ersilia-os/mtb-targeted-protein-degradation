@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
 Per NON-CAT pocket: sort script 60's docking report by score, greedily select the top TARGET_N
-compounds with no synthon reused (MAX_SYN=1, same algorithm as the old
-scripts/XX_merge_scores_select_hits.py). Output: output/61_docking_top100_diverse_selection/
-top100_diverse_per_pocket.csv (compound_id, smiles, score, pocket_name).
+compounds with no synthon reused (MAX_SYN=1). Output: top100_diverse_per_pocket.csv (compound_id,
+smiles, score, pocket_name).
 
 Also produces a 6-group score boxplot (script 56's groups + this script's own "REAL 2 - selected"),
 plus a physchem profile + t-SNE vs a background sampled evenly per pocket from script 57's raw

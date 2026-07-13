@@ -1,49 +1,13 @@
 #!/usr/bin/env python3
 """
-Identify Enamine REAL 10B compounds that are selective for each of the 7 NON-CAT reference pockets
-(catalytic-adjacent/interface sites) independently: top 1% predicted probability (ind_1.npz
-threshold, from ersilia-os/gcadda4tb-enamine-real-screening) for that pocket, but NOT top 1% for
-any pocket belonging to a different protein. Same selectivity logic as the CAT analysis, applied
-per-pocket to the NON-CAT set instead - see src/screening_10b_utils.py for the shared helpers
-(download_file, get_pocket_to_ac, load_ind1) and their docstrings for why only top-1% SET
-MEMBERSHIP is available (continuous probabilities are never persisted by that external repo).
+Identify Enamine REAL 10B compounds selective for each of the 7 NON-CAT pockets: top-1% predicted
+probability (ind_1.npz) for that pocket, not top-1% for any pocket on a different protein. Only set
+membership survives from the external screen, no continuous score (src/screening_10b_utils.py).
+pheS/pheT heterodimer partners exempt each other's background.
 
-Processes the first N_CHUNKS chunks (of 994) available under PATH_TO_RESULTS. All 994 are local as
-of this run (N_CHUNKS=994 below), but the skip-if-already-done logic (see "Output/resumability"
-below) means this stays safe to point at a smaller N_CHUNKS or a partially-downloaded
-PATH_TO_RESULTS in the future - only newly available chunks get processed.
-
-The 7 targets are read from output/selected_pockets.csv (site_type == "NON-CAT"), excluding the
-dimer-interface pocket 7K98_pocket_6 - same filter scripts/56_NONCAT_top100_REAL10M.py applies:
-  pheS: alphafold3_P9WFU3_model_2_pocket_2
-  pheT: alphafold2_P9WFU1_model_0_pocket_1
-  aspS: alphafold3_P9WFW3_model_3_pocket_2, chai1_P9WFW3_model_0_pocket_2
-  lysS: alphafold3_P9WFU9_model_1_pocket_2
-  alaS: swissmodel_P9WFW7_model_0_pocket_2, alphafold2_P9WFW7_model_0_pocket_3
-
-Background per target = all pockets NOT belonging to the target's own protein or (if applicable)
-its heterodimer partner - pheS<->pheT, PARTNER_AC_OF, applied symmetrically in both directions
-(same convention as scripts/53_CAT_selective.py, confirmed with the user to apply both ways).
-aspS/lysS/alaS have no documented partner gene.
-
-Per chunk, the tar is opened once and all 276 pockets' ind_1/thr are read into memory up front, then
-each of the 7 targets is resolved via in-memory set operations - no need to reopen/reread the tar
-per target since all 7 share the same chunk.
-
-Compound ids/SMILES are looked up via each chunk's {chunk}_SMILES_IDs.tsv.zip mapping file,
-downloaded on-demand into this repo's tmp/ via screening_10b_utils.download_file. Each mapping is
-~90MB - keeping all of them around would balloon to >100GB across ~994 chunks, so once a chunk's
-mapping has been used to write all 7 pockets' output for that chunk, the cached .tsv.zip is deleted
-immediately (tmp/ only ever holds the one chunk currently being processed, not an accumulating
-per-chunk cache).
-
-Output/resumability: one CSV per pocket PER CHUNK
-(output/57_NONCAT_selective_10B/{gene}_{pocket}/{chunk}.csv), not one combined file - the
-~86MB-per-chunk SMILES-mapping download dominates runtime, so a chunk whose 7 output files already
-all exist is skipped entirely (no re-download, no re-read of its tar). This makes the job resumable
-and incrementally scalable: bump N_CHUNKS and re-run, only the newly-added chunks get processed.
-The end-of-run "Totals" summary is therefore cumulative - it reads every {chunk}.csv present on
-disk per pocket, not just chunks processed in this particular invocation.
+Resumable: one CSV per pocket per chunk (output/57_NONCAT_selective_10B/{gene}_{pocket}/
+{chunk}.csv), skips chunks already fully done. Each chunk's ~90MB SMILES mapping is deleted after
+use to keep tmp/ bounded across 994 chunks.
 
 Usage:
     python 57_NONCAT_REAL10B_selective.py
