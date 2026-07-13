@@ -385,6 +385,10 @@ Finally, `scripts/51_filter_hits.py` applies a sequential filter to the combined
 | `QED`                   | Quantitative Estimate of Drug-likeness (RDKit)                    |
 | `is_pains`              | Whether the compound matches a PAINS structural alert (RDKit)     |
 
+### Merging 1st and 2nd Enamine REAL docking campaigns
+
+`scripts/54_merge_scores_select_hits.py` consolidates round-1 (113k, `output/unidock_REAL_docking`) and round-2 (~99k, `output/unidock_REAL_docking_2`) docking scores for the `alphafold3_P9WFU3_model_2_pocket_2` reference pocket into a single ranked table (compound_id, smiles, source, docking_score), sorted by docking score ascending (112,953 `10M` + 99,100 `10B` + 5 `Both` = 212,058 rows; compounds present in both campaigns keep their best/lowest score and are labeled `Both`). It then greedily selects the top 10,000 compounds while capping chemical redundancy: compound IDs encode synthons (building blocks) as `{m|s}_{reaction_id}____{synthon_1}____{synthon_2}[____{synthon_3}]`, and no synthon may appear in more than `MAX_SYN = 3` selected compounds (same diversity-capping idea as `scripts/33_enamine_REAL_selection.py` and `notebooks/43_clustering.ipynb`). Two columns are added: `observed_synthons` (semicolon-separated per-synthon counts across ALL previously considered rows, selected or not — this is a diagnostic column and is not itself capped) and `select` (1/0, driven by a separate selected-only counter that enforces the MAX_SYN cap). The output is truncated to the rows actually considered (not the full 212,058) — reaching 10,000 selections took 10,080 considered rows at this cap. Output: `output/54_merge_scores_select_hits/alphafold3_P9WFU3_model_2_pocket_2_merged_docking_scores.csv`.
+
 ## TL;DR ⏱️
 
 We’re developing BacPROTAC-based degraders targeting 21 essential tRNA synthetases in *Mycobacterium tuberculosis*. For each of these tRNA synthetases:

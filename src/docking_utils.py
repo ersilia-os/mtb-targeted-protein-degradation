@@ -250,7 +250,7 @@ def plot_score_boxplots_multi(pockets, score_sources, out_path, xtick_rotation=4
     score_sources — ordered list of (label, color_name, {pocket: pd.Series}, common) tuples, one
                     box per pocket group per source, in the given order. `common` marks whether
                     this source is the SAME set of compounds re-scored against every pocket (e.g.
-                    Hit Locator, REAL 2 - all, and REAL 1 - negatives, which is a single fixed
+                    Hit Locator, REAL 2 - pre-screened, and REAL 1 - negatives, which is a single fixed
                     ~12,958-compound background sample shared by every pocket's input_ligands
                     file - confirmed identical across pockets) vs. a genuinely per-pocket-specific
                     set (e.g. REAL 1 - positives, each pocket's own top-100k surrogate ranking; or
