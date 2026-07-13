@@ -311,6 +311,16 @@ def plot_score_boxplots_multi(pockets, score_sources, out_path, xtick_rotation=4
 
 PROP_COLUMNS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings", "QED"]
 DISCRETE_PROPS = {"HBD", "HBA", "RotBonds", "AromaticRings"}
+PROP_XLIMS = {
+    "MW":            (200, 500),
+    "cLogP":         (-4, 8),
+    "TPSA":          (0, 200),
+    "QED":           (0, 1),
+    "HBD":           (0, 7),
+    "HBA":           (0, 13),
+    "RotBonds":      (0, 13),
+    "AromaticRings": (0, 8),
+}
 
 
 def sample_prescreened_smiles(lib, exclude_ids, n, seed):
@@ -408,6 +418,50 @@ def plot_tsne(sel_smiles, bg_smiles, out_path, seed, sel_color="purple"):
     stylia.save_figure(out_path)
 
 
+def plot_tsne_multi(source_smiles, out_path, seed):
+    """Same t-SNE projection as plot_tsne, generalized to an arbitrary ordered list of independent
+    groups instead of a fixed selected-vs-background pair (mirrors plot_profiling ->
+    plot_profiling_multi). source_smiles - ordered list of (label, color_name, {id: smiles})."""
+    import numpy as np
+    from rdkit import Chem
+    from rdkit.Chem import rdFingerprintGenerator
+    from sklearn.manifold import TSNE
+    stylia = _safe_import_stylia()
+
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+
+    morgan_gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
+
+    def to_fp(smi):
+        mol = Chem.MolFromSmiles(smi)
+        if mol is None:
+            return None
+        return morgan_gen.GetFingerprintAsNumPy(mol)
+
+    groups, fps = [], []
+    for label, _, smiles_dict in source_smiles:
+        for smi in smiles_dict.values():
+            fp = to_fp(smi)
+            if fp is None:
+                continue
+            fps.append(fp)
+            groups.append(label)
+    groups = np.array(groups)
+    coords = TSNE(n_components=2, random_state=seed, init="random").fit_transform(np.array(fps))
+
+    fig, axs = stylia.create_figure(1, 1, width=0.5, height=0.5)
+    ax = axs.next()
+    for label, color_name, smiles_dict in source_smiles:
+        mask = groups == label
+        ax.scatter(coords[mask, 0], coords[mask, 1], color=getattr(nc, color_name),
+                   alpha=0.6, label=f"{label} (n={mask.sum():,})")
+    ax.legend()
+    stylia.label(ax, xlabel="t-SNE 1", ylabel="t-SNE 2")
+    stylia.save_figure(out_path)
+
+
 def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
     """KDE (continuous) + overlaid bars (discrete) + PAINS bar."""
     from scipy.stats import gaussian_kde
@@ -417,17 +471,6 @@ def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
     stylia.set_style("ersilia")
     nc = stylia.NamedColors()
     c_sel = getattr(nc, sel_color)
-
-    XLIMS = {
-        "MW":            (200, 500),
-        "cLogP":         (-4, 8),
-        "TPSA":          (0, 200),
-        "QED":           (0, 1),
-        "HBD":           (0, 7),
-        "HBA":           (0, 13),
-        "RotBonds":      (0, 13),
-        "AromaticRings": (0, 8),
-    }
 
     pains_sel = 100 * sel_props["is_pains"].sum() / len(sel_props) if len(sel_props) > 0 else 0.0
     pains_bg  = 100 * bg_props["is_pains"].sum()  / len(bg_props)  if len(bg_props)  > 0 else 0.0
@@ -440,7 +483,7 @@ def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
         ax = axs.next()
         bg_data  = bg_props[prop].dropna().values
         sel_data = sel_props[prop].dropna().values
-        lo, hi = XLIMS[prop]
+        lo, hi = PROP_XLIMS[prop]
         if prop in DISCRETE_PROPS:
             vals = sorted(set(bg_data.astype(int)) | set(sel_data.astype(int)))
             bg_freq  = pd.Series(bg_data.astype(int)).value_counts(normalize=True).reindex(vals, fill_value=0)
@@ -468,6 +511,64 @@ def plot_profiling(sel_props, bg_props, out_path, sel_color="purple"):
     ax.bar([0, 1], [pains_bg, pains_sel], color=[nc.gray, c_sel], alpha=0.8)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["Pre-screened", "Selected"])
+    ax.set_ylim(0, 10)
+    stylia.label(ax, xlabel="", ylabel="PAINS (%)")
+
+    stylia.save_figure(out_path)
+
+
+def plot_profiling_multi(source_props, out_path):
+    """Same panels as plot_profiling, generalized to an arbitrary ordered list of independent
+    groups instead of a fixed selected-vs-background pair (mirrors plot_score_boxplots ->
+    plot_score_boxplots_multi). source_props - ordered list of (label, color_name, props_df)."""
+    from scipy.stats import gaussian_kde
+    stylia = _safe_import_stylia()
+
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+
+    for label, _, props in source_props:
+        pains_pct = 100 * props["is_pains"].sum() / len(props) if len(props) > 0 else 0.0
+        print(f"  {label}: {len(props):,} compounds, {pains_pct:.1f}% PAINS")
+
+    fig, axs = stylia.create_figure(3, 3, width=1.3, height=0.8)
+
+    for prop in PROP_COLUMNS:
+        ax = axs.next()
+        lo, hi = PROP_XLIMS[prop]
+        if prop in DISCRETE_PROPS:
+            all_vals = set()
+            for _, _, props in source_props:
+                all_vals |= set(props[prop].dropna().astype(int))
+            vals = sorted(all_vals)
+            for label, color_name, props in source_props:
+                data = props[prop].dropna().astype(int)
+                freq = pd.Series(data).value_counts(normalize=True).reindex(vals, fill_value=0)
+                ax.bar(vals, freq.values, color=getattr(nc, color_name), alpha=0.5, label=label)
+            ax.set_xlim(lo - 0.5, hi + 0.5)
+            stylia.label(ax, xlabel=prop, ylabel="Frequency")
+        else:
+            for label, color_name, props in source_props:
+                data = props[prop].dropna().values
+                if len(data) < 2:
+                    continue
+                kde = gaussian_kde(data)
+                x = np.linspace(lo, hi, 300)
+                ax.plot(x, kde(x), color=getattr(nc, color_name), label=f"{label} (n={len(props):,})")
+            ax.set_xlim(lo, hi)
+            stylia.label(ax, xlabel=prop, ylabel="Density")
+            if prop == "cLogP":
+                ax.legend(loc="upper left", fontsize="small")
+
+    ax = axs.next()
+    xs = list(range(len(source_props)))
+    pains_pcts = [100 * props["is_pains"].sum() / len(props) if len(props) > 0 else 0.0
+                  for _, _, props in source_props]
+    colors = [getattr(nc, color_name) for _, color_name, _ in source_props]
+    ax.bar(xs, pains_pcts, color=colors, alpha=0.8)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([label for label, _, _ in source_props], rotation=20, ha="right")
     ax.set_ylim(0, 10)
     stylia.label(ax, xlabel="", ylabel="PAINS (%)")
 
