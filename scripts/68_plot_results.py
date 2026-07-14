@@ -37,6 +37,11 @@ HIST_MODELS = [
     ("eos5jv3.csv", ["mycomembrane_permeation"], "eos5jv3_distribution.png", "eos5jv3 (permeability)"),
     ("eos42ez.csv", ["cytotoxicity_hepg2", "cytotoxicity_hskmc", "cytotoxicity_imr90"], "eos42ez_distributions.png", "eos42ez (cytotoxicity)"),
 ]
+PERMEABILITY_MODELS = [
+    ("eos3ujl.csv", "permeability_probability", "eos3ujl"),
+    ("eos8d8a.csv", "mycpermcheck", "eos8d8a"),
+    ("eos1lb5.csv", "perm_proba_lepori_mtb", "eos1lb5_lepori_mtb"),
+]
 
 
 def _safe_import_stylia():
@@ -165,6 +170,51 @@ def plot_ersilia_distributions():
         print(f"Saved: {out_path}")
 
 
+def load_permeability_scores():
+    """Merge eos3ujl, eos8d8a and eos1lb5's perm_proba_lepori_mtb column on `key` into one
+    DataFrame (key, eos3ujl, eos8d8a, eos1lb5_lepori_mtb), or None if any input is missing."""
+    merged = None
+    for filename, column, label in PERMEABILITY_MODELS:
+        path = os.path.join(ERSILIA_DIR, filename)
+        if not os.path.isfile(path):
+            print(f"Warning: {path} not found - skipping permeability comparison.")
+            return None
+        df = pd.read_csv(path, usecols=["key", column]).rename(columns={column: label})
+        merged = df if merged is None else merged.merge(df, on="key", how="inner")
+    return merged
+
+
+def plot_permeability_comparison():
+    print("--- Permeability model comparison (eos3ujl, eos8d8a, eos1lb5_lepori_mtb) ---")
+    merged = load_permeability_scores()
+    if merged is None:
+        return
+
+    stylia = _safe_import_stylia()
+    stylia.set_format("slide")
+    stylia.set_style("ersilia")
+    nc = stylia.NamedColors()
+
+    labels = [label for _, _, label in PERMEABILITY_MODELS]
+    fig, axs = stylia.create_figure(2, 2)
+
+    ax = axs.next()
+    for label, color in zip(labels, [nc.blue, nc.purple, nc.mint]):
+        ax.hist(merged[label], bins=30, color=color, alpha=0.5, label=label)
+    ax.legend()
+    stylia.label(ax, xlabel="Permeability probability", ylabel="Count", title=f"Distributions (n={len(merged):,})")
+
+    for x_label, y_label in [(labels[0], labels[1]), (labels[0], labels[2]), (labels[1], labels[2])]:
+        ax = axs.next()
+        r = merged[x_label].corr(merged[y_label], method="spearman")
+        ax.scatter(merged[x_label], merged[y_label], color=nc.blue, s=3, alpha=0.3)
+        stylia.label(ax, xlabel=x_label, ylabel=y_label, title=f"n={len(merged):,}, r={r:.2f}")
+
+    out_path = os.path.join(OUTPUT_DIR, "permeability_model_comparison.png")
+    stylia.save_figure(out_path)
+    print(f"Saved: {out_path}")
+
+
 def report_nsps():
     print("--- eos12x7 (NSPS drug-likeness range) ---")
     path = os.path.join(ERSILIA_DIR, "eos12x7.csv")
@@ -270,6 +320,8 @@ def plot_protein_upsets(agg_scores):
 
 def main():
     plot_ersilia_distributions()
+    print()
+    plot_permeability_comparison()
     print()
     report_nsps()
     print()
