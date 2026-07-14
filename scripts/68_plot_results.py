@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-Plots/reports script 67's Ersilia characterization outputs for the aggregated hit set, plus docking
-score boxplots for the 12 curated pockets: script 65/66's aggregated cross-docking set against Hit
-Locator / REAL round 1 / REAL round 2 references, mirroring script 61's design. A missing input
-(e.g. eos42ez.csv, not yet run via script 67) prints a warning and is skipped, not fatal.
+Plots/reports script 67's Ersilia characterization outputs, plus docking score boxplots and
+protein-level UpSet plots for the 12 curated pockets. A missing input is skipped with a warning,
+not fatal.
 
 Usage:
     python 68_plot_results.py
@@ -68,9 +67,7 @@ def load_report(directory, pocket, filename="report.csv"):
 
 
 def load_real2_report(pocket):
-    """REAL round 2's report for `pocket` - the dimer pocket's equivalent (docked against the same
-    ~99k round-2 set, see scripts/50_unidock_docking_multimers.py) lives under MULTIMER_DOCKING_DIR
-    instead of LIBRARIES["REAL"], same distinction script 54 already makes."""
+    """REAL round 2's report for `pocket` - the dimer pocket lives under MULTIMER_DOCKING_DIR instead."""
     directory = MULTIMER_DOCKING_DIR if pocket == DIMER_POCKET else LIBRARIES["REAL"]
     return load_report(directory, pocket)
 
@@ -81,26 +78,25 @@ def build_present(loader, pockets):
 
 
 def load_pocket_ranks():
-    """{pocket: pd.Series(rank, indexed by compound_id)} from script 66's merged_docking_scores.csv
-    - rank vs. the Enamine REAL round-2 (~99,105) background library, not vs. our own 2,923-compound
-    aggregated set, so values can go well beyond 2,923 (up to ~100k)."""
+    """{pocket: pd.Series(rank, indexed by compound_id)} - rank vs. the ~99,105-compound REAL
+    round-2 background library, not vs. our own aggregated set."""
     df = pd.read_csv(MERGED_DOCKING_SCORES_CSV, index_col="compound_id")
     rank_cols = [c for c in df.columns if c.endswith("_rank")]
     return {c.removesuffix("_rank"): df[c].dropna() for c in rank_cols}
 
 
-def load_protein_pockets():
-    """{protein: [pocket_name, ...]} for all 12 curated pockets, pheS+pheT merged into "pheST" -
-    same merge convention as scripts/54_NONCAT_promiscuous.py's load_noncat_targets(), extended
-    here to include CAT pockets too (not NON-CAT only)."""
+def load_protein_pockets(site_type=None):
+    """{protein: [pocket_name, ...]}, pheS+pheT merged into "pheST". Optionally filter to one
+    site_type ("CAT" or "NON-CAT")."""
     df = pd.read_csv(SELECTED_POCKETS_CSV)
+    if site_type is not None:
+        df = df[df["site_type"] == site_type]
     df["gene_name"] = df["gene_name"].replace({"pheS": "pheST", "pheT": "pheST"})
     return df.groupby("gene_name")["pocket_name"].apply(list).to_dict()
 
 
 def summarize_by_n_targets(hit_sets):
-    """'1 target: X, 2 targets: Y, ...' - how many compounds hit exactly k of the proteins in
-    hit_sets, for k from 1 to len(hit_sets)."""
+    """'1 target: X, 2 targets: Y, ...' - count of compounds hitting exactly k proteins."""
     from collections import Counter
     all_ids = set().union(*hit_sets.values())
     counts = Counter(sum(cid in s for s in hit_sets.values()) for cid in all_ids)
@@ -109,10 +105,7 @@ def summarize_by_n_targets(hit_sets):
 
 
 def annotate_degree_groups(ax_bars, upset):
-    """Draws a horizontal bracket line (same height for every group, based on the tallest bar
-    overall) + total-count label above each contiguous group of bars sharing the same degree
-    (number of proteins in that intersection) - sort_by="degree" in save_protein_upset guarantees
-    same-degree bars are contiguous, so a single pass suffices."""
+    """Draws a bracket + total-count label above each contiguous group of same-degree bars."""
     sizes = upset.intersections.to_numpy()
     degrees = [sum(idx) for idx in upset.intersections.index]
     bars = ax_bars.patches
@@ -130,15 +123,14 @@ def annotate_degree_groups(ax_bars, upset):
         degree = degrees[i]
         total = int(sizes[i:j].sum())
         ax_bars.plot([x_start, x_end], [y_line, y_line], color="black", lw=1, clip_on=False)
-        ax_bars.text((x_start + x_end) / 2, label_y, f"{degree} target{'s' if degree != 1 else ''}; n={total}",
+        ax_bars.text((x_start + x_end) / 2, label_y, f"{degree} target{'s' if degree != 1 else ''}\nn={total}",
                      ha="center", va="bottom", fontsize=8, clip_on=False)
         i = j
     ax_bars.set_ylim(top=max(ax_bars.get_ylim()[1], label_y * 1.15))
 
 
 def save_protein_upset(hit_sets, title, out_path):
-    """Plain matplotlib + upsetplot, no stylia - matches docking_utils.save_upset and script 54's
-    save_target_upset, since upsetplot.plot() doesn't compose with stylia's figure API."""
+    """Plain matplotlib + upsetplot, no stylia (upsetplot.plot() doesn't compose with it)."""
     import warnings
     import matplotlib.pyplot as plt
     from upsetplot import UpSet, from_contents
@@ -225,10 +217,7 @@ def plot_docking_score_boxplots(pockets, agg_scores):
     print(f"Saved: {out_path}")
 
 
-def plot_protein_upsets(agg_scores):
-    protein_pockets = load_protein_pockets()
-
-    print("--- Protein-level docking score UpSet plots ---")
+def _score_upsets(agg_scores, protein_pockets, suffix, label):
     for threshold in DOCKING_SCORE_THRESHOLDS:
         hit_sets = {
             protein: set().union(*(
@@ -238,12 +227,12 @@ def plot_protein_upsets(agg_scores):
             for protein, pockets_for_protein in protein_pockets.items()
         }
         print(f"  score <= {threshold}: " + ", ".join(f"{p}={len(s)}" for p, s in hit_sets.items()))
-        out_path = os.path.join(OUTPUT_DIR, f"upset_score_{abs(threshold)}.png")
-        save_protein_upset(hit_sets, f"Docking score ≤ {threshold}", out_path)
+        out_path = os.path.join(OUTPUT_DIR, f"upset_score_{abs(threshold)}{suffix}.png")
+        save_protein_upset(hit_sets, f"Docking score ≤ {threshold}{label}", out_path)
         print(f"  Saved: {out_path}")
 
-    print("--- Protein-level docking rank UpSet plots ---")
-    pocket_ranks = load_pocket_ranks()
+
+def _rank_upsets(pocket_ranks, protein_pockets, suffix, label):
     for rank in RANK_THRESHOLDS:
         hit_sets = {
             protein: set().union(*(
@@ -253,9 +242,25 @@ def plot_protein_upsets(agg_scores):
             for protein, pockets_for_protein in protein_pockets.items()
         }
         print(f"  rank <= {rank}: " + ", ".join(f"{p}={len(s)}" for p, s in hit_sets.items()))
-        out_path = os.path.join(OUTPUT_DIR, f"upset_rank_{rank}.png")
-        save_protein_upset(hit_sets, f"Rank ≤ {rank} vs. REAL round-2 (~99,105)", out_path)
+        out_path = os.path.join(OUTPUT_DIR, f"upset_rank_{rank}{suffix}.png")
+        save_protein_upset(hit_sets, f"Rank ≤ {rank} vs. REAL round-2 (~99,105){label}", out_path)
         print(f"  Saved: {out_path}")
+
+
+def plot_protein_upsets(agg_scores):
+    """Runs the score/rank UpSet plots for all pockets, then again for CAT-only and NON-CAT-only."""
+    pocket_ranks = load_pocket_ranks()
+    variants = [("", None), ("_CAT", "CAT"), ("_NONCAT", "NON-CAT")]
+
+    for suffix, site_type in variants:
+        label = f" ({site_type} pockets only)" if site_type else ""
+        protein_pockets = load_protein_pockets(site_type)
+
+        print(f"--- Protein-level docking score UpSet plots{label} ---")
+        _score_upsets(agg_scores, protein_pockets, suffix, label)
+
+        print(f"--- Protein-level docking rank UpSet plots{label} ---")
+        _rank_upsets(pocket_ranks, protein_pockets, suffix, label)
 
 
 def main():
