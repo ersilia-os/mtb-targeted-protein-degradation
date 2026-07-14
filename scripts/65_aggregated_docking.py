@@ -5,7 +5,8 @@
 """
 Dock script 64's 2,923 prepared aggregated compounds against each of the 12 curated pockets
 (output/selected_pockets.csv, CAT + NON-CAT, dimer included) - one shared ligand set docked
-against every pocket, a full cross-matrix (unlike script 60's per-pocket subset).
+against every pocket, a full cross-matrix (unlike script 60's per-pocket subset). Each pocket is
+docked N_REPLICATES times (different seed each time) to measure Uni-Dock's own run-to-run variance.
 
 Usage:
     conda activate unidock_tools
@@ -47,6 +48,7 @@ os.makedirs(DOCKING_RESULTS_DIR, exist_ok=True)
 
 DIMER_POCKET = "7K98_pocket_6"
 CONDA_ENV_PROTONATION = "adda4tb"
+N_REPLICATES = 5
 
 
 def load_pockets():
@@ -207,6 +209,25 @@ def generate_report(directory: str, output_csv: str):
             writer.writerow([compound.replace("_out.sdf", ""), score if score is not None else ""])
 
 
+def average_replicates(results_dir, output_csv):
+    """Average score across the N_REPLICATES results_r.csv files for a pocket: compound, score
+    (mean), score_std - joined on compound (not row position)."""
+    combined = None
+    for r in range(1, N_REPLICATES + 1):
+        df = pd.read_csv(os.path.join(results_dir, f"results_{r}.csv"))
+        df[f"score_{r}"] = pd.to_numeric(df["score"], errors="coerce")
+        df = df[["compound", f"score_{r}"]].set_index("compound")
+        combined = df if combined is None else combined.join(df, how="outer")
+
+    score_cols = [f"score_{r}" for r in range(1, N_REPLICATES + 1)]
+    result = pd.DataFrame({
+        "score": combined[score_cols].mean(axis=1).round(3),
+        "score_std": combined[score_cols].std(axis=1).round(3),
+    })
+    result.index.name = "compound"
+    result.reset_index().to_csv(output_csv, index=False)
+
+
 def main():
     pockets = load_pockets()
     print(f"Curated pockets (CAT + NON-CAT, incl. dimer): {len(pockets)}")
@@ -222,12 +243,11 @@ def main():
         print(f"\n\n--- {gene} ({site_type}): {pocket_name} ---\n\n")
 
         outpath = os.path.join(DOCKING_RESULTS_DIR, pocket_name)
-        os.makedirs(outpath, exist_ok=True)
-        report_path = os.path.join(outpath, "report.csv")
-
-        if os.path.isfile(report_path) and len(pd.read_csv(report_path)) >= n_ligands:
-            print(f"  report.csv already complete ({report_path}), skipping.")
-            continue
+        results_dir = os.path.join(outpath, "results")
+        docking_archive_dir = os.path.join(outpath, "docking")
+        logs_archive_dir = os.path.join(outpath, "logs")
+        for d in (outpath, results_dir, docking_archive_dir, logs_archive_dir):
+            os.makedirs(d, exist_ok=True)
 
         if pocket_name == DIMER_POCKET:
             structure_file, ac = "7K98", None
@@ -238,25 +258,35 @@ def main():
 
         receptor = resolve_receptor(pocket_name, structure_file, ac, outpath)
 
-        docking_dir = os.path.join(outpath, "docking")
-        log_file = os.path.join(outpath, "logs.log")
-        os.makedirs(docking_dir, exist_ok=True)
+        for r in range(1, N_REPLICATES + 1):
+            results_path = os.path.join(results_dir, f"results_{r}.csv")
+            if os.path.isfile(results_path) and len(pd.read_csv(results_path)) >= n_ligands:
+                print(f"  Replicate {r}: already complete ({results_path}), skipping.")
+                continue
 
-        run_unidock(receptor=receptor, ligand_index=ligand_index_path,
-                    center_x=cx, center_y=cy, center_z=cz,
-                    output_dir=docking_dir, log_file=log_file)
+            print(f"  Replicate {r}/{N_REPLICATES} (seed={RANDOM_SEED + r - 1})...")
+            tmp_docking_dir = os.path.join(outpath, "_docking_tmp")
+            tmp_log_file = os.path.join(outpath, "_logs_tmp.log")
+            os.makedirs(tmp_docking_dir, exist_ok=True)
 
-        print("  Generating report...")
-        generate_report(docking_dir, report_path)
+            run_unidock(receptor=receptor, ligand_index=ligand_index_path,
+                        center_x=cx, center_y=cy, center_z=cz, seed=RANDOM_SEED + r - 1,
+                        output_dir=tmp_docking_dir, log_file=tmp_log_file)
 
-        print("  Compressing results...")
-        with tarfile.open(os.path.join(outpath, "docking.tar.gz"), "w:gz", compresslevel=9) as tar:
-            tar.add(docking_dir, arcname="docking")
-        with tarfile.open(os.path.join(outpath, "logs.tar.gz"), "w:gz") as tar:
-            tar.add(log_file, arcname="logs.log")
+            print("    Generating report...")
+            generate_report(tmp_docking_dir, results_path)
 
-        os.remove(log_file)
-        shutil.rmtree(docking_dir)
+            print("    Compressing results...")
+            with tarfile.open(os.path.join(docking_archive_dir, f"docking_{r}.tar.gz"), "w:gz", compresslevel=9) as tar:
+                tar.add(tmp_docking_dir, arcname="docking")
+            with tarfile.open(os.path.join(logs_archive_dir, f"logs_{r}.tar.gz"), "w:gz") as tar:
+                tar.add(tmp_log_file, arcname="logs.log")
+
+            os.remove(tmp_log_file)
+            shutil.rmtree(tmp_docking_dir)
+
+        print("  Averaging across replicates...")
+        average_replicates(results_dir, os.path.join(outpath, "results.csv"))
 
 
 if __name__ == "__main__":

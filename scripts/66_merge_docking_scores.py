@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Merge script 65's 12 per-pocket report.csv files into one wide table: compound_id, smiles,
+Merge script 65's 12 per-pocket results.csv files (mean docking score across 5 replicates) into
+one wide table: compound_id, smiles,
 <pocket_1>, <pocket_1>_rank, <pocket_2>, <pocket_2>_rank, ... - score and rank vs. the Enamine REAL
-round-2 library (~99,105 compounds) for that pocket. Also reports reproducibility against whatever
-old/precalculated scores already existed for the same (compound, pocket) pairs, from prior docking
-rounds (round-1, round-2, the dimer's multimer round, and the NON-CAT REAL10B-selective round).
+round-2 library (~99,105 compounds) for that pocket.
 
 Usage:
     python 66_merge_docking_scores.py
@@ -22,8 +21,6 @@ DOCKING_RESULTS_DIR = os.path.join(ROOT, "output", "65_aggregated_docking", "doc
 
 REAL_ROUND2_DIR = os.path.join(ROOT, "output", "unidock_REAL_docking_2", "docking_results")
 MULTIMER_DIR = os.path.join(ROOT, "output", "50_unidock_docking_multimers")
-REAL_ROUND1_DIR = os.path.join(ROOT, "output", "unidock_REAL_docking", "docking_results")
-REAL10B_SELECTIVE_DIR = os.path.join(ROOT, "output", "60_unidock_docking_noncat_selective_10B", "docking_results")
 DIMER_POCKET = "7K98_pocket_6"
 
 OUTPUT_DIR = os.path.join(ROOT, "output", "66_merge_docking_scores")
@@ -52,36 +49,30 @@ def load_round2_background(pockets):
     return background
 
 
-def load_old_scores(pockets):
-    """{(compound_id, pocket_name): score} from whatever historical docking round already
-    scored that pair - round-2/multimer/round-1/REAL10B-selective, first found wins."""
-    old_scores = {}
-    for pocket_name in pockets:
-        if pocket_name == DIMER_POCKET:
-            for cid, s in load_report_scores(os.path.join(MULTIMER_DIR, pocket_name, "report.csv")).items():
-                old_scores[(cid, pocket_name)] = s
-            continue
-        for base in (REAL_ROUND2_DIR, REAL_ROUND1_DIR, REAL10B_SELECTIVE_DIR):
-            for cid, s in load_report_scores(os.path.join(base, pocket_name, "report.csv")).items():
-                old_scores.setdefault((cid, pocket_name), s)
-    return old_scores
-
-
 def main():
     result = pd.read_csv(AGGREGATED_HITS_CSV, usecols=["compound_id", "smiles", "source"])
     n_compounds = len(result)
     print(f"Base compound list: {n_compounds:,} compounds")
+
+    props = pd.read_csv(AGGREGATED_HITS_CSV, usecols=["QED", "MW"])
+    n_qed = (props["QED"] > 0.5).sum()
+    n_mw = ((props["MW"] > 300) & (props["MW"] < 500)).sum()
+    print(f"QED > 0.5: {n_qed:,} / {n_compounds:,} ({100 * n_qed / n_compounds:.1f}%)")
+    print(f"MW in (300, 500): {n_mw:,} / {n_compounds:,} ({100 * n_mw / n_compounds:.1f}%)")
 
     pockets = pd.read_csv(SELECTED_POCKETS_CSV)["pocket_name"].tolist()
     print(f"Pockets: {len(pockets)}")
 
     background = load_round2_background(pockets)
 
+    std_cols = []
     for pocket_name in pockets:
-        report_path = os.path.join(DOCKING_RESULTS_DIR, pocket_name, "report.csv")
-        report = pd.read_csv(report_path)
-        report = report.rename(columns={"compound": "compound_id", "score": pocket_name})
+        results_path = os.path.join(DOCKING_RESULTS_DIR, pocket_name, "results.csv")
+        report = pd.read_csv(results_path, usecols=["compound", "score", "score_std"])
+        std_col = f"{pocket_name}__std"
+        report = report.rename(columns={"compound": "compound_id", "score": pocket_name, "score_std": std_col})
         report[pocket_name] = report[pocket_name].astype(float)
+        std_cols.append(std_col)
 
         result = result.merge(report, on="compound_id", how="left")
         assert len(result) == n_compounds, f"{pocket_name}: merge changed row count (duplicate compound_ids?)"
@@ -96,32 +87,30 @@ def main():
         ranks[scores.isna().to_numpy()] = pd.NA
         result[f"{pocket_name}_rank"] = ranks
 
+    total_endpoints = n_compounds * len(pockets)
+    all_scores = result[pockets].to_numpy()
+    all_stds = result[std_cols].to_numpy()
+
+    n_le_10 = (all_scores <= -10).sum()
+    n_le_11 = (all_scores <= -11).sum()
+    n_le_12 = (all_scores <= -12).sum()
+    n_std_le_01 = (all_stds <= 0.1).sum()
+    n_std_le_05 = (all_stds <= 0.5).sum()
+    n_std_le_10 = (all_stds <= 1.0).sum()
+
+    print(f"\nTotal endpoints (compounds x pockets): {total_endpoints:,}")
+    print(f"endpoints with score <=-10: {n_le_10:,} ({100 * n_le_10 / total_endpoints:.1f}%)")
+    print(f"endpoints with score <=-11: {n_le_11:,} ({100 * n_le_11 / total_endpoints:.1f}%)")
+    print(f"endpoints with score <=-12: {n_le_12:,} ({100 * n_le_12 / total_endpoints:.1f}%)")
+    print(f"endpoints with std <=0.1: {n_std_le_01:,} ({100 * n_std_le_01 / total_endpoints:.1f}%)")
+    print(f"endpoints with std <=0.5: {n_std_le_05:,} ({100 * n_std_le_05 / total_endpoints:.1f}%)")
+    print(f"endpoints with std <=1.0: {n_std_le_10:,} ({100 * n_std_le_10 / total_endpoints:.1f}%)")
+
+    result = result.drop(columns=std_cols)
+
     out_path = os.path.join(OUTPUT_DIR, "merged_docking_scores.csv")
     result.to_csv(out_path, index=False)
     print(f"\nSaved {len(result):,} rows x {len(result.columns)} columns to {out_path}")
-
-    print("\nChecking reproducibility against precalculated scores from prior docking rounds...")
-    old_scores = load_old_scores(pockets)
-    diffs = []
-    n_excluded = 0
-    for _, row in result.iterrows():
-        for pocket_name in pockets:
-            old_score = old_scores.get((row["compound_id"], pocket_name))
-            if old_score is None:
-                continue
-            new_score = row[pocket_name]
-            if old_score > 0 or new_score > 0:  # failed/clashing pose artifact, not a real energy
-                n_excluded += 1
-                continue
-            diffs.append(abs(new_score - old_score))
-
-    diffs = pd.Series(diffs)
-    print(f"  {len(diffs) + n_excluded:,} (compound, pocket) pairs had a precalculated score to compare against")
-    print(f"  {n_excluded:,} excluded (failed/clashing-pose artifact - nonsensical positive energy on either side)")
-    print("\nreproducibility to previous runs")
-    print(f"<0.1: {100 * (diffs <= 0.1).sum() / len(diffs):.1f}%")
-    print(f"<0.5: {100 * (diffs <= 0.5).sum() / len(diffs):.1f}%")
-    print(f"<1.0: {100 * (diffs <= 1.0).sum() / len(diffs):.1f}%")
 
 
 if __name__ == "__main__":
