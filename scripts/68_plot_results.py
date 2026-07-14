@@ -96,12 +96,17 @@ def load_protein_pockets(site_type=None):
 
 
 def summarize_by_n_targets(hit_sets):
-    """'1 target: X, 2 targets: Y, ...' - count of compounds hitting exactly k proteins."""
+    """'1 target: X, 2 targets: Y, ...' plus a single- vs multi-target proportion line."""
     from collections import Counter
     all_ids = set().union(*hit_sets.values())
     counts = Counter(sum(cid in s for s in hit_sets.values()) for cid in all_ids)
     n = len(hit_sets)
-    return ", ".join(f"{k} target{'s' if k != 1 else ''}: {counts.get(k, 0)}" for k in range(1, n + 1))
+    breakdown = ", ".join(f"{k} target{'s' if k != 1 else ''}: {counts.get(k, 0)}" for k in range(1, n + 1))
+    total = sum(counts.values())
+    if not total:
+        return breakdown
+    single_pct = 100 * counts.get(1, 0) / total
+    return f"{breakdown}\nSingle-target: {single_pct:.1f}%, Multi-target: {100 - single_pct:.1f}%"
 
 
 def annotate_degree_groups(ax_bars, upset):
