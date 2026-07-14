@@ -62,8 +62,8 @@ def plot_histograms(df, columns, out_path):
     stylia.save_figure(out_path)
 
 
-def load_report(directory, pocket):
-    path = os.path.join(directory, pocket, "report.csv")
+def load_report(directory, pocket, filename="report.csv"):
+    path = os.path.join(directory, pocket, filename)
     return load_scores(path) if os.path.isfile(path) else pd.Series(dtype=float)
 
 
@@ -168,6 +168,31 @@ def plot_ersilia_distributions():
         print(f"Saved: {out_path}")
 
 
+def report_nsps():
+    print("--- eos12x7 (NSPS drug-likeness range) ---")
+    path = os.path.join(ERSILIA_DIR, "eos12x7.csv")
+    if not os.path.isfile(path):
+        print(f"Warning: {path} not found - skipping.")
+        return
+    df = pd.read_csv(path)
+    n = len(df)
+    count = int(((df["nsps_score"] >= 10) & (df["nsps_score"] <= 40)).sum())
+    print(f"NSPS in [10, 40]: {count:,} / {n:,} ({100 * count / n:.1f}%)")
+
+
+def report_cytotoxicity():
+    print("--- eos42ez (cytotoxicity, all 3 endpoints < 0.3) ---")
+    path = os.path.join(ERSILIA_DIR, "eos42ez.csv")
+    if not os.path.isfile(path):
+        print(f"Warning: {path} not found - skipping.")
+        return
+    df = pd.read_csv(path)
+    n = len(df)
+    cols = ["cytotoxicity_hepg2", "cytotoxicity_hskmc", "cytotoxicity_imr90"]
+    count = int((df[cols] < 0.3).all(axis=1).sum())
+    print(f"All 3 cytotoxicity scores < 0.3: {count:,} / {n:,} ({100 * count / n:.1f}%)")
+
+
 def report_eos2xeq_flags():
     print("--- eos2xeq (motif/structural-alert flags) ---")
     path = os.path.join(ERSILIA_DIR, "eos2xeq.csv")
@@ -236,10 +261,14 @@ def plot_protein_upsets(agg_scores):
 def main():
     plot_ersilia_distributions()
     print()
+    report_nsps()
+    print()
+    report_cytotoxicity()
+    print()
     report_eos2xeq_flags()
     print()
     pockets = pd.read_csv(SELECTED_POCKETS_CSV)["pocket_name"].tolist()
-    agg_scores = build_present(lambda p: load_report(AGGREGATED_DOCKING_DIR, p), pockets)
+    agg_scores = build_present(lambda p: load_report(AGGREGATED_DOCKING_DIR, p, filename="results.csv"), pockets)
     plot_docking_score_boxplots(pockets, agg_scores)
     print()
     plot_protein_upsets(agg_scores)

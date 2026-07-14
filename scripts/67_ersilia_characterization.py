@@ -13,6 +13,11 @@ used so far for this project's compound set:
               membrane permeability)
     eos2xeq - antibacterial structural-alert / motif flags (has_pains, has_brenk, is_sim_known_ab,
               nitrofuran_motif, fluoroquinolone_motif, carbepenem_motif, betalactam_motif)
+    eos42ez - cytotoxicity (HepG2, HSkMC, IMR90)
+    eos3ujl - Mtb cell wall permeability (SVC on Mordred descriptors, permeable-vs-not probability)
+    eos8d8a - MycPermCheck (Mtb cell membrane permeability, physicochemical-property classifier)
+    eos1lb5 - Mycobacterium cell wall penetration (6-output compendium: lung diffusion, caseum
+              diffusion, and cell wall permeation from 3 literature sources incl. eos5jv3's own)
 
 For each model, in order: fetch (skipped if already present in `ersilia catalog --local`) -> serve
 -> run -i smiles_input.csv -o {model_id}.csv -> close -> delete (always, regardless of whether the
