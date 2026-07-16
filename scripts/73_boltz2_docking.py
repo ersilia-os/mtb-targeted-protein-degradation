@@ -35,6 +35,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 
 import pandas as pd
 import yaml
@@ -53,6 +54,9 @@ os.makedirs(MSA_CACHE_DIR, exist_ok=True)
 os.makedirs(MSA_BOOTSTRAP_DIR, exist_ok=True)
 
 MAX_BOOTSTRAP_ATTEMPTS = 3
+# api.colabfold.com rate-limits to ~1 request per 50s per IP (X-Rate-Limit-Limit: 0.02, seen on a
+# 429 response); a fixed 2min sleep before every MSA request keeps us comfortably under that.
+MSA_REQUEST_BACKOFF_S = 120
 AFFINITY_FIELDS = ["affinity_pred_value", "affinity_probability_binary",
                    "affinity_pred_value1", "affinity_probability_binary1",
                    "affinity_pred_value2", "affinity_probability_binary2"]
@@ -122,6 +126,8 @@ def bootstrap_msa(pocket_name, sequence, contacts, candidates):
         with open(yaml_path, "w") as f:
             yaml.safe_dump(build_bootstrap_yaml(sequence, contacts, smiles), f, sort_keys=False)
 
+        print(f"  Waiting {MSA_REQUEST_BACKOFF_S}s before MSA request (rate-limit backoff)...")
+        time.sleep(MSA_REQUEST_BACKOFF_S)
         print(f"  Bootstrapping MSA with {compound_id}...")
         subprocess.run([
             "boltz", "predict", yaml_path,
@@ -245,16 +251,22 @@ def main():
 
     for pocket_name in pockets:
         print(f"\n--- {pocket_name} ---")
-        prow = pocket_sequences.loc[pocket_name]
-        contacts = [int(p) for p in prow["pocket_contacts"].split()]
-        bootstrap_msa(pocket_name, prow["sequence"], contacts, compounds_by_len)
+        try:
+            prow = pocket_sequences.loc[pocket_name]
+            contacts = [int(p) for p in prow["pocket_contacts"].split()]
+            bootstrap_msa(pocket_name, prow["sequence"], contacts, compounds_by_len)
 
-        if args.max_compounds is None:
-            check_yaml_count(pocket_name, n_total_compounds)
-        data_dir = prepare_scope_dir(pocket_name, args.max_compounds)
+            if args.max_compounds is None:
+                check_yaml_count(pocket_name, n_total_compounds)
+            data_dir = prepare_scope_dir(pocket_name, args.max_compounds)
 
-        out_dir = os.path.join(OUTPUT_DIR, args.out_subdir, pocket_name)
-        run_boltz_predict(data_dir, out_dir)
+            out_dir = os.path.join(OUTPUT_DIR, args.out_subdir, pocket_name)
+            run_boltz_predict(data_dir, out_dir)
+        except (RuntimeError, subprocess.CalledProcessError) as e:
+            # A pocket-level failure (e.g. the remote MSA server being transiently unreachable)
+            # shouldn't kill the rest of the batch, same as a single bad compound doesn't.
+            print(f"  Warning: {pocket_name} failed, skipping. Error: {e}")
+            continue
 
         # Re-aggregate after every pocket (not just once at the end) so a long multi-pocket run
         # has an up-to-date summary CSV at any point it's interrupted or checked on.

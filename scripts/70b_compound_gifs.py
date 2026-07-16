@@ -27,7 +27,11 @@ os.makedirs(CHUNKS_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 N_GROUPS = 6
-GIF_KWARGS = ["--style", "rdkit", "--n_rows", "1", "--n_cols", "1", "--size", "512", "--duration", "1000", "--color", "white"]
+GIF_KWARGS = ["--style", "rdkit", "--n_rows", "1", "--n_cols", "1", "--size", "512", "--duration", "1000",
+              "--bond_width", "2"]
+# chemgifs' --color names (mint/pink/purple/orange/yellow/blue/gray) are the exact Ersilia brand
+# palette from stylia (stylia/colors/colors.py, _ERSILIA_NAMED). One distinct color per group.
+GROUP_COLORS = ["purple", "mint", "blue", "yellow", "pink", "orange"]
 
 
 def main():
@@ -39,10 +43,12 @@ def main():
         chunk_csv = os.path.join(CHUNKS_DIR, f"group_{i}of{N_GROUPS}.csv")
         group.to_csv(chunk_csv, index=False)
 
+        color = GROUP_COLORS[i - 1]
         output_gif = os.path.join(OUTPUT_DIR, f"filtered_hits_group{i}of{N_GROUPS}.gif")
-        print(f"Group {i}/{N_GROUPS}: {len(group)} compounds -> {output_gif}")
+        print(f"Group {i}/{N_GROUPS}: {len(group)} compounds -> {output_gif} (color: {color})")
         subprocess.run(
-            ["conda", "run", "-n", "chemgifs", "chemgifs", "-i", chunk_csv, "-o", output_gif, *GIF_KWARGS],
+            ["conda", "run", "-n", "chemgifs", "chemgifs", "-i", chunk_csv, "-o", output_gif,
+             *GIF_KWARGS, "--color", color],
             check=True,
         )
 
