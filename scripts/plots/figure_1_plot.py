@@ -11,12 +11,13 @@ sys.path.append(os.path.join(root, "..", "..", "src"))
 import json
 import numpy as np
 import pandas as pd
+import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import pymol
 from pymol import cmd
 import stylia
-from default import RANDOM_SEED
 
 # Format: print | Style: article — change with stylia.set_format() / stylia.set_style()
 stylia.set_format("print")
@@ -35,6 +36,13 @@ with open(os.path.join(plots_dir, "color_mapping.json")) as f:
     mappings = json.load(f)
 uniprot_to_gene = mappings["uniprot_to_gene"]
 cmap_dict = mappings["gene_to_color"]
+gene_to_vi = mappings["gene_to_vulnerability_index"]
+VI_GENOME_MIN = mappings["vulnerability_index_genome_min"]
+VI_GENOME_MAX = mappings["vulnerability_index_genome_max"]
+gene_to_pdb_count = mappings["gene_to_pdb_count"]
+gene_to_chembl_binders = mappings["gene_to_chembl_binders"]
+gene_to_chembl_total = mappings["gene_to_chembl_total"]
+gene_to_unique_pocket_count = mappings["gene_to_unique_pocket_count"]
 
 
 def zoom_to_fixed_box(selection="structure", box_size=30.0, box_name="_zoom_box"):
@@ -170,6 +178,9 @@ def show_zoomed_image(ax, img, zoom=1.0):
     ax.set_aspect("equal", adjustable="datalim")
 
 
+POCKET_SPHERE_RADIUS = 12.0
+
+
 def render_protein_structures(proteins=PROTEINS):
     for protein in proteins:
 
@@ -178,6 +189,22 @@ def render_protein_structures(proteins=PROTEINS):
 
         # Select reference structure
         ref_st = df['File name'].tolist()[0]
+
+        # Pocket centroids to display: highest-probability pocket among this reference
+        # structure's own pockets (same coordinate frame as the loaded structure), plus
+        # the next-highest-probability pocket far enough away not to overlap it (distance
+        # > 2*POCKET_SPHERE_RADIUS + 1, i.e. the two spheres' radii plus a small buffer).
+        ref_pockets = df[df['File name'] == ref_st].sort_values('Pocket probability', ascending=False)
+        all_centroids = [
+            np.array([float(v) for v in row['Pocket centroid coordinate (x y z)'].split()])
+            for _, row in ref_pockets.iterrows()
+        ]
+        top_centroids = [all_centroids[0]]
+        min_separation = 2 * POCKET_SPHERE_RADIUS + 1
+        for centroid in all_centroids[1:]:
+            if np.linalg.norm(centroid - top_centroids[0]) > min_separation:
+                top_centroids.append(centroid)
+                break
 
         # Create pymol session
         pymol.finish_launching(['pymol', '-cq'])
@@ -190,6 +217,19 @@ def render_protein_structures(proteins=PROTEINS):
         cmd.hide("everything", "structure")
         cmd.show("surface", "structure")
         cmd.set("transparency", 0, "structure")
+
+        # Pocket centroid markers: top pocket(s), POCKET_SPHERE_RADIUS sphere each,
+        # protein's own color, almost opaque. PyMOL's sphere_transparency runs 0
+        # (opaque) -> 1 (invisible), so "almost opaque" is a LOW value here, not 0.9.
+        gene = uniprot_to_gene[protein]
+        centroid_color_rgb = mcolors.to_rgb(cmap_dict[gene])
+        cmd.set_color("pocket_centroid_color", list(centroid_color_rgb))
+        for i, (cx, cy, cz) in enumerate(top_centroids):
+            obj_name = f"pocket_centroid_{i}"
+            cmd.pseudoatom(obj_name, pos=[float(cx), float(cy), float(cz)], vdw=POCKET_SPHERE_RADIUS)
+            cmd.show("spheres", obj_name)
+            cmd.color("pocket_centroid_color", obj_name)
+            cmd.set("sphere_transparency", 0.1, obj_name)
 
         # Fancy visualization
         cmd.bg_color("white")
@@ -204,7 +244,6 @@ def render_protein_structures(proteins=PROTEINS):
         cmd.set("antialias", 2)
         if MY_VIEWS[protein] != "":
             cmd.set_view(MY_VIEWS[protein])
-        gene = uniprot_to_gene[protein]
         zoom_to_fixed_box("structure", box_size=95)
         cmd.save(os.path.join(plots_dir, f"session_{protein}_{gene}.pse"))
         cmd.ray(1200, 1200)
@@ -214,8 +253,23 @@ def render_protein_structures(proteins=PROTEINS):
 N_COLS = 7
 
 
-def render_structure_panel(ax, protein):
-    ax.set_axis_off()
+def apply_grid_frame(ax, show_grids):
+    # --show-grids draws each subplot's actual GridSpec-assigned rectangle (spines
+    # only, no ticks/labels) so the underlying grid layout can be inspected directly.
+    if show_grids:
+        ax.set_axis_on()
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(True)
+            spine.set_edgecolor("red")
+            spine.set_linewidth(0.5)
+    else:
+        ax.set_axis_off()
+
+
+def render_structure_panel(ax, protein, show_grids=False):
+    apply_grid_frame(ax, show_grids)
 
     gene = uniprot_to_gene[protein]
     file = os.path.join(plots_dir, f"figure_{protein}_{gene}.png")
@@ -229,65 +283,141 @@ def render_structure_panel(ax, protein):
         # that show_zoomed_image uses adjustable="datalim" (axes box position no
         # longer shifts per-column based on image content).
         legend_handles = [Line2D([0], [0], marker='o', color='w', label=gene, markerfacecolor=color, markeredgecolor='black', markeredgewidth=0.5, markersize=stylia.MARKERSIZE)]
-        ax.legend(handles=legend_handles, loc="upper center", frameon=False, bbox_to_anchor=(0.5, 1.24), fontsize=stylia.FONTSIZE_BIG, handletextpad=0.3)
+        ax.legend(handles=legend_handles, loc="upper center", frameon=False, bbox_to_anchor=(0.5, 0.05), fontsize=stylia.FONTSIZE_BIG, handletextpad=0.3)
 
     stylia.label(ax, xlabel="", ylabel="")
 
 
-PLACEHOLDER_CIRCLE_POSITIONS = [(0.3, 0.8), (0.7, 0.8), (0.3, 0.2), (0.7, 0.2)]
+PLACEHOLDER_CIRCLE_POSITIONS = [(0.3, 0.8), (0.7, 0.8), (0.3, 0.2), (0.7, 0.2)]  # [VI, PDBs, ChEMBL binders, distinct pockets]
+
+# Shared size scale for every circle in the panel: rendered marker size always maps
+# linearly onto [CIRCLE_SIZE_MIN, CIRCLE_SIZE_MAX], whatever the underlying metric.
+CIRCLE_SIZE_MIN = 1
+CIRCLE_SIZE_MAX = 300
+
+# VI: size CIRCLE_SIZE_MIN at the least vulnerable gene in the whole H37Rv proteome
+# (VI_GENOME_MAX), size CIRCLE_SIZE_MAX at the most vulnerable gene among these 21
+# tRNA synthetases (VI_TRNA_MIN, not genome-wide) — more negative VI = more vulnerable.
+VI_TRNA_MIN = min(gene_to_vi.values())
+
+# PDBs: size CIRCLE_SIZE_MIN at 0 associated experimental structures, size
+# CIRCLE_SIZE_MAX at the most PDB-covered of these 21 tRNA synthetases.
+PDB_TRNA_MAX = max(gene_to_pdb_count.values())
+
+# ChEMBL binders: size CIRCLE_SIZE_MIN at 0 confirmed binders, size CIRCLE_SIZE_MAX at
+# the most-binder-rich of the (only 3) genes with any ChEMBL target mapping at all.
+CHEMBL_BINDERS_TRNA_MAX = max(gene_to_chembl_binders.values())
+
+# Distinct pockets: size CIRCLE_SIZE_MIN at the fewest distinct pockets, size
+# CIRCLE_SIZE_MAX at the most, among these 21 tRNA synthetases.
+POCKET_COUNT_TRNA_MAX = max(gene_to_unique_pocket_count.values())
 
 
-def render_placeholder_panel(ax, protein, rng):
-    ax.set_axis_off()
+def render_placeholder_panel(ax, protein, show_grids=False):
+    apply_grid_frame(ax, show_grids)
 
     gene = uniprot_to_gene[protein]
     color = cmap_dict[gene]
 
-    # scatter markers are defined in points, not data units, so they stay circular
-    # regardless of the (non-square) axes box aspect ratio — unlike a Circle patch
-    # placed via transAxes, which stretches into an ellipse on a non-square axes.
-    xs, ys = zip(*PLACEHOLDER_CIRCLE_POSITIONS)
-    ax.scatter(xs, ys, transform=ax.transAxes, s=stylia.MARKERSIZE_BIG * 10, color=color, edgecolor='black', linewidth=0.5, zorder=1)
-    for x, y in PLACEHOLDER_CIRCLE_POSITIONS:
-        value = rng.integers(0, 10)
-        ax.text(x, y, str(value), transform=ax.transAxes, ha='center', va='center', fontsize=stylia.FONTSIZE, zorder=2)
+    # s_max is an empirically-validated points^2 area (not derived from
+    # ax.transData): the axes box isn't finalized until stylia.save_figure()'s
+    # internal tight_layout() call, which runs after this function, so any
+    # live geometry read here (e.g. via transData) reflects stale, pre-layout
+    # axes bounds. This value matches the fixed-size circles validated earlier
+    # at this same layout to not overlap.
+    s_max = stylia.MARKERSIZE_BIG * 20
+
+    # Upper-left circle: Bosch et al. 2021 Vulnerability Index (VI).
+    vi_x, vi_y = PLACEHOLDER_CIRCLE_POSITIONS[0]
+    vi = gene_to_vi[gene]
+    vi_frac = (VI_GENOME_MAX - vi) / (VI_GENOME_MAX - VI_TRNA_MIN)
+    vi_size_value = CIRCLE_SIZE_MIN + vi_frac * (CIRCLE_SIZE_MAX - CIRCLE_SIZE_MIN)
+    s = s_max * (vi_size_value / CIRCLE_SIZE_MAX)
+    ax.scatter([vi_x], [vi_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
+    ax.text(vi_x, vi_y, f"VI\n{vi:.1f}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+
+    # Upper-right circle: number of associated experimental PDB structures. Zero PDBs
+    # gets no circle at all (text only) rather than an empty marker.
+    pdb_x, pdb_y = PLACEHOLDER_CIRCLE_POSITIONS[1]
+    pdb_count = gene_to_pdb_count[gene]
+    pdb_label = "PDB" if pdb_count == 1 else "PDBs"
+    if pdb_count > 0:
+        pdb_frac = pdb_count / PDB_TRNA_MAX
+        pdb_size_value = CIRCLE_SIZE_MIN + pdb_frac * (CIRCLE_SIZE_MAX - CIRCLE_SIZE_MIN)
+        s = s_max * (pdb_size_value / CIRCLE_SIZE_MAX)
+        ax.scatter([pdb_x], [pdb_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
+    ax.text(pdb_x, pdb_y, f"{pdb_count}\n{pdb_label}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+
+    # Bottom-left circle: ChEMBL binders (IC50 <= 10 uM). Genes with no ChEMBL target
+    # mapping at all get no circle and a "No data" label instead of "0 binders".
+    chembl_x, chembl_y = PLACEHOLDER_CIRCLE_POSITIONS[2]
+    if gene in gene_to_chembl_binders:
+        n_binders = gene_to_chembl_binders[gene]
+        binder_label = "binder" if n_binders == 1 else "binders"
+        if n_binders > 0:
+            # Any nonzero count starts at 50% of max size, then scales proportionally
+            # up to 100% at CHEMBL_BINDERS_TRNA_MAX (unlike VI/PDBs, which scale from 0).
+            chembl_frac = 0.5 + 0.5 * (n_binders / CHEMBL_BINDERS_TRNA_MAX)
+            s = s_max * chembl_frac
+            ax.scatter([chembl_x], [chembl_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
+        ax.text(chembl_x, chembl_y, f"{n_binders}\n{binder_label}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+    else:
+        ax.text(chembl_x, chembl_y, "No\ndata", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+
+    # Bottom-right circle: distinct pockets per protein, deduplicated across all of its
+    # structures (see figure_1_calculations.py: greedy dedup by pocket centroid distance,
+    # threshold matching notebooks/08_coherence_detected_pockets.ipynb).
+    pocket_x, pocket_y = PLACEHOLDER_CIRCLE_POSITIONS[3]
+    n_pockets = gene_to_unique_pocket_count[gene]
+    pocket_label = "pocket" if n_pockets == 1 else "pockets"
+    if n_pockets > 0:
+        pocket_frac = n_pockets / POCKET_COUNT_TRNA_MAX
+        pocket_size_value = CIRCLE_SIZE_MIN + pocket_frac * (CIRCLE_SIZE_MAX - CIRCLE_SIZE_MIN)
+        s = s_max * (pocket_size_value / CIRCLE_SIZE_MAX)
+        ax.scatter([pocket_x], [pocket_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
+    ax.text(pocket_x, pocket_y, f"{n_pockets}\n{pocket_label}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+
+    # Set (and lock) fixed data coordinates AFTER all scatter/text calls — each
+    # ax.scatter() call above triggers matplotlib's default autoscale-on-new-artist
+    # behavior, which silently overrides limits set beforehand.
+    ax.set_xlim(-0.3, 1.3)
+    ax.set_ylim(-0.3, 1.3)
+    ax.set_autoscale_on(False)
 
     stylia.label(ax, xlabel="", ylabel="")
 
 
-SPACER_HEIGHT_RATIO = 0.3  # blank row inserted between bands, to give the next row's legend room without loosening the structure-circle gap within a band
-GRID_WIDTH = 1.2  # wider than stylia's default full-SIZE width, so each (width-constrained) structure image renders bigger
+GRID_WIDTH = 1.0  # wider than stylia's default full-SIZE width, so each (width-constrained) structure image renders bigger
+ROW_HEIGHT_SCALE = 0.9  # shrinks unused vertical margin in width-constrained structure/circle rows
+TIGHT_LAYOUT_H_PAD = 0.0  # stylia.save_figure() always calls plt.tight_layout() with default padding,
+# which overrides fig.subplots_adjust(hspace=0.0) below — pass h_pad through a temporary
+# monkeypatch of plt.tight_layout so row spacing is actually controlled by this constant.
 
 
-def render_composite_figure(proteins=PROTEINS):
-    # Placeholder plot rows use a random 0-9 value per protein; seeded for reproducibility.
-    rng = np.random.default_rng(RANDOM_SEED)
-
+def render_composite_figure(proteins=PROTEINS, show_grids=False):
     n_bands = len(proteins) // N_COLS
     full_n_bands = len(PROTEINS) // N_COLS
-    n_spacers = n_bands - 1
     height_ratios = [1.0, 1.0] * n_bands
-    for i in range(n_spacers):
-        height_ratios.insert(3 * i + 2, SPACER_HEIGHT_RATIO)
     # Scaled so a structure/circle row's absolute height stays constant regardless of n_bands.
-    height = sum(height_ratios) / (2 * full_n_bands)
-    fig, axs = stylia.create_figure(2 * n_bands + n_spacers, N_COLS, width=GRID_WIDTH, height=height, height_ratios=height_ratios)
+    height = sum(height_ratios) / (2 * full_n_bands) * ROW_HEIGHT_SCALE
+    fig, axs = stylia.create_figure(2 * n_bands, N_COLS, width=GRID_WIDTH, height=height, height_ratios=height_ratios)
     fig.subplots_adjust(hspace=0.0)
 
-    for i, band_start in enumerate(range(0, len(proteins), N_COLS)):
+    for band_start in range(0, len(proteins), N_COLS):
         band = proteins[band_start:band_start + N_COLS]
 
         for protein in band:
-            render_structure_panel(axs.next(), protein)
+            render_structure_panel(axs.next(), protein, show_grids=show_grids)
 
         for protein in band:
-            render_placeholder_panel(axs.next(), protein, rng)
+            render_placeholder_panel(axs.next(), protein, show_grids=show_grids)
 
-        if i < n_bands - 1:
-            for _ in band:
-                axs.next().set_axis_off()
-
-    stylia.save_figure(os.path.join(plots_dir, "protein_structures.png"))
+    original_tight_layout = plt.tight_layout
+    plt.tight_layout = lambda *a, **k: original_tight_layout(h_pad=TIGHT_LAYOUT_H_PAD, w_pad=TIGHT_LAYOUT_H_PAD)
+    try:
+        stylia.save_figure(os.path.join(plots_dir, "protein_structures.png"))
+    finally:
+        plt.tight_layout = original_tight_layout
 
 
 def cleanup_intermediate_files(store_pymol, store_pngs):
@@ -306,8 +436,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--store-pymol", action="store_true", default=False, help="Keep the per-protein PyMOL .pse sessions instead of deleting them after use")
     parser.add_argument("--store-pngs", action="store_true", default=False, help="Keep the per-protein figure_*.png renders instead of deleting them after use")
+    parser.add_argument("--show-grids", action="store_true", default=False, help="Draw each subplot's GridSpec rectangle (red spines) to visualize the underlying grid layout")
     args = parser.parse_args()
 
     render_protein_structures(proteins=PROTEINS)
-    render_composite_figure()
+    render_composite_figure(show_grids=args.show_grids)
     cleanup_intermediate_files(store_pymol=args.store_pymol, store_pngs=args.store_pngs)
