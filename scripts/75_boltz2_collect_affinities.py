@@ -91,14 +91,13 @@ def load_compounds():
 
 
 def sanity_check_pocket_lists(selected_pockets, pocket_sequences):
-    """The only expected diff is the dimer pocket 7K98_pocket_6, which Boltz-2 (single-chain
-    only) doesn't cover."""
+    """Script 71 now covers all 12 pockets, including the 7K98_pocket_6 dimer (2-chain pheS+pheT
+    complex), so no diff between the two pocket lists is expected at all."""
     diff = set(selected_pockets["pocket_name"]) - set(pocket_sequences["pocket_name"])
-    if diff == {"7K98_pocket_6"}:
-        print("Pocket lists check out: only 7K98_pocket_6 (dimer, not Boltz-2-eligible) is "
-              "absent from pocket_sequences.csv.")
-    elif diff:
+    if diff:
         print(f"WARNING: unexpected pockets in selected_pockets.csv but not pocket_sequences.csv: {diff}")
+    else:
+        print("Pocket lists check out: all pockets in selected_pockets.csv are present in pocket_sequences.csv.")
 
 
 def merge_results(raw_df, pocket_sequences, compounds):

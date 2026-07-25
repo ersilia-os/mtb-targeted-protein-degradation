@@ -57,6 +57,13 @@ MAX_BOOTSTRAP_ATTEMPTS = 3
 # api.colabfold.com rate-limits to ~1 request per 50s per IP (X-Rate-Limit-Limit: 0.02, seen on a
 # 429 response); a fixed 2min sleep before every MSA request keeps us comfortably under that.
 MSA_REQUEST_BACKOFF_S = 120
+# Manual stress-testing (20 back-to-back submit calls, mix of real pocket sequences) showed the
+# MSA server itself never hangs -- every response (success or 429) came back in under 2s. The
+# "Read timed out (6.02s)" failures we still see in practice must be rare/transient (network blip
+# on nebula's side, most likely), not something a longer timeout or more spacing would fix.
+# Persistence is the pragmatic mitigation: retry the same MAX_BOOTSTRAP_ATTEMPTS candidates across
+# multiple rounds before giving up on a pocket.
+MAX_BOOTSTRAP_ROUNDS = 8
 AFFINITY_FIELDS = ["affinity_pred_value", "affinity_probability_binary",
                    "affinity_pred_value1", "affinity_probability_binary1",
                    "affinity_pred_value2", "affinity_probability_binary2"]
@@ -107,11 +114,90 @@ def build_bootstrap_yaml(sequence, contacts, smiles):
     }
 
 
+def build_bootstrap_yaml_dimer(seq_a, contacts_a, seq_b, contacts_b, smiles):
+    """Dimer counterpart of build_bootstrap_yaml(): two protein chains (A=pheS, B=pheT), neither
+    with an msa: field, so --use_msa_server auto-generates both. Ligand takes id "C" since B is
+    now a protein chain."""
+    return {
+        "version": 1,
+        "sequences": [
+            {"protein": {"id": "A", "sequence": seq_a}},
+            {"protein": {"id": "B", "sequence": seq_b}},
+            {"ligand": {"id": "C", "smiles": smiles}},
+        ],
+        "constraints": [
+            {"pocket": {"binder": "C", "contacts": [["A", pos] for pos in contacts_a]
+                        + [["B", pos] for pos in contacts_b]}}
+        ],
+        "properties": [
+            {"affinity": {"binder": "C"}}
+        ],
+    }
+
+
+def bootstrap_msa_dimer(pocket_name, seq_a, contacts_a, seq_b, contacts_b, candidates):
+    """Dimer counterpart of bootstrap_msa(): ensures BOTH msa_cache/<pocket_name>.csv (chain A)
+    and msa_cache/<pocket_name>_chainB.csv (chain B) exist, generating both from a single
+    `boltz predict --use_msa_server` call per candidate (one 2-chain YAML, not two single-chain
+    calls) since a joint call is what a real production dimer prediction will use anyway.
+
+    Boltz-2's single-chain MSA output is named "<yaml_stem>_0.csv" (index 0 = the sole protein
+    entity in that YAML) -- see bootstrap_msa() above. For a 2-protein-chain YAML we expect the
+    same indexing to extend to "<yaml_stem>_0.csv" (chain A) and "<yaml_stem>_1.csv" (chain B),
+    but this has not been empirically confirmed for a multi-chain YAML (only inferred from the
+    single-chain naming). If either expected file is missing after the call, this raises naming
+    exactly which one -- fail loudly here (smoke test), not silently mid-production-run."""
+    cache_path_a = os.path.join(MSA_CACHE_DIR, f"{pocket_name}.csv")
+    cache_path_b = os.path.join(MSA_CACHE_DIR, f"{pocket_name}_chainB.csv")
+    if (os.path.isfile(cache_path_a) and os.path.getsize(cache_path_a) > 0
+            and os.path.isfile(cache_path_b) and os.path.getsize(cache_path_b) > 0):
+        print(f"  MSA cache already present: {cache_path_a}, {cache_path_b}")
+        return
+
+    bootstrap_out = os.path.join(MSA_BOOTSTRAP_DIR, pocket_name)
+    os.makedirs(bootstrap_out, exist_ok=True)
+    for round_num in range(1, MAX_BOOTSTRAP_ROUNDS + 1):
+        for compound_id, smiles in zip(candidates["compound_id"].head(MAX_BOOTSTRAP_ATTEMPTS),
+                                        candidates["smiles"].head(MAX_BOOTSTRAP_ATTEMPTS)):
+            yaml_stem = f"bootstrap_{compound_id}"
+            yaml_path = os.path.join(bootstrap_out, f"{yaml_stem}.yaml")
+            with open(yaml_path, "w") as f:
+                yaml.safe_dump(build_bootstrap_yaml_dimer(seq_a, contacts_a, seq_b, contacts_b, smiles),
+                                f, sort_keys=False)
+
+            print(f"  Waiting {MSA_REQUEST_BACKOFF_S}s before MSA request (rate-limit backoff)...")
+            time.sleep(MSA_REQUEST_BACKOFF_S)
+            print(f"  [round {round_num}/{MAX_BOOTSTRAP_ROUNDS}] Bootstrapping dimer MSA with {compound_id}...")
+            subprocess.run([
+                "boltz", "predict", yaml_path,
+                "--out_dir", bootstrap_out,
+                "--use_msa_server", "--no_kernels",
+            ], check=True)
+
+            generated_a = os.path.join(bootstrap_out, f"boltz_results_{yaml_stem}", "msa", f"{yaml_stem}_0.csv")
+            generated_b = os.path.join(bootstrap_out, f"boltz_results_{yaml_stem}", "msa", f"{yaml_stem}_1.csv")
+            ok_a = os.path.isfile(generated_a) and os.path.getsize(generated_a) > 0
+            ok_b = os.path.isfile(generated_b) and os.path.getsize(generated_b) > 0
+            if ok_a and ok_b:
+                shutil.copyfile(generated_a, cache_path_a)
+                shutil.copyfile(generated_b, cache_path_b)
+                print(f"  MSA cache written: {cache_path_a}, {cache_path_b}")
+                return
+            missing = ([] if ok_a else [generated_a]) + ([] if ok_b else [generated_b])
+            print(f"  Warning: bootstrap with {compound_id} did not produce {missing}, trying next candidate.")
+        print(f"  Round {round_num}/{MAX_BOOTSTRAP_ROUNDS} exhausted for {pocket_name}, retrying...")
+
+    raise RuntimeError(f"Failed to bootstrap dimer MSA for {pocket_name} after {MAX_BOOTSTRAP_ROUNDS} rounds "
+                       f"x {MAX_BOOTSTRAP_ATTEMPTS} attempts.")
+
+
 def bootstrap_msa(pocket_name, sequence, contacts, candidates):
     """Ensures msa_cache/<pocket_name>.csv exists, generating it via a single-compound
     `boltz predict --use_msa_server` call (on a purpose-built, msa-less YAML) if missing. Tries up
     to MAX_BOOTSTRAP_ATTEMPTS candidate compounds (shortest SMILES first) in case one fails to
-    embed."""
+    embed, across up to MAX_BOOTSTRAP_ROUNDS rounds -- a failure is usually a rare/transient MSA
+    server hiccup rather than a bad candidate, so retrying the same candidates again is as likely
+    to succeed as trying different ones."""
     cache_path = os.path.join(MSA_CACHE_DIR, f"{pocket_name}.csv")
     if os.path.isfile(cache_path) and os.path.getsize(cache_path) > 0:
         print(f"  MSA cache already present: {cache_path}")
@@ -119,31 +205,34 @@ def bootstrap_msa(pocket_name, sequence, contacts, candidates):
 
     bootstrap_out = os.path.join(MSA_BOOTSTRAP_DIR, pocket_name)
     os.makedirs(bootstrap_out, exist_ok=True)
-    for compound_id, smiles in zip(candidates["compound_id"].head(MAX_BOOTSTRAP_ATTEMPTS),
-                                    candidates["smiles"].head(MAX_BOOTSTRAP_ATTEMPTS)):
-        yaml_stem = f"bootstrap_{compound_id}"
-        yaml_path = os.path.join(bootstrap_out, f"{yaml_stem}.yaml")
-        with open(yaml_path, "w") as f:
-            yaml.safe_dump(build_bootstrap_yaml(sequence, contacts, smiles), f, sort_keys=False)
+    for round_num in range(1, MAX_BOOTSTRAP_ROUNDS + 1):
+        for compound_id, smiles in zip(candidates["compound_id"].head(MAX_BOOTSTRAP_ATTEMPTS),
+                                        candidates["smiles"].head(MAX_BOOTSTRAP_ATTEMPTS)):
+            yaml_stem = f"bootstrap_{compound_id}"
+            yaml_path = os.path.join(bootstrap_out, f"{yaml_stem}.yaml")
+            with open(yaml_path, "w") as f:
+                yaml.safe_dump(build_bootstrap_yaml(sequence, contacts, smiles), f, sort_keys=False)
 
-        print(f"  Waiting {MSA_REQUEST_BACKOFF_S}s before MSA request (rate-limit backoff)...")
-        time.sleep(MSA_REQUEST_BACKOFF_S)
-        print(f"  Bootstrapping MSA with {compound_id}...")
-        subprocess.run([
-            "boltz", "predict", yaml_path,
-            "--out_dir", bootstrap_out,
-            "--use_msa_server", "--no_kernels",
-        ], check=True)
+            print(f"  Waiting {MSA_REQUEST_BACKOFF_S}s before MSA request (rate-limit backoff)...")
+            time.sleep(MSA_REQUEST_BACKOFF_S)
+            print(f"  [round {round_num}/{MAX_BOOTSTRAP_ROUNDS}] Bootstrapping MSA with {compound_id}...")
+            subprocess.run([
+                "boltz", "predict", yaml_path,
+                "--out_dir", bootstrap_out,
+                "--use_msa_server", "--no_kernels",
+            ], check=True)
 
-        # named "<yaml_stem>_0.csv", not a fixed "input_0.csv"
-        generated = os.path.join(bootstrap_out, f"boltz_results_{yaml_stem}", "msa", f"{yaml_stem}_0.csv")
-        if os.path.isfile(generated) and os.path.getsize(generated) > 0:
-            shutil.copyfile(generated, cache_path)
-            print(f"  MSA cache written: {cache_path}")
-            return
-        print(f"  Warning: bootstrap with {compound_id} did not produce a usable MSA, trying next candidate.")
+            # named "<yaml_stem>_0.csv", not a fixed "input_0.csv"
+            generated = os.path.join(bootstrap_out, f"boltz_results_{yaml_stem}", "msa", f"{yaml_stem}_0.csv")
+            if os.path.isfile(generated) and os.path.getsize(generated) > 0:
+                shutil.copyfile(generated, cache_path)
+                print(f"  MSA cache written: {cache_path}")
+                return
+            print(f"  Warning: bootstrap with {compound_id} did not produce a usable MSA, trying next candidate.")
+        print(f"  Round {round_num}/{MAX_BOOTSTRAP_ROUNDS} exhausted for {pocket_name}, retrying...")
 
-    raise RuntimeError(f"Failed to bootstrap MSA for {pocket_name} after {MAX_BOOTSTRAP_ATTEMPTS} attempts.")
+    raise RuntimeError(f"Failed to bootstrap MSA for {pocket_name} after {MAX_BOOTSTRAP_ROUNDS} rounds "
+                       f"x {MAX_BOOTSTRAP_ATTEMPTS} attempts.")
 
 
 def prepare_scope_dir(pocket_name, max_compounds):
@@ -254,7 +343,12 @@ def main():
         try:
             prow = pocket_sequences.loc[pocket_name]
             contacts = [int(p) for p in prow["pocket_contacts"].split()]
-            bootstrap_msa(pocket_name, prow["sequence"], contacts, compounds_by_len)
+            if pd.notna(prow.get("sequence_b")):
+                contacts_b = [int(p) for p in prow["pocket_contacts_b"].split()]
+                bootstrap_msa_dimer(pocket_name, prow["sequence"], contacts,
+                                     prow["sequence_b"], contacts_b, compounds_by_len)
+            else:
+                bootstrap_msa(pocket_name, prow["sequence"], contacts, compounds_by_len)
 
             if args.max_compounds is None:
                 check_yaml_count(pocket_name, n_total_compounds)

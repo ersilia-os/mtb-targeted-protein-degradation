@@ -52,6 +52,26 @@ def build_yaml(sequence, msa_path, smiles, contacts):
     }
 
 
+def build_dimer_yaml(seq_a, msa_a, seq_b, msa_b, smiles, contacts_a, contacts_b):
+    """Same schema as build_yaml(), but for the 7K98_pocket_6 pheS+pheT complex: two protein
+    chains (A=pheS, B=pheT), so the ligand takes id "C" instead of "B"."""
+    return {
+        "version": 1,
+        "sequences": [
+            {"protein": {"id": "A", "sequence": seq_a, "msa": msa_a}},
+            {"protein": {"id": "B", "sequence": seq_b, "msa": msa_b}},
+            {"ligand": {"id": "C", "smiles": smiles}},
+        ],
+        "constraints": [
+            {"pocket": {"binder": "C", "contacts": [["A", pos] for pos in contacts_a]
+                        + [["B", pos] for pos in contacts_b]}}
+        ],
+        "properties": [
+            {"affinity": {"binder": "C"}}
+        ],
+    }
+
+
 def main():
     pockets = pd.read_csv(POCKET_SEQUENCES_CSV)
     compounds = pd.read_csv(COMPOUNDS_CSV)
@@ -64,6 +84,12 @@ def main():
         sequence = prow["sequence"]
         contacts = [int(p) for p in prow["pocket_contacts"].split()]
         msa_path = f"{NEBULA_REPO_ROOT}/output/73_boltz2_docking/msa_cache/{pocket_name}.csv"
+        is_dimer = pd.notna(prow.get("sequence_b"))
+
+        if is_dimer:
+            sequence_b = prow["sequence_b"]
+            contacts_b = [int(p) for p in prow["pocket_contacts_b"].split()]
+            msa_path_b = f"{NEBULA_REPO_ROOT}/output/73_boltz2_docking/msa_cache/{pocket_name}_chainB.csv"
 
         pocket_dir = os.path.join(INPUT_YAMLS_DIR, pocket_name)
         os.makedirs(pocket_dir, exist_ok=True)
@@ -74,7 +100,11 @@ def main():
                 n_skipped += 1
                 continue
 
-            yaml_dict = build_yaml(sequence, msa_path, crow["smiles"], contacts)
+            if is_dimer:
+                yaml_dict = build_dimer_yaml(sequence, msa_path, sequence_b, msa_path_b,
+                                              crow["smiles"], contacts, contacts_b)
+            else:
+                yaml_dict = build_yaml(sequence, msa_path, crow["smiles"], contacts)
             with open(out_path, "w") as f:
                 yaml.safe_dump(yaml_dict, f, sort_keys=False)
             n_written += 1

@@ -53,6 +53,9 @@ def main():
     for _, row in pockets.iterrows():
         pocket_name = row["pocket_name"]
         msa_cached = os.path.isfile(os.path.join(MSA_CACHE_DIR, f"{pocket_name}.csv"))
+        if pd.notna(row.get("sequence_b")):
+            # Dimer pocket: needs both chains' MSA cached before it's really ready.
+            msa_cached = msa_cached and os.path.isfile(os.path.join(MSA_CACHE_DIR, f"{pocket_name}_chainB.csv"))
         n_struct, n_aff = pocket_progress(pocket_name, args.out_subdir)
 
         if n_aff >= N_COMPOUNDS:
