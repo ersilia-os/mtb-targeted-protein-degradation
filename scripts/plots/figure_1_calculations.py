@@ -10,6 +10,9 @@ import pandas as pd
 import stylia
 from matplotlib.colors import to_hex
 
+# Format: print — change with stylia.set_format()
+stylia.set_format("print")
+
 data_dir = os.path.join(root, "..", "..", "data")
 output_dir = os.path.join(root, "..", "..", "output")
 plots_dir = os.path.join(root, "..", "..", "plots", "figure_1")

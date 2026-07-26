@@ -81,25 +81,25 @@ PROTEINS = sorted(set(pocket_detection_data['Uniprot AC']))
 PROTEINS = np.array(PROTEINS)[np.argsort([uniprot_to_gene[i] for i in PROTEINS])]
 
 MY_VIEWS = {
-    "P9WFW7": (0.3057363033294678, 0.4373838007450104, -0.8457068204879761, -0.5882235765457153, -0.611682653427124, -0.5290026068687439, -0.748680830001831, 0.6591969728469849, 0.07026650756597519, 0.0, 0.0, -433.7461853027344, -1.5699996948242188, 4.530498504638672, -0.6824989318847656, 329.82318115234375, 537.6693725585938, 20.0),
+    "P9WFW7": (0.312430620,    0.466541409,    0.827481985, -0.380785346,   -0.736536384,    0.559036851,  0.870279729,   -0.489755034,   -0.052467018,  0.000000000,    0.000000000, -466.590057373, -1.569999695,    4.530498505,   -0.682498932,367.863159180,  565.316955566,   20.000000000 ),
     "P9WFW5": (0.5257094502449036, 0.24445058405399323, -0.8147862553596497, -0.4274793863296509, 0.9040127396583557, -0.004594181664288044, 0.7354535460472107, 0.35071954131126404, 0.5797445774078369, 0.0, 0.0, -491.1474304199219, 1.5335006713867188, 0.069000244140625, -2.2099990844726562, 387.224365234375, 595.0704956054688, 20.0),
     "P9WFW3": (-0.26671209931373596, 0.51364666223526, 0.815495491027832, -0.777970016002655, -0.6141894459724426, 0.13241274654865265, 0.5688825249671936, -0.5991148352622986, 0.563413143157959, 4.291534423828125e-06, 8.13603401184082e-06, -374.25726318359375, 5.0578107833862305, 5.926779747009277, 4.082901954650879, 270.3341064453125, 478.18035888671875, 20.0),
     "P9WFW1": (-0.4216419458389282, 0.8592755198478699, -0.2895902097225189, -0.27892550826072693, 0.1809750199317932, 0.9431059956550598, 0.8627971410751343, 0.47842830419540405, 0.16336770355701447, 0.0, 0.0, -491.1474304199219, 4.153499603271484, -1.8014984130859375, 3.6859970092773438, 387.224365234375, 595.0704956054688, 20.0),
-    "P9WQA1": (0.4465216100215912, 0.7717994451522827, -0.45270758867263794, 0.5876753926277161, -0.6344872117042542, -0.5020610094070435, -0.6747274398803711, -0.04186404496431351, -0.7368791103363037, 0.0, 0.0, -491.1474304199219, -1.9305000305175781, -0.6425018310546875, -2.5839996337890625, 387.224365234375, 595.0704956054688, 20.0),
+    "P9WQA1": ( 0.684969127,    0.360620856,    0.633064270, -0.128735647,   -0.795332789,    0.592346072,0.717109144,   -0.487235487,   -0.498353481,0.000000000,    0.000000000, -466.590057373,-1.930500031,   -0.642501831,   -2.583999634,367.863159180,  565.316955566,   20.000000000), 
     "P9WN61": (0.762495219707489, 0.0944238156080246, -0.6400659680366516, -0.6421377658843994, -0.010534999892115593, -0.7665179967880249, -0.07912039756774902, 0.9954747557640076, 0.0525999590754509, 0.0, 0.0, -491.1474304199219, -1.5144996643066406, -0.6930007934570312, 6.256999969482422, 387.224365234375, 595.0704956054688, 20.0),
     "P9WFV9": (-0.7302274703979492, -0.11305446177721024, 0.673784077167511, 0.1144353523850441, 0.9520406723022461, 0.2837631106376648, -0.673551619052887, 0.2843160629272461, -0.6822696328163147, 0.0, 0.0, -491.1474304199219, -0.9449996948242188, 8.261497497558594, -2.5309982299804688, 387.224365234375, 595.0704956054688, 20.0),
     "P9WFV7": (0.634964108467102, 0.6521565318107605, -0.4141402542591095, 0.548267126083374, -0.002736924681812525, 0.8362982869148254, 0.5442638397216797, -0.7580783367156982, -0.35929417610168457, 0.0, 0.0, -491.1474304199219, 2.8590011596679688, -1.5230026245117188, -2.671001434326172, 387.224365234375, 595.0704956054688, 20.0),
     "P9WFV5": (0.941296398639679, 0.1540936380624771, 0.30035918951034546, -0.33244943618774414, 0.2685926556587219, 0.9040654301643372, 0.05863688141107559, -0.9508472084999084, 0.3040543496608734, 0.0, 0.0, -491.1474304199219, 0.2584991455078125, 2.062999725341797, -3.6795005798339844, 387.224365234375, 595.0704956054688, 20.0),
     "P9WFV3": (-0.0221111997961998, 0.9986055493354797, 0.04795076698064804, -0.21365615725517273, 0.04213476553559303, -0.9760009050369263, -0.9766592383384705, -0.03182630613446236, 0.2124253511428833, 0.0, 0.0, -497.0749816894531, 0.4790000915527344, -6.293498992919922, 10.033000946044922, 393.1518859863281, 600.998046875, 20.0),
     "P9WFV1": (-0.609279215335846, 0.7763136625289917, 0.16159172356128693, -0.13472627103328705, -0.3021676242351532, 0.943687379360199, 0.7814245223999023, 0.5531991124153137, 0.2886964678764343, 4.6759843826293945e-05, -2.6777386665344238e-05, -494.4760437011719, 10.133469581604004, 6.652966499328613, -5.180924415588379, 390.5534973144531, 598.3994140625, 20.0),
-    "P9WFU9": (-0.8799959421157837, -0.29623836278915405, -0.37128183245658875, 0.38811424374580383, 0.0021511525847017765, -0.9216091632843018, 0.2738143801689148, -0.9551107287406921, 0.11308161914348602, 0.0, 0.0, -491.1474304199219, 0.8774986267089844, -3.3414993286132812, 6.8939971923828125, 387.224365234375, 595.0704956054688, 20.0),
+    "P9WFU9": (  0.108211756,   -0.602419376,    0.790810108, 0.695626080,    0.614177227,    0.372677028,-0.710205436,    0.509780943,    0.485519290, 0.000000000,    0.000000000, -466.590057373, 0.877498627,   -3.341499329,    6.893997192,67.863159180,  565.316955566,   20.000000000 ),
     "P9WFU5": (0.3144778311252594, 0.6041325926780701, 0.7322072386741638, 0.2726598381996155, -0.7963241934776306, 0.5399298667907715, 0.9092639088630676, 0.02984808385372162, -0.4151495099067688, 0.0, 0.0, -491.1474304199219, -3.6910018920898438, -1.782501220703125, -0.1999969482421875, 387.224365234375, 595.0704956054688, 20.0),
     "P9WFU3": (0.8389383554458618, -0.3773128390312195, -0.3921956419944763, -0.49929937720298767, -0.24691034853458405, -0.8305028676986694, 0.21652206778526306, 0.8925665020942688, -0.3955335021018982, 0.0, 0.0, -491.1474304199219, 15.207504272460938, -7.323997497558594, -2.7709999084472656, 387.224365234375, 595.0704956054688, 20.0),
-    "P9WFU1": (0.02011774480342865, -0.7623866200447083, -0.6468092203140259, -0.86275714635849, -0.34015029668807983, 0.3740968704223633, -0.5052179098129272, 0.5505126714706421, -0.6645970940589905, 0.0, 0.0, -491.1474304199219, -0.6439971923828125, 4.8594970703125, -4.352996826171875, 387.224365234375, 595.0704956054688, 20.0),
+    "P9WFU1": (0.649043918,   -0.306319863,   -0.696354270, -0.756129503,   -0.159016922,   -0.634806931, 0.083722532, 0.938553512, -0.334826291,  0.000000000, 0.000000000, -466.590057373, -0.643997192,    4.859497070,   -4.352996826,367.863159180,  565.316955566,   20.000000000 ),
     "P9WFT9": (0.8664358854293823, -0.32233402132987976, 0.381300687789917, 0.4621317684650421, 0.8068275451660156, -0.3680553734302521, -0.18900713324546814, 0.4951080083847046, 0.8480231165885925, 0.0, 0.0, -491.1474304199219, 1.9814987182617188, -6.362499237060547, 1.6375007629394531, 387.224365234375, 595.0704956054688, 20.0),
-    "P9WFT7": "",
+    "P9WFT7": (0.406122983,    0.380642772,    0.830766201, 0.126066312,    0.877084732,   -0.463493139, -0.905079246,    0.292967290,    0.308219969,  0.000000000,    0.000000000, -371.862823486, -4.729499817,   -3.773498535,    5.320499420,273.135955811,  470.589752197,   20.000000000), 
     "P9WFT5": "",
-    "P9WFT3": "",
+    "P9WFT3": (0.244085222,   -0.812733531,   -0.529044509,-0.957535088,   -0.115654342,   -0.264106989, 0.153462872,    0.571041286,   -0.806449711, 0.000000000,    0.000000000, -466.590057373, 3.377502441,    1.659999847,   -0.513000488,67.863159180,  565.316955566,   20.000000000 ),    
     "P9WFT1": "",
     "P9WFS9": ""
 }
@@ -245,9 +245,22 @@ def render_protein_structures(proteins=PROTEINS):
         if MY_VIEWS[protein] != "":
             cmd.set_view(MY_VIEWS[protein])
         zoom_to_fixed_box("structure", box_size=95)
-        cmd.save(os.path.join(plots_dir, f"session_{protein}_{gene}.pse"))
         cmd.ray(1200, 1200)
         cmd.png(os.path.join(plots_dir, f"figure_{protein}_{gene}.png"), dpi=600)
+
+        # After saving the PNG, add every other detected pocket for this reference
+        # structure to the session (the PNG only shows the top pocket(s) selected above).
+        for i, centroid in enumerate(all_centroids):
+            if any(np.array_equal(centroid, tc) for tc in top_centroids):
+                continue
+            cx, cy, cz = centroid
+            obj_name = f"pocket_all_{i}"
+            cmd.pseudoatom(obj_name, pos=[float(cx), float(cy), float(cz)], vdw=POCKET_SPHERE_RADIUS)
+            cmd.show("spheres", obj_name)
+            cmd.color("pocket_centroid_color", obj_name)
+            cmd.set("sphere_transparency", 0.1, obj_name)
+
+        cmd.save(os.path.join(plots_dir, f"session_{protein}_{gene}.pse"))
 
 
 N_COLS = 7
@@ -283,7 +296,7 @@ def render_structure_panel(ax, protein, show_grids=False):
         # that show_zoomed_image uses adjustable="datalim" (axes box position no
         # longer shifts per-column based on image content).
         legend_handles = [Line2D([0], [0], marker='o', color='w', label=gene, markerfacecolor=color, markeredgecolor='black', markeredgewidth=0.5, markersize=stylia.MARKERSIZE)]
-        ax.legend(handles=legend_handles, loc="upper center", frameon=False, bbox_to_anchor=(0.5, 0.05), fontsize=stylia.FONTSIZE_BIG, handletextpad=0.3)
+        ax.legend(handles=legend_handles, loc="upper center", frameon=False, bbox_to_anchor=(0.5, 0.05), fontsize=stylia.FONTSIZE, handletextpad=0.3)
 
     stylia.label(ax, xlabel="", ylabel="")
 
@@ -312,6 +325,19 @@ CHEMBL_BINDERS_TRNA_MAX = max(gene_to_chembl_binders.values())
 # CIRCLE_SIZE_MAX at the most, among these 21 tRNA synthetases.
 POCKET_COUNT_TRNA_MAX = max(gene_to_unique_pocket_count.values())
 
+# Fixed placeholder size (points^2, absolute — not scaled by s_max) for "no data" circles
+# (0 PDBs, no ChEMBL mapping): deliberately small and constant across every panel, so it
+# reads as "nothing here" rather than as a data point on the row's own size scale.
+EMPTY_CIRCLE_SIZE = 10
+
+
+def readable_text_color(hex_color):
+    # Standard YIQ perceptual luminance; below 0.5 the background reads as "dark"
+    # enough that black text loses contrast, so switch to white.
+    r, g, b = mcolors.to_rgb(hex_color)
+    luminance = 0.299 * r + 0.587 * g + 0.114 * b
+    return "white" if luminance < 0.5 else "black"
+
 
 def render_placeholder_panel(ax, protein, show_grids=False):
     apply_grid_frame(ax, show_grids)
@@ -334,48 +360,56 @@ def render_placeholder_panel(ax, protein, show_grids=False):
     vi_size_value = CIRCLE_SIZE_MIN + vi_frac * (CIRCLE_SIZE_MAX - CIRCLE_SIZE_MIN)
     s = s_max * (vi_size_value / CIRCLE_SIZE_MAX)
     ax.scatter([vi_x], [vi_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
-    ax.text(vi_x, vi_y, f"VI\n{vi:.1f}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+    ax.text(vi_x, vi_y, f"VI\n{vi:.1f}", ha='center', va='center', color=readable_text_color(color), fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
 
     # Upper-right circle: number of associated experimental PDB structures. Zero PDBs
-    # gets no circle at all (text only) rather than an empty marker.
+    # gets an empty (unfilled) placeholder circle and no text label, instead of a
+    # scaled marker with a "0 PDBs" label.
     pdb_x, pdb_y = PLACEHOLDER_CIRCLE_POSITIONS[1]
     pdb_count = gene_to_pdb_count[gene]
     pdb_label = "PDB" if pdb_count == 1 else "PDBs"
     if pdb_count > 0:
-        pdb_frac = pdb_count / PDB_TRNA_MAX
-        pdb_size_value = CIRCLE_SIZE_MIN + pdb_frac * (CIRCLE_SIZE_MAX - CIRCLE_SIZE_MIN)
-        s = s_max * (pdb_size_value / CIRCLE_SIZE_MAX)
+        # 1 PDB = 50% of max size, then scales linearly up to 100% at PDB_TRNA_MAX
+        # (mirrors the ChEMBL ligands / distinct pockets circles' floor-then-scale rule).
+        pdb_frac = 0.5 + 0.5 * (pdb_count - 1) / (PDB_TRNA_MAX - 1)
+        s = s_max * pdb_frac
         ax.scatter([pdb_x], [pdb_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
-    ax.text(pdb_x, pdb_y, f"{pdb_count}\n{pdb_label}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+        ax.text(pdb_x, pdb_y, f"{pdb_count}\n{pdb_label}", ha='center', va='center', color=readable_text_color(color), fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+    else:
+        ax.scatter([pdb_x], [pdb_y], s=EMPTY_CIRCLE_SIZE, facecolor='none', edgecolor=color, linewidth=stylia.LINEWIDTH, zorder=1)
 
-    # Bottom-left circle: ChEMBL binders (IC50 <= 10 uM). Genes with no ChEMBL target
-    # mapping at all get no circle and a "No data" label instead of "0 binders".
+    # Bottom-left circle: ChEMBL ligands (IC50 <= 10 uM). Genes with no ChEMBL target
+    # mapping at all get an empty (unfilled) placeholder circle and no text label,
+    # instead of "0 ligands" (a real measured zero, drawn with no circle, stays as-is).
     chembl_x, chembl_y = PLACEHOLDER_CIRCLE_POSITIONS[2]
     if gene in gene_to_chembl_binders:
         n_binders = gene_to_chembl_binders[gene]
-        binder_label = "binder" if n_binders == 1 else "binders"
+        binder_label = "ligand" if n_binders == 1 else "ligands"
         if n_binders > 0:
             # Any nonzero count starts at 50% of max size, then scales proportionally
             # up to 100% at CHEMBL_BINDERS_TRNA_MAX (unlike VI/PDBs, which scale from 0).
             chembl_frac = 0.5 + 0.5 * (n_binders / CHEMBL_BINDERS_TRNA_MAX)
             s = s_max * chembl_frac
             ax.scatter([chembl_x], [chembl_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
-        ax.text(chembl_x, chembl_y, f"{n_binders}\n{binder_label}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+        chembl_text_color = readable_text_color(color) if n_binders > 0 else "black"
+        ax.text(chembl_x, chembl_y, f"{n_binders}\n{binder_label}", ha='center', va='center', color=chembl_text_color, fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
     else:
-        ax.text(chembl_x, chembl_y, "No\ndata", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+        ax.scatter([chembl_x], [chembl_y], s=EMPTY_CIRCLE_SIZE, facecolor='none', edgecolor=color, linewidth=stylia.LINEWIDTH, zorder=1)
 
     # Bottom-right circle: distinct pockets per protein, deduplicated across all of its
     # structures (see figure_1_calculations.py: greedy dedup by pocket centroid distance,
     # threshold matching notebooks/08_coherence_detected_pockets.ipynb).
     pocket_x, pocket_y = PLACEHOLDER_CIRCLE_POSITIONS[3]
     n_pockets = gene_to_unique_pocket_count[gene]
-    pocket_label = "pocket" if n_pockets == 1 else "pockets"
+    pocket_label = "pock."
     if n_pockets > 0:
-        pocket_frac = n_pockets / POCKET_COUNT_TRNA_MAX
-        pocket_size_value = CIRCLE_SIZE_MIN + pocket_frac * (CIRCLE_SIZE_MAX - CIRCLE_SIZE_MIN)
-        s = s_max * (pocket_size_value / CIRCLE_SIZE_MAX)
+        # 1 pocket = 50% of max size, then scales linearly up to 100% at
+        # POCKET_COUNT_TRNA_MAX (mirrors the ChEMBL binders circle's floor-then-scale rule).
+        pocket_frac = 0.5 + 0.5 * (n_pockets - 1) / (POCKET_COUNT_TRNA_MAX - 1)
+        s = s_max * pocket_frac
         ax.scatter([pocket_x], [pocket_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
-    ax.text(pocket_x, pocket_y, f"{n_pockets}\n{pocket_label}", ha='center', va='center', fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+    pocket_text_color = readable_text_color(color) if n_pockets > 0 else "black"
+    ax.text(pocket_x, pocket_y, f"{n_pockets}\n{pocket_label}", ha='center', va='center', color=pocket_text_color, fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
 
     # Set (and lock) fixed data coordinates AFTER all scatter/text calls — each
     # ax.scatter() call above triggers matplotlib's default autoscale-on-new-artist
