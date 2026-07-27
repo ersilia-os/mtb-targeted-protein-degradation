@@ -4,11 +4,15 @@ import sys
 root = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(root, "..", "..", "src"))
 
+import itertools
 import json
+import pickle
+
 import numpy as np
 import pandas as pd
 import stylia
 from matplotlib.colors import to_hex
+from scipy.spatial.distance import cosine
 
 # Format: print — change with stylia.set_format()
 stylia.set_format("print")
@@ -32,9 +36,14 @@ uniprot_to_gene = {i: j for i, j in zip(uniprot_to_gene_df['uniprot_ac'], unipro
 uniprot_ids = ["P9WFW5", "P9WFW7", "P9WFW3", "P9WQA1", "P9WN61", "P9WFT5", "P9WFV3", "P9WFS9", "P9WFV1", "P9WFV9", "P9WFT9", "P9WFV7", "P9WFT7",
                "P9WFW1", "P9WFU5", "P9WFU9", "P9WFV5", "P9WFT3", "P9WFU3", "P9WFU1", "P9WFT1"]
 
+# Single canonical ordering (alphabetical by gene name), reused for every section below —
+# also what figure_1b_plot.py's SeqId/structural/PocketVec panels sort by, so all outputs
+# from this script line up row-for-row.
+uniprot_order = sorted(uniprot_ids, key=lambda uid: uniprot_to_gene[uid])
+genes_sorted = [uniprot_to_gene[uid] for uid in uniprot_order]
+
 # stylia SpectralColormap ("npg" preset), one color per protein, assigned in
 # alphabetical gene-name order so the gradient lines up with PROTEINS in figure_1_plot.py.
-genes_sorted = sorted(uniprot_to_gene[uid] for uid in uniprot_ids)
 palette = stylia.SpectralColormap("npg").sample(len(genes_sorted))
 gene_to_color = {gene: to_hex(palette[i]) for i, gene in enumerate(genes_sorted)}
 
@@ -55,7 +64,7 @@ banner("COUNTING EXPERIMENTAL PDB STRUCTURES")
 # files, so counting the "_updated" folder alone avoids double-counting).
 pdbe_dir = os.path.join(data_dir, "structures", "pdbe_database")
 gene_to_pdb_count = {}
-for uid in uniprot_ids:
+for uid in uniprot_order:
     gene = uniprot_to_gene[uid]
     updated_dir = os.path.join(pdbe_dir, uid, f"{uid}_updated")
     if os.path.isdir(updated_dir):
@@ -74,7 +83,7 @@ CHEMBL_BINDER_CUTOFF_NM = 10000
 chembl_dir = os.path.join(data_dir, "ligands", "chembl")
 gene_to_chembl_binders = {}
 gene_to_chembl_total = {}
-for uid in uniprot_ids:
+for uid in uniprot_order:
     gene = uniprot_to_gene[uid]
     chembl_file = os.path.join(chembl_dir, f"{uid}.json")
     if not os.path.exists(chembl_file):
@@ -91,7 +100,7 @@ for uid in uniprot_ids:
 print(f"ChEMBL binders (IC50 <= {CHEMBL_BINDER_CUTOFF_NM} nM) by gene: {gene_to_chembl_binders}")
 print(f"ChEMBL total unique molecules by gene: {gene_to_chembl_total}")
 
-banner("COUNTING DISTINCT POCKETS PER PROTEIN")
+banner("DEDUPLICATING POCKETS PER PROTEIN")
 # pocket_detection_data.csv has one row per pocket per structure, so a protein with 13
 # structures can log the same physical pocket 13 times over. Structures are aligned into
 # a shared coordinate frame (output/aligned_relaxed_structures), so pocket centroids are
@@ -100,18 +109,25 @@ banner("COUNTING DISTINCT POCKETS PER PROTEIN")
 # already-accepted centroid. 6.14 A matches the empirical same-pocket distance cutoff
 # from notebooks/08_coherence_detected_pockets.ipynb (pairwise pocket-centroid distance
 # analysis across aligned structures for the same protein).
+# Computed once here — both the count (gene_to_unique_pocket_count, below) and the
+# accepted rows themselves (uid_to_accepted_rows, reused for the PocketVec matrix later)
+# come from this single pass.
 POCKET_DEDUP_DISTANCE_THRESHOLD = 6.14
 pocket_detection_data = pd.read_csv(os.path.join(output_dir, "pocket_detection_data.csv"))
 gene_to_unique_pocket_count = {}
-for uid in uniprot_ids:
+uid_to_accepted_rows = {}
+for uid in uniprot_order:
     gene = uniprot_to_gene[uid]
     df = pocket_detection_data[pocket_detection_data['Uniprot AC'] == uid].sort_values('Pocket score', ascending=False)
-    centroids = [np.array([float(v) for v in c.split()]) for c in df['Pocket centroid coordinate (x y z)']]
-    accepted = []
-    for c in centroids:
-        if all(np.linalg.norm(c - a) > POCKET_DEDUP_DISTANCE_THRESHOLD for a in accepted):
-            accepted.append(c)
-    gene_to_unique_pocket_count[gene] = len(accepted)
+    accepted_centroids = []
+    accepted_rows = []
+    for _, row in df.iterrows():
+        centroid = np.array([float(v) for v in row['Pocket centroid coordinate (x y z)'].split()])
+        if all(np.linalg.norm(centroid - c) > POCKET_DEDUP_DISTANCE_THRESHOLD for c in accepted_centroids):
+            accepted_centroids.append(centroid)
+            accepted_rows.append(row)
+    gene_to_unique_pocket_count[gene] = len(accepted_rows)
+    uid_to_accepted_rows[uid] = accepted_rows
 print(f"Distinct pocket counts by gene: {gene_to_unique_pocket_count}")
 
 banner("SAVING MAPPINGS")
@@ -126,7 +142,89 @@ mappings = {
     "gene_to_chembl_total": gene_to_chembl_total,
     "gene_to_unique_pocket_count": gene_to_unique_pocket_count,
 }
-output_path = os.path.join(plots_dir, "color_mapping.json")
-with open(output_path, "w") as f:
+color_mapping_path = os.path.join(plots_dir, "color_mapping.json")
+with open(color_mapping_path, "w") as f:
     json.dump(mappings, f, indent=2)
-print(f"Saved to {output_path}")
+print(f"Saved to {color_mapping_path}")
+
+banner("STRUCTURAL RMSD MATRIX: pooling output/structural_comparisons/ CSVs (both directions)")
+# Upper triangle: mean RMSD between the two proteins (pooled, both directions).
+# Diagonal: min RMSD between structures of the same protein — not yet computed anywhere
+# in the pipeline (scripts/15_calculate_StSim.py only does cross-protein pairs) and slow
+# (~1600 superpositions), so left as a placeholder 0 for now.
+# Lower triangle: min RMSD between the two proteins (pooled, both directions).
+COMPARISONS_DIR = os.path.join(output_dir, "structural_comparisons")
+pair_rmsds = {}
+for uid1, uid2 in itertools.combinations(uniprot_order, 2):
+    values = []
+    for a, b in [(uid1, uid2), (uid2, uid1)]:
+        path = os.path.join(COMPARISONS_DIR, f"{a}_{b}_rmsd.csv")
+        if os.path.exists(path):
+            values.extend(pd.read_csv(path)["rmsd"].tolist())
+    if not values:
+        raise FileNotFoundError(f"No structural comparison file found for {uid1}/{uid2}")
+    pair_rmsds[frozenset((uid1, uid2))] = values
+    print(f"{uniprot_to_gene[uid1]}/{uniprot_to_gene[uid2]}: {len(values)} pooled comparisons "
+          f"(mean={np.mean(values):.2f}, min={np.min(values):.2f})")
+
+n = len(uniprot_order)
+struct_matrix = np.zeros((n, n))
+for i, uid_i in enumerate(uniprot_order):
+    for j, uid_j in enumerate(uniprot_order):
+        if i == j:
+            struct_matrix[i, j] = 0.0
+        elif i < j:
+            struct_matrix[i, j] = np.mean(pair_rmsds[frozenset((uid_i, uid_j))])
+        else:
+            struct_matrix[i, j] = np.min(pair_rmsds[frozenset((uid_i, uid_j))])
+
+struct_matrix_df = pd.DataFrame(struct_matrix, index=uniprot_order, columns=uniprot_order)
+struct_output_path = os.path.join(plots_dir, "structural_similarity_matrix.tsv")
+struct_matrix_df.to_csv(struct_output_path, sep="\t")
+print(f"Saved to {struct_output_path}")
+
+banner("POCKETVEC MATRIX: min cosine distance over deduplicated pockets")
+# Mirrors notebooks/16_PocketVec_analyses.ipynb's own convention: off-diagonal = min
+# cosine distance between every pocket of protein i and every pocket of protein j;
+# diagonal = min cosine distance between a protein's own distinct pockets (every protein
+# here has >=2 deduplicated pockets, so this is always well-defined). Reuses
+# uid_to_accepted_rows from the dedup pass above — no second dedup pass needed.
+with open(os.path.join(output_dir, "pocketvec_RUN", "fps_rank.pkl"), "rb") as f:
+    fps_rank = pickle.load(f)
+
+
+def pocketvec_key(file_name, pocket_number):
+    return f"{file_name.replace('.pdb', '')}_pocket_{pocket_number}"
+
+
+uid_to_vectors = {}
+for uid in uniprot_order:
+    vectors = []
+    for row in uid_to_accepted_rows[uid]:
+        key = pocketvec_key(row["File name"], row["Pocket number"])
+        if key not in fps_rank:
+            print(f"  WARNING: {key} not found in fps_rank.pkl — skipping this pocket")
+            continue
+        vectors.append(fps_rank[key])
+    uid_to_vectors[uid] = vectors
+    print(f"{uniprot_to_gene[uid]} ({uid}): {len(vectors)} pockets with descriptors")
+
+pocketvec_matrix = np.zeros((n, n))
+for i, uid_i in enumerate(uniprot_order):
+    for j, uid_j in enumerate(uniprot_order):
+        if j < i:
+            continue
+        if i == j:
+            pairs = itertools.combinations(uid_to_vectors[uid_i], 2)
+        else:
+            pairs = itertools.product(uid_to_vectors[uid_i], uid_to_vectors[uid_j])
+        dist = min(cosine(va, vb) for va, vb in pairs)
+        pocketvec_matrix[i, j] = dist
+        pocketvec_matrix[j, i] = dist
+
+pocketvec_matrix_df = pd.DataFrame(pocketvec_matrix, index=uniprot_order, columns=uniprot_order)
+print(f"Matrix value range: min={pocketvec_matrix_df.values.min():.4f}, "
+      f"max={pocketvec_matrix_df.values[~np.eye(n, dtype=bool)].max():.4f} (excluding diagonal)")
+pocketvec_output_path = os.path.join(plots_dir, "pocketvec_similarity_matrix.tsv")
+pocketvec_matrix_df.to_csv(pocketvec_output_path, sep="\t")
+print(f"Saved to {pocketvec_output_path}")

@@ -73,6 +73,38 @@ def download_file(outfile):
         raise
 
 
+def list_smiles_chunks():
+    """Sorted chunk names available in GDRIVE_FOLDER_ID, derived from *_SMILES_IDs.tsv.zip
+    filenames. Self-contained discovery - doesn't depend on any external repo/cluster path."""
+    service_file = os.path.join(ROOT, "service.json")
+    creds = Credentials.from_service_account_file(service_file, scopes=["https://www.googleapis.com/auth/drive.readonly"])
+    http = httplib2.Http(timeout=600)
+    authed_http = AuthorizedHttp(creds, http=http)
+    service = build("drive", "v3", http=authed_http)
+
+    suffix = "_SMILES_IDs.tsv.zip"
+    query = f"name contains '{suffix}' and '{GDRIVE_FOLDER_ID}' in parents and trashed=false"
+    chunks = []
+    page_token = None
+    while True:
+        for attempt in range(10):
+            try:
+                results = service.files().list(
+                    q=query, fields="nextPageToken, files(name)", pageSize=1000,
+                    pageToken=page_token, supportsAllDrives=True, includeItemsFromAllDrives=True,
+                ).execute()
+                break
+            except (HttpError, OSError):
+                time.sleep(5)
+                if attempt == 9:
+                    raise
+        chunks.extend(f["name"][:-len(suffix)] for f in results.get("files", []))
+        page_token = results.get("nextPageToken")
+        if not page_token:
+            break
+    return sorted(chunks)
+
+
 def get_pocket_to_ac():
     """{pocket_name: Uniprot AC} for all 276 pockets, from output/pocket_detection_data.csv."""
     df = pd.read_csv(PATH_TO_POCKET_DATA)
