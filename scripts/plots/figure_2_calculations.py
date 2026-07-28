@@ -10,10 +10,10 @@ chunk (processed/figure_2b_REAL10B_samples/{chunk}.csv), skips chunks already sa
 chunk's ~90MB SMILES mapping is deleted after use to keep tmp/ bounded across 994 chunks (herbert's
 root disk has little headroom).
 
-Docking percentiles (compute_docking_percentiles): p1/p0.1 (top-1,000/top-100 out of each
-pocket's screened compound set) per pocket, for all three libraries. Stores precomputed
-percentiles rather than raw score arrays - 276 pockets x ~100k compounds per library would make
-for an unnecessarily large file. REAL 10M percentiles use each pocket's prioritized top-100k
+Docking percentiles (compute_docking_percentiles): median, p1/p0.1 (top-1,000/top-100 out of
+each pocket's screened compound set) per pocket, for all three libraries. Stores precomputed
+summary stats rather than raw score arrays - 276 pockets x ~100k compounds per library would make
+for an unnecessarily large file. REAL 10M stats use each pocket's prioritized top-100k
 "active" set only (docking_utils.load_real_positive_scores), not the shared ~12,958-compound
 background sample also present in that library's docking output - matching HL's and REAL 10B's
 fully-screened sets.
@@ -135,6 +135,7 @@ def pocket_percentiles(pocket, scores, library, uniprot_to_gene):
         "gene": uniprot_to_gene.get(uniprot_ac, "unknown"),
         "library": library,
         "n": len(scores),
+        "median": np.median(scores),
         "p0_1": np.percentile(scores, 0.1),
         "p1": np.percentile(scores, 1),
     }
