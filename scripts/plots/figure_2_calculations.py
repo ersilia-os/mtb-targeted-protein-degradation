@@ -1,6 +1,7 @@
 """
 Computes all data feeding figure_2_plot.py: physicochemical properties for HL/REAL 10M/REAL 10B
-(panel B) and per-pocket docking-score percentiles for all three libraries (panel C).
+(panel B), per-pocket docking-score percentiles for all three libraries (panel C), and one
+best-compound PyMOL docking snapshot per gene (panel D).
 
 HL and REAL 10M (compute_hl_and_real10m): random 100k samples, physicochemical properties via
 docking_utils.compute_properties(). REAL 10B (compute_real10b): the Enamine REAL 10B library is
@@ -18,6 +19,16 @@ for an unnecessarily large file. REAL 10M stats use each pocket's prioritized to
 background sample also present in that library's docking output - matching HL's and REAL 10B's
 fully-screened sets.
 
+Docking snapshots (compute_docking_snapshots): a PyMOL render (cartoon protein + stick ligand +
+pocket-residue lines + H-bond dashes, following notebooks/46_docking_exploration_IIa.ipynb's
+pymol_screenshot()) of the single best-scoring compound per gene. Docked 3D poses (not just
+scores) are only archived (as a per-pocket docking.tar.gz) for a small hand-curated subset of
+pockets - 6 of 276 for HL, 14 of 276 for REAL 10B, 0 for REAL 10M - covering 6 genes total
+(alaS, aspS, ileS, lysS, pheS, pheT). So "best compound" here is the best score among only that
+gene's pose-archived (library, pocket) candidates, restricted to HL/REAL 10B (REAL 10M can never
+contribute a renderable snapshot - no poses are archived for it anywhere) - not the true best
+across all of a gene's pockets/libraries, most of which only ever had their score kept.
+
 Usage:
     python figure_2_calculations.py [--max-chunks N]
 """
@@ -26,6 +37,9 @@ import glob
 import json
 import os
 import sys
+import tarfile
+import tempfile
+from collections import defaultdict
 
 root = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(root, "..", "..", "src"))
@@ -182,6 +196,184 @@ def compute_docking_percentiles():
         print(f"  {library}: {len(group)} pocket(s)")
 
 
+# Only these two libraries ever archive docked 3D poses (a per-pocket docking.tar.gz) - REAL 10M's
+# docking_results/ tree has report.csv (scores) everywhere but no docking.tar.gz anywhere, so it
+# can never supply a renderable pose and is excluded here.
+POSE_LIBRARIES = {"HL": LIBRARIES["DL"], "REAL 10B": LIBRARIES["REAL"]}
+
+
+def pockets_with_poses(library_dir):
+    return sorted(
+        pocket for pocket in os.listdir(library_dir)
+        if os.path.isfile(os.path.join(library_dir, pocket, "docking.tar.gz"))
+    )
+
+
+def best_compound_candidates(uniprot_to_gene):
+    """{gene: [{library, pocket, compound, score}, ...]} - one entry per (library, pose-archived
+    pocket) belonging to that gene, each already reduced to that pocket's own best-scoring
+    compound. compute_docking_snapshots() flattens these across genes and takes the global
+    top-N by score, so a gene can supply more than one of the N snapshots."""
+    candidates = defaultdict(list)
+    for library, library_dir in POSE_LIBRARIES.items():
+        for pocket in pockets_with_poses(library_dir):
+            uniprot_ac = pocket.split("_model_")[0].split("_")[-1]
+            gene = uniprot_to_gene.get(uniprot_ac)
+            if gene is None:
+                continue
+            scores = load_scores(os.path.join(library_dir, pocket, "report.csv"))
+            candidates[gene].append({
+                "gene": gene, "library": library, "pocket": pocket,
+                "compound": scores.idxmin(), "score": scores.min(),
+            })
+    return candidates
+
+
+def find_structure_pdbqt(library_dir, pocket):
+    """Usually a pocket's own folder holds a copy of its structure's .pdbqt, but some sibling
+    pockets sharing the same structure only keep ONE shared copy, stored under a different
+    sibling's folder (e.g. alphafold3_P9WFU9_model_1's .pdbqt lives only under
+    .../model_1_pocket_2/, not .../model_1_pocket_1/, even though pocket_1 also uses it) - so
+    search every sibling pocket of the same structure, not just this one's own folder."""
+    structure = pocket.rsplit("_pocket_", 1)[0]
+    direct = os.path.join(library_dir, pocket, structure + ".pdbqt")
+    if os.path.isfile(direct):
+        return direct
+    for sibling in os.listdir(library_dir):
+        if sibling.startswith(structure + "_pocket_"):
+            candidate = os.path.join(library_dir, sibling, structure + ".pdbqt")
+            if os.path.isfile(candidate):
+                return candidate
+    raise FileNotFoundError(f"{structure}.pdbqt not found in any sibling pocket folder under {library_dir}")
+
+
+def pymol_snapshot(pocket, compound, library_dir, out_path):
+    """One PyMOL render (cartoon protein + stick ligand + pocket-residue lines + H-bond dashes)
+    of a single docked compound - following notebooks/46_docking_exploration_IIa.ipynb's
+    pymol_screenshot(), trimmed to just the PNG (no pandamap 2D-interaction diagram, no separate
+    .pdb dump)."""
+    import pymol
+    from pymol import cmd
+
+    pocket_dir = os.path.join(library_dir, pocket)
+    structure_path = find_structure_pdbqt(library_dir, pocket)
+
+    with tarfile.open(os.path.join(pocket_dir, "docking.tar.gz"), "r|gz") as tf:
+        for member in tf:
+            if member.name == f"docking/{compound}_out.sdf":
+                data = tf.extractfile(member).read()
+                break
+        else:
+            raise FileNotFoundError(f"{compound}_out.sdf not found in {pocket_dir}/docking.tar.gz")
+
+    tmp_fd, tmp_sdf = tempfile.mkstemp(suffix=".sdf")
+    os.close(tmp_fd)
+    try:
+        with open(tmp_sdf, "w") as f:
+            f.write(data.decode("utf-8", errors="replace"))
+
+        pymol.finish_launching(["pymol", "-cq"])
+        cmd.reinitialize()
+        cmd.bg_color("white")
+        cmd.set("ray_opaque_background", 0)
+
+        cmd.load(structure_path, "structure")
+        cmd.util.cbag("structure")
+        cmd.set_color("structure_col", [0x8D / 255, 0xC7 / 255, 0xFA / 255])
+        cmd.color("structure_col", "structure and elem C")
+
+        lig = "lig"
+        cmd.load(tmp_sdf, lig)
+        cmd.util.cbag(lig)
+        cmd.set_color("ligC_orange", [0xF5 / 255, 0xA6 / 255, 0x3A / 255])
+        cmd.color("ligC_orange", f"{lig} and elem C")
+
+        cmd.hide("everything", "structure")
+        cmd.show("cartoon", "structure")
+        cmd.set("cartoon_transparency", 0.4, "structure")
+        cmd.select("pocket_atoms", f"(structure within 6 of {lig}) and not solvent")
+        cmd.show("lines", "pocket_atoms")
+        cmd.show("sticks", lig)
+        cmd.orient(lig)
+        cmd.zoom(lig, buffer=6)
+        cmd.h_add("structure")
+        cmd.h_add(lig)
+
+        pairs = cmd.find_pairs(f"{lig} and donor", "pocket_atoms and acceptor", mode=1, cutoff=3.5, angle=45)
+        pairs += cmd.find_pairs(f"{lig} and acceptor", "pocket_atoms and donor", mode=1, cutoff=3.5, angle=45)
+        cmd.delete("hbonds")
+        for a1, a2 in list(dict.fromkeys(pairs)):
+            cmd.distance("hbonds", a1, a2)
+        cmd.color("yellow", "hbonds")
+        cmd.hide("labels", "hbonds")
+        cmd.set("dash_width", 2)
+        cmd.hide("everything", "elem H")
+
+        cmd.set("ray_shadows", 0)
+        cmd.set("ray_trace_mode", 1)
+        cmd.png(out_path, width=1200, height=1200, dpi=300, ray=1)
+    finally:
+        os.remove(tmp_sdf)
+
+
+# Matches panel D's 7-column layout in figure_2_plot.py - a fixed count, not one-per-gene, since
+# only 6 genes have any pose-archived candidates at all (see POSE_LIBRARIES above) and repeats
+# are wanted rather than leaving a slot empty.
+N_SNAPSHOTS = 7
+
+
+def select_minimizing_repeats(candidates_by_gene, n):
+    """Picks n entries with the minimum possible number of repeated genes: every gene's own best
+    candidate is taken before any gene's second-best, every gene's second-best before any third,
+    etc. - a gene only repeats once all other genes (with a candidate left) have already gotten
+    that many picks. Within each round, ties across genes are broken by score."""
+    remaining = {gene: sorted(entries, key=lambda e: e["score"]) for gene, entries in candidates_by_gene.items()}
+    selected = []
+    round_index = 0
+    while len(selected) < n:
+        round_pool = sorted(
+            (entries[round_index] for entries in remaining.values() if len(entries) > round_index),
+            key=lambda e: e["score"],
+        )
+        if not round_pool:
+            break  # no gene has any candidate left at this depth
+        selected.extend(round_pool[:n - len(selected)])
+        round_index += 1
+    return selected
+
+
+def compute_docking_snapshots():
+    banner("Loading gene mapping from figure 1's color mapping")
+    with open(os.path.join(ROOT, "plots", "figure_1", "color_mapping.json")) as f:
+        uniprot_to_gene = json.load(f)["uniprot_to_gene"]
+
+    banner("Finding pose-archived compound candidates (HL/REAL 10B only)")
+    candidates_by_gene = best_compound_candidates(uniprot_to_gene)
+    all_candidates = [e for entries in candidates_by_gene.values() for e in entries]
+    for e in sorted(all_candidates, key=lambda e: e["score"]):
+        print(f"  {e['gene']:<8} {e['library']:<8} {e['pocket']:<45} {e['compound']:<15} {e['score']:.3f}")
+
+    banner(f"Rendering top-{N_SNAPSHOTS} PyMOL snapshots (minimum repeated genes, best score first)")
+    top = sorted(select_minimizing_repeats(candidates_by_gene, N_SNAPSHOTS), key=lambda e: e["score"])
+    output_dir = os.path.join(plots_dir, "docking_snapshots")
+    os.makedirs(output_dir, exist_ok=True)
+    for old_file in glob.glob(os.path.join(output_dir, "*.png")):
+        os.remove(old_file)
+
+    index_rows = []
+    for rank, entry in enumerate(top, start=1):
+        filename = f"{rank:02d}_{entry['gene']}.png"
+        out_path = os.path.join(output_dir, filename)
+        print(f"#{rank} {entry['gene']}: {entry['compound']} in {entry['pocket']} "
+              f"({entry['library']}, score {entry['score']:.3f}) -> {out_path}")
+        pymol_snapshot(entry["pocket"], entry["compound"], POSE_LIBRARIES[entry["library"]], out_path)
+        index_rows.append({**entry, "rank": rank, "filename": filename})
+
+    index_path = os.path.join(output_dir, "index.csv")
+    pd.DataFrame(index_rows).to_csv(index_path, index=False)
+    print(f"Saved {len(top)} snapshot(s) and {index_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-chunks", type=int, default=None,
@@ -191,6 +383,7 @@ def main():
     compute_hl_and_real10m()
     compute_real10b(max_chunks=args.max_chunks)
     compute_docking_percentiles()
+    compute_docking_snapshots()
 
 
 if __name__ == "__main__":

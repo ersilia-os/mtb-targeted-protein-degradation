@@ -118,7 +118,7 @@ ZOOM_DICT = {
     "aspS": 1.4,
     "gatA": 1.6,
     "gatB": 1.4,
-    "thrS": 1.0,
+    "thrS": 0.5,
     "ileS": 1.3,
     "valS": 1.2,
     "leuS": 1.3,

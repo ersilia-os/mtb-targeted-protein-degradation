@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 import tempfile
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -232,7 +233,50 @@ def gene_docking_stats(docking_percentiles, gene):
     return pivoted.sort_values(("p1", "REAL 10B"))
 
 
-def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=None, show_yaxis=True):
+def load_docking_snapshot_index():
+    """Ordered rows (rank, gene, library, pocket, compound, score, filename) for panel D's 7
+    snapshot cells - figure_2_calculations.py's compute_docking_snapshots() writes this index
+    alongside the PNGs since panel D shows a fixed top-7 by score (repeats allowed), not one slot
+    per gene, so the same gene's snapshots need distinguishing beyond just its name."""
+    index_path = os.path.join(plots_dir, "docking_snapshots", "index.csv")
+    if not os.path.isfile(index_path):
+        return pd.DataFrame()
+    return pd.read_csv(index_path).sort_values("rank")
+
+
+LIBRARY_DISPLAY_NAMES = {"HL": "Hit Locator", "REAL 10M": "REAL 10M", "REAL 10B": "REAL 10B"}
+
+
+def plot_docking_snapshot(ax, rank, image_path, library, score):
+    """One panel D cell: a best-compound PyMOL docking snapshot, titled with the panel's own
+    plain-text number (outside the frame via loc="lower center", no color/marker), plus two more
+    plain-text legends - which library (top center) and its docking score (bottom center)."""
+    ax.imshow(np.array(Image.open(image_path)))
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    number_handle = [Line2D([0], [0], linestyle="None", marker="None", label=str(rank))]
+    number_legend = ax.legend(handles=number_handle, loc="lower center", frameon=False,
+                               bbox_to_anchor=(0.5, 1.0), fontsize=stylia.FONTSIZE_BIG, handlelength=0,
+                               handletextpad=0, borderaxespad=0)
+    # Each subsequent ax.legend() call below would otherwise silently replace the previous one -
+    # add_artist() keeps all but the last one on the axes at once.
+    ax.add_artist(number_legend)
+
+    # handlelength=0 collapses the (invisible) marker's reserved space so only the text shows.
+    library_handle = [Line2D([0], [0], linestyle="None", marker="None",
+                              label=LIBRARY_DISPLAY_NAMES.get(library, library))]
+    library_legend = ax.legend(handles=library_handle, loc="upper center", frameon=True, framealpha=0.8,
+                                edgecolor="black", fontsize=stylia.FONTSIZE, handlelength=0, handletextpad=0)
+    ax.add_artist(library_legend)
+
+    score_handle = [Line2D([0], [0], linestyle="None", marker="None", label=f"Dock. score: {score:.2f}")]
+    ax.legend(handles=score_handle, loc="lower center", frameon=True, framealpha=0.8, edgecolor="black",
+              fontsize=stylia.FONTSIZE, handlelength=0, handletextpad=0)
+
+
+def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=None, show_yaxis=True,
+                     snapshot_rows=None):
     """One cell of panel C's 3x7 gene grid, titled with a colored circle + gene name analogously
     to figure 1 panel A's per-structure gene legend (render_structure_panel()'s legend_handles
     pattern), reusing the same gene->color mapping. Plots each library's per-pocket median and p1
@@ -240,41 +284,103 @@ def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=No
     docking_df is given; otherwise a dummy single-dot scatter placeholder (for a gene with no
     docking data at all) in the gene's own color. show_yaxis=False drops the "Docking score"
     ylabel and y tick numbers - the 3x7 grid only needs them on each row's first column."""
+    # Matplotlib draws axes in creation order, and each axes' own opaque white background patch
+    # is painted before its own artists - silently covering anything from a PRECEDING axes that
+    # overlaps into this one's screen region (the same bug plot_property() hit with panel B's
+    # legend). With C's rows pulled close together, a cross-reference label near the top of one
+    # row's panel can visually reach into the row below's rectangle, drawn right after it.
+    ax.patch.set_visible(False)
     if docking_df is not None and not docking_df.empty:
         nc = stylia.NamedColors()
-        x = list(range(len(docking_df)))
-        # docking_df is sorted by REAL 10B's p1, so index 0 is the best pocket - give a thin
-        # black outline (on both dots and dashes, drawn slightly larger and behind the normal
-        # library-colored markers) to every pocket from that SAME structure (e.g. all of
-        # "alphafold2_..._model_1"'s pockets), not just the single best one.
-        best_structure = docking_df.index[0].rsplit("_pocket_", 1)[0]
+        n = len(docking_df)
+        x = list(range(n))
+        # Reference structure is this gene's AlphaFold2 model_0 (AF2 has exactly one model per
+        # protein, confirmed across all 21 genes - a single unambiguous structure per gene) -
+        # give a thin black outline (on both dots and dashes, drawn slightly larger and behind
+        # the normal library-colored markers) to every pocket from that structure, wherever they
+        # land in the REAL 10B p1 sort order. Uniprot AC is parsed the same way
+        # figure_2_calculations.py's pocket_percentiles() does.
+        uniprot_ac = docking_df.index[0].split("_model_")[0].split("_")[-1]
+        best_structure = f"alphafold2_{uniprot_ac}_model_0"
         highlight = [i for i, pocket in enumerate(docking_df.index)
                      if pocket.rsplit("_pocket_", 1)[0] == best_structure]
+        non_highlight = [i for i in range(n) if i not in highlight]
+        highlight_x = [x[i] for i in highlight]
+        non_highlight_x = [x[i] for i in non_highlight]
         for label, _, color_name in LIBRARIES:
             lib_color = nc.get(color_name)
             # No connecting line between pockets - a plain scatter of per-pocket stats. Median:
-            # horizontal dash. p1: small filled dot. Same color per library, so both stats read
-            # at a glance without a legend.
-            p1_size = stylia.MARKERSIZE * 0.6
+            # horizontal dash. p1: filled dot, smaller for the non-highlighted majority and
+            # bigger for the highlighted (winning-structure) pockets, so the highlight reads as
+            # emphasis rather than just an outline.
+            p1_size = stylia.MARKERSIZE * 0.25
+            p1_size_highlight = stylia.MARKERSIZE * 1.6
             outline_lw = 0.4
-            highlight_x = [x[i] for i in highlight]
             ax.scatter(highlight_x, docking_df[("median", label)].iloc[highlight], marker="_",
                        s=p1_size, linewidths=stylia.LINEWIDTH * 1.5 + outline_lw * 2, color="black",
                        zorder=2)
             ax.scatter(highlight_x, docking_df[("p1", label)].iloc[highlight],
-                       s=p1_size * 1.8, color="black", linewidth=0, zorder=2)
-            # Dash length matches the p1 dot's own diameter (same s -> same linear scale) instead
-            # of a wider, independently-sized dash.
+                       s=p1_size_highlight * 1.3, color="black", linewidth=0, zorder=2)
+            # Dash length matches the (non-highlighted) p1 dot's own diameter (same s -> same
+            # linear scale) instead of a wider, independently-sized dash.
             ax.scatter(x, docking_df[("median", label)], marker="_", s=p1_size,
                        linewidths=stylia.LINEWIDTH * 1.5, color=lib_color, zorder=3)
-            ax.scatter(x, docking_df[("p1", label)], s=p1_size, color=lib_color, linewidth=0,
-                       zorder=3)
-        ax.set_xlim(-0.5, len(docking_df) - 0.5)
-        ax.set_ylim(-12, -6)  # -12 at the bottom, -6 at the top - standard orientation
+            ax.scatter(non_highlight_x, docking_df[("p1", label)].iloc[non_highlight], s=p1_size,
+                       color=lib_color, linewidth=0, zorder=3)
+            ax.scatter(highlight_x, docking_df[("p1", label)].iloc[highlight],
+                       s=p1_size_highlight, color=lib_color, linewidth=0, zorder=3)
+        # Margin between the axis border and the first/last dot scales with the pocket count, so
+        # it reads as the same visual proportion of the panel across genes with very different
+        # pocket counts (5 to 40) instead of a fixed absolute margin shrinking in relative terms
+        # as more dots are packed into the same width.
+        margin = 0.08 * max(n - 1, 1)
+        ax.set_xlim(-margin, (n - 1) + margin)
+        # -15 (not -12) at the bottom so every panel D cross-reference star fits on-scale - the
+        # most extreme one (pheS's rank-1/2 snapshots) sits at -14.5/-14.3, both more negative
+        # than a single pocket's own 1st-percentile cutoff (the previous -12 floor was tuned to
+        # that, not to single-best-compound scores).
+        ax.set_ylim(-15, -6)
+
+        # Cross-reference to panel D: a black star at the exact best-compound score (sharper
+        # than even the p1 dot, since it's the single best compound, not a 1st-percentile cutoff)
+        # for every panel D snapshot that came from this gene, labeled with that snapshot's own
+        # panel D number - so the two panels can be read together. Every label sits to the right
+        # of its own star. Stars for the same gene can land very close in score (e.g. pheS's
+        # rank-1/2, 0.27 apart, same pocket/x) - MIN_LABEL_SEP pushes a stacked label straight up
+        # (same x as the one below it) just far enough that the numbers don't touch.
+        points = []
+        for row in snapshot_rows or []:
+            if row["pocket"] not in docking_df.index:
+                continue
+            points.append((docking_df.index.get_loc(row["pocket"]), row["score"], int(row["rank"])))
+        points.sort(key=lambda p: p[1])  # ascending score - bottom to top
+
+        # Same idea as the margin above: a fixed offset would look cramped on a 5-pocket panel
+        # and lost on a 40-pocket one, so scale it with pocket count instead.
+        LABEL_BASE_DX = 0.05 * max(n - 1, 1)
+        MIN_LABEL_SEP = 1.1
+        prev_label_y = None
+        for x_pos, score, rank in points:
+            label_y = score if prev_label_y is None else max(score, prev_label_y + MIN_LABEL_SEP)
+            prev_label_y = label_y
+            label_x = x_pos + LABEL_BASE_DX
+            ax.scatter([x_pos], [score], marker="*", s=stylia.MARKERSIZE * 1.5, color="black",
+                       linewidth=0, zorder=6)
+            ax.text(label_x, label_y, str(rank), fontsize=stylia.FONTSIZE, ha="left", va="center",
+                    zorder=6)
+
         ax.set_xticks([])
         if not show_yaxis:
-            ax.set_yticks([])
+            # tick_params(left=False, labelleft=False), not set_yticks([]) - clearing the ticks
+            # outright also removes the tick *locations* gridlines are drawn at, which silently
+            # dropped the y-grid on every column but the first.
+            ax.tick_params(axis="y", left=False, labelleft=False)
         stylia.label(ax, xlabel="", ylabel="Docking score" if show_yaxis else "", abc=abc)
+        # Horizontal gridlines only, to help read off docking-score values - panel C only.
+        # visible=True is required, not just axis="y": with visible left as the matplotlib
+        # default (None), grid() toggles off the axis it's given whenever rcParams already
+        # started it enabled (stylia's default), which is exactly this case.
+        ax.grid(True, axis="y")
     else:
         ax.scatter([0.5], [0.5], color=color, edgecolor="black", linewidth=0.5,
                    s=stylia.MARKERSIZE * 3, zorder=2)
@@ -283,9 +389,9 @@ def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=No
         ax.set_xticks([])
         ax.set_yticks([])
         stylia.label(ax, xlabel="", ylabel="", abc=abc)
+        ax.grid(False)
     # Full rectangle border (all four spines - default visible, so nothing to disable) instead of
     # just the bottom+left "L" panel B uses.
-    ax.grid(False)
     if abc is not None:
         boost_abc_fontsize(ax, shrink_factor)
 
@@ -348,25 +454,40 @@ def main():
     # Docking percentiles cover all 21 genes (compute_docking_percentiles() runs over every
     # pocket) - now plotted for every gene, not just alaS.
     docking_percentiles = load_docking_percentiles()
+    # snapshot_index rows are also used here (not just in panel D below) - each panel D
+    # rendered snapshot's exact pocket/score gets a matching marker in that gene's own panel C
+    # plot, so a reader can trace one directly from the other.
+    snapshot_index = load_docking_snapshot_index()
+    snapshot_rows_by_gene = defaultdict(list)
+    for _, row in snapshot_index.iterrows():
+        snapshot_rows_by_gene[row["gene"]].append(row)
+
     gene_row_axes = [[] for _ in range(n_gene_rows)]
     for i, gene in enumerate(genes):
         ax = axs.next()
         docking_df = gene_docking_stats(docking_percentiles, gene)
         plot_gene_panel(ax, gene, gene_colors[gene], docking_df=docking_df,
                          abc="C" if i == 0 else None, shrink_factor=shrink_factor,
-                         show_yaxis=(i % len(PROPERTIES) == 0))
+                         show_yaxis=(i % len(PROPERTIES) == 0),
+                         snapshot_rows=snapshot_rows_by_gene.get(gene))
         gene_row_axes[i // len(PROPERTIES)].append(ax)
     ax_bottom = gene_row_axes[0][0]
 
-    # Panel D: 1 row x 7 columns, left empty for now (no content yet) but with a visible frame
-    # (all four spines, no tick numbers) and its own bold "D" label on the first cell, matching
-    # how B/C are labeled. d_row_axes is kept (mirroring gene_row_axes) so this row can be
-    # repositioned below, independent of whatever hspace gives the C3-D gap.
+    # Panel D: 1 row x 7 columns, the top-7 best-compound PyMOL docking snapshots overall (see
+    # figure_2_calculations.py's compute_docking_snapshots() - a fixed count by global score,
+    # repeats allowed, not one slot per gene) - any leftover columns (if the index has fewer than
+    # 7 rows) stay empty, visible-frame placeholders. d_row_axes is kept (mirroring
+    # gene_row_axes) so this row can be repositioned below, independent of whatever hspace gives
+    # the C3-D gap. snapshot_index itself was already loaded above, for panel C's markers.
     d_row_axes = []
     for i in range(n_d_panels):
         ax = axs.next()
         ax.set_xticks([])
         ax.set_yticks([])
+        if i < len(snapshot_index):
+            row = snapshot_index.iloc[i]
+            image_path = os.path.join(plots_dir, "docking_snapshots", row["filename"])
+            plot_docking_snapshot(ax, i + 1, image_path, row["library"], row["score"])
         stylia.label(ax, xlabel="", ylabel="", abc="D" if i == 0 else None)
         if i == 0:
             boost_abc_fontsize(ax, shrink_factor)
@@ -380,7 +501,7 @@ def main():
     # wspace pulled in from matplotlib's ~0.2 default so more of the row's fixed total width goes
     # to each panel's actual plot area rather than the gaps between the 5 columns (panel B's
     # subplots were reading as too narrow).
-    fig.subplots_adjust(hspace=0.7, wspace=0.08)
+    fig.subplots_adjust(hspace=0.6, wspace=0.08)
 
     # Measure, directly from matplotlib's own layout, (1) how far panel B's title sits from the
     # left edge of what will become the saved SVG's own viewBox, and (2) the real gap between
@@ -413,6 +534,11 @@ def main():
     # frame edge. After this, label A can simply match panel_bc_x with no extra offset needed.
     row1_first_ax._left_title.set_x(-(b_title_offset_pt / 72) / (row1_pos.width * fig_width_in))
     ax_bottom._left_title.set_x(-(b_title_offset_pt / 72) / (row2_pos.width * fig_width_in))
+    # Panel D's first cell never had this shift applied, so its "D" label sat flush with its own
+    # frame edge (default loc="left" behavior) instead of lining up with A/B/C's shifted x - apply
+    # the same correction here.
+    row_d_pos = d_row_axes[0].get_position()
+    d_row_axes[0]._left_title.set_x(-(b_title_offset_pt / 72) / (row_d_pos.width * fig_width_in))
 
     gap_fraction = row1_pos.y0 - row2_pos.y1  # figure-fraction; unaffected by the later tight crop
     gap_b_c_pt = gap_fraction * fig_height_in * 72

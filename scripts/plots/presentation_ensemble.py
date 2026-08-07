@@ -17,7 +17,8 @@ All outputs saved to the repo's tmp/ (ad hoc, not a pipeline output).
 
 Usage:
     python presentation_ensemble.py
-    python presentation_ensemble.py --skip-render  # reuse existing PNGs, just rebuild the circular figure
+    python presentation_ensemble.py --skip-render     # reuse existing PNGs, just rebuild the circular figure
+    python presentation_ensemble.py --include-name    # write each structure's name next to it in the circular figure
 """
 import argparse
 import glob
@@ -206,7 +207,7 @@ def render_structures(structure_paths):
     print(f"Saved: {OUT_PATH}")
 
 
-def build_circular_figure(obj_names, gene_color_hex):
+def build_circular_figure(obj_names, gene_color_hex, include_name=False):
     fig, ax = plt.subplots(figsize=(16, 16))
 
     n = len(obj_names)
@@ -218,6 +219,9 @@ def build_circular_figure(obj_names, gene_color_hex):
         img = plt.imread(png_path)
         imagebox = OffsetImage(img, zoom=CIRCLE_IMAGE_ZOOM)
         ax.add_artist(AnnotationBbox(imagebox, (x, y), frameon=False, zorder=2))
+
+        if include_name:
+            ax.text(x, y - 0.18, obj_name, ha="center", va="top", fontsize=11, zorder=2)
 
     center_img = plt.imread(CENTER_PNG_PATH)
     center_imagebox = OffsetImage(center_img, zoom=CENTER_IMAGE_ZOOM)
@@ -240,6 +244,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--skip-render", action="store_true",
                          help="Skip PyMOL rendering and reuse the PNGs already in tmp/; only rebuild the circular summary figure.")
+    parser.add_argument("--include-name", action="store_true",
+                         help="Write each structure's name next to it in the circular summary figure.")
     args = parser.parse_args()
 
     structure_paths = sorted(glob.glob(os.path.join(ALIGNED_DIR, "*.pdb")))
@@ -253,7 +259,7 @@ def main():
     if not args.skip_render:
         render_structures(structure_paths)
 
-    build_circular_figure(obj_names, gene_color_hex)
+    build_circular_figure(obj_names, gene_color_hex, include_name=args.include_name)
 
 
 if __name__ == "__main__":
