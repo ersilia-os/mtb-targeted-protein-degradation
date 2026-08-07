@@ -97,12 +97,12 @@ def generate_report(directory: str, output_csv: str = "scores.csv", score_field:
 # Define paths
 # root = '.'
 root = os.path.dirname(os.path.abspath(__file__))
-UNIDOCK_PATH = os.path.join(root, "..", "processed", "unidock_docking")
+UNIDOCK_PATH = os.path.join(root, "..", "output", "unidock_docking")
 OUTPATH = os.path.join(UNIDOCK_PATH, "docking_results")
 os.makedirs(OUTPATH, exist_ok=True)
 
 # Load pocket detection data
-pocket_detection_data = pd.read_csv(os.path.join(root, "..", "processed", "pocket_detection_data.csv"))
+pocket_detection_data = pd.read_csv(os.path.join(root, "..", "output", "pocket_detection_data.csv"))
 
 # Shuffle with fixed seed
 df = pocket_detection_data.sample(frac=1, random_state=42).reset_index(drop=True)

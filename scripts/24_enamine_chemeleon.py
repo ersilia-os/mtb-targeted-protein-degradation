@@ -47,7 +47,7 @@ class CheMeleonFingerprint:
         return self.model.fingerprint(bmg).numpy(force=True)
 
 # Get input data
-PATH_TO_MFPS = "../processed/enamine_characterization"
+PATH_TO_MFPS = "../output/enamine_characterization"
 OUTDIR = PATH_TO_MFPS
 IK_TO_SMILES = pickle.load(open(os.path.join(PATH_TO_MFPS, "IK_TO_SMI.pkl"), "rb"))
 ID_TO_SMILES = pickle.load(open(os.path.join(PATH_TO_MFPS, "ID_TO_SMI.pkl"), "rb"))

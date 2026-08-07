@@ -2,7 +2,7 @@ import tarfile
 import os
 
 root = os.path.dirname(os.path.abspath(__file__))
-UNIDOCK_PATH = os.path.join(root, "..", "processed", "unidock_docking", "docking_results")
+UNIDOCK_PATH = os.path.join(root, "..", "output", "unidock_docking", "docking_results")
 
 # For each pocket
 for pocket in sorted(os.listdir(UNIDOCK_PATH)):

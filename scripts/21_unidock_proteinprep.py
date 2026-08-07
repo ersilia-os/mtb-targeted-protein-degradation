@@ -10,9 +10,9 @@ import sys
 import os
 
 # Define some paths
-pocket_detection_data = pd.read_csv("../processed/pocket_detection_data.csv")
-PATH_TO_STRUCTURES = "../processed/aligned_relaxed_structures"
-PATH_TO_OUTPUT = "../processed/unidock_docking/structures_prepared"
+pocket_detection_data = pd.read_csv("../output/pocket_detection_data.csv")
+PATH_TO_STRUCTURES = "../output/aligned_relaxed_structures"
+PATH_TO_OUTPUT = "../output/unidock_docking/structures_prepared"
 os.makedirs(PATH_TO_OUTPUT, exist_ok=True)
 
 # Structures to prepare
