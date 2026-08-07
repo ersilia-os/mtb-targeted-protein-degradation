@@ -54,27 +54,27 @@ LIBRARIES = [
     ("REAL 10B", "figure_2b_REAL10B.csv",  "amber"),
 ]
 
-# Relative vertical sizes of panel A (scheme.svg), B (property row), C (gene grid rows), D (new,
-# still-empty row). B's share was halved from the original 3:1:5 (A:B:C) design to shrink just
-# B's plot area - per request, this should shrink the KDE/bar drawing area only, not the tick
+# Relative vertical sizes of panel a (scheme.svg), b (property row), c (gene grid rows), d (new,
+# still-empty row). b's share was halved from the original 3:1:5 (a:b:c) design to shrink just
+# b's plot area - per request, this should shrink the KDE/bar drawing area only, not the tick
 # label text below it (fontsize is independent of axes-box height, so that already holds without
-# extra work) - while keeping C's rows at their original absolute size (see
-# UNIT_HEIGHT_FRACTION in main()). D's ratio just matches a single C row for now - a placeholder,
-# easy to retune once D has real content.
+# extra work) - while keeping c's rows at their original absolute size (see
+# UNIT_HEIGHT_FRACTION in main()). d's ratio just matches a single c row for now - a placeholder,
+# easy to retune once d has real content.
 ROW_HEIGHT_RATIOS = [1.2, 5, 5, 5, 5]
 
-# Panel A (scheme.pdf) is a hand-authored Inkscape schematic, exported to PDF and rasterized via
+# panel a (scheme.pdf) is a hand-authored Inkscape schematic, exported to PDF and rasterized via
 # Poppler (see pdf_page_size_mm()/render_pdf_to_png()) rather than embedded as vector SVG - it
-# can't use stylia.label(abc=...) directly, so its "A" label is drawn by hand onto the composited
-# raster in merge_with_scheme(). Panels B/C are embedded natively via stylia.label(..., abc=...).
-# Label A's own x is NOT fixed here - it's set dynamically to match wherever matplotlib actually
-# put B/C's title (see main()/merge_with_scheme()), so all three stay aligned regardless of the
+# can't use stylia.label(abc=...) directly, so its "a" label is drawn by hand onto the composited
+# raster in merge_with_scheme(). panels b/c are embedded natively via stylia.label(..., abc=...).
+# Label a's own x is NOT fixed here - it's set dynamically to match wherever matplotlib actually
+# put b/c's title (see main()/merge_with_scheme()), so all three stay aligned regardless of the
 # distributions block's own left margin (y-axis label/tick width). Only its y (top) margin is a
 # fixed constant, since there's no equivalent matplotlib position to match it against.
 LABEL_FONT_PATH = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 LABEL_SIZE_PT = 8
-# One shared margin: label A's own offset from the schematic's top edge, AND the breathing room
-# left on both sides of the B+C block (it otherwise fills the full scheme width - see panel_bc_x
+# One shared margin: label a's own offset from the schematic's top edge, AND the breathing room
+# left on both sides of the b+c block (it otherwise fills the full scheme width - see panel_bc_x
 # in merge_with_scheme() - which put its content flush against both edges with zero margin).
 # Keeping both uses on the same constant is what makes the top/left spacing read as one
 # consistent margin throughout the figure, rather than two independently-tuned numbers.
@@ -119,9 +119,9 @@ def content_bottom_mm(png_path, dpi):
 
 
 def boost_abc_fontsize(ax, shrink_factor):
-    """Panels B/C's titles get shrunk by shrink_factor when composited under the schematic in
-    merge_with_scheme() (the whole B+C block is scaled down to fit the scheme's width minus
-    margins) - boost the source fontsize here so they end up the same physical size as panel A's
+    """panels b/c's titles get shrunk by shrink_factor when composited under the schematic in
+    merge_with_scheme() (the whole b+c block is scaled down to fit the scheme's width minus
+    margins) - boost the source fontsize here so they end up the same physical size as panel a's
     own (unscaled) label after that compositing shrink, instead of visibly smaller."""
     ax._left_title.set_fontsize(get_fontsize_big() / shrink_factor)
 
@@ -130,7 +130,7 @@ def expected_shrink_factor(scheme_width_mm):
     """How much merge_with_scheme() will shrink the distributions block's width (and everything
     in it, fonts included) to fit scheme.pdf's width minus MARGIN_MM on each side - computed here,
     before the matplotlib figure is even built, purely from scheme.pdf's page width and stylia's
-    own configured figure width, so plot_property()/plot_gene_panel() can pre-compensate the B/C
+    own configured figure width, so plot_property()/plot_gene_panel() can pre-compensate the b/c
     title fontsize (see boost_abc_fontsize()) instead of needing a second render pass."""
     target_width_mm = scheme_width_mm - 2 * MARGIN_MM
     natural_width_mm = get_size() * 25.4  # stylia figure width in inches, before any compositing scale
@@ -204,7 +204,7 @@ def plot_property(ax, prop, libraries, abc=None, shrink_factor=None):
         ax.set_xticks(PROP_XTICKS[prop])
 
     # y-axis border shown (left spine) alongside the x-axis border (bottom spine), matching
-    # panel C's box - but still no y tick marks/numbers, since the cross-panel y-scales aren't
+    # panel c's box - but still no y tick marks/numbers, since the cross-panel y-scales aren't
     # meant to be compared.
     ax.tick_params(axis="y", left=False, labelleft=False)
     ax.spines["top"].set_visible(False)
@@ -234,9 +234,9 @@ def gene_docking_stats(docking_percentiles, gene):
 
 
 def load_docking_snapshot_index():
-    """Ordered rows (rank, gene, library, pocket, compound, score, filename) for panel D's 7
+    """Ordered rows (rank, gene, library, pocket, compound, score, filename) for panel d's 7
     snapshot cells - figure_2_calculations.py's compute_docking_snapshots() writes this index
-    alongside the PNGs since panel D shows a fixed top-7 by score (repeats allowed), not one slot
+    alongside the PNGs since panel d shows a fixed top-7 by score (repeats allowed), not one slot
     per gene, so the same gene's snapshots need distinguishing beyond just its name."""
     index_path = os.path.join(plots_dir, "docking_snapshots", "index.csv")
     if not os.path.isfile(index_path):
@@ -248,7 +248,7 @@ LIBRARY_DISPLAY_NAMES = {"HL": "Hit Locator", "REAL 10M": "REAL 10M", "REAL 10B"
 
 
 def plot_docking_snapshot(ax, rank, image_path, library, score):
-    """One panel D cell: a best-compound PyMOL docking snapshot, titled with the panel's own
+    """One panel d cell: a best-compound PyMOL docking snapshot, titled with the panel's own
     plain-text number (outside the frame via loc="lower center", no color/marker), plus two more
     plain-text legends - which library (top center) and its docking score (bottom center)."""
     ax.imshow(np.array(Image.open(image_path)))
@@ -277,8 +277,8 @@ def plot_docking_snapshot(ax, rank, image_path, library, score):
 
 def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=None, show_yaxis=True,
                      snapshot_rows=None):
-    """One cell of panel C's 3x7 gene grid, titled with a colored circle + gene name analogously
-    to figure 1 panel A's per-structure gene legend (render_structure_panel()'s legend_handles
+    """One cell of panel c's 3x7 gene grid, titled with a colored circle + gene name analogously
+    to figure 1 panel a's per-structure gene legend (render_structure_panel()'s legend_handles
     pattern), reusing the same gene->color mapping. Plots each library's per-pocket median and p1
     docking score (x = pocket identity, unlabeled - only their relative order matters here) when
     docking_df is given; otherwise a dummy single-dot scatter placeholder (for a gene with no
@@ -286,8 +286,8 @@ def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=No
     ylabel and y tick numbers - the 3x7 grid only needs them on each row's first column."""
     # Matplotlib draws axes in creation order, and each axes' own opaque white background patch
     # is painted before its own artists - silently covering anything from a PRECEDING axes that
-    # overlaps into this one's screen region (the same bug plot_property() hit with panel B's
-    # legend). With C's rows pulled close together, a cross-reference label near the top of one
+    # overlaps into this one's screen region (the same bug plot_property() hit with panel b's
+    # legend). With c's rows pulled close together, a cross-reference label near the top of one
     # row's panel can visually reach into the row below's rectangle, drawn right after it.
     ax.patch.set_visible(False)
     if docking_df is not None and not docking_df.empty:
@@ -335,16 +335,16 @@ def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=No
         # as more dots are packed into the same width.
         margin = 0.08 * max(n - 1, 1)
         ax.set_xlim(-margin, (n - 1) + margin)
-        # -15 (not -12) at the bottom so every panel D cross-reference star fits on-scale - the
+        # -15 (not -12) at the bottom so every panel d cross-reference star fits on-scale - the
         # most extreme one (pheS's rank-1/2 snapshots) sits at -14.5/-14.3, both more negative
         # than a single pocket's own 1st-percentile cutoff (the previous -12 floor was tuned to
         # that, not to single-best-compound scores).
         ax.set_ylim(-15, -6)
 
-        # Cross-reference to panel D: a black star at the exact best-compound score (sharper
+        # Cross-reference to panel d: a black star at the exact best-compound score (sharper
         # than even the p1 dot, since it's the single best compound, not a 1st-percentile cutoff)
-        # for every panel D snapshot that came from this gene, labeled with that snapshot's own
-        # panel D number - so the two panels can be read together. Every label sits to the right
+        # for every panel d snapshot that came from this gene, labeled with that snapshot's own
+        # panel d number - so the two panels can be read together. Every label sits to the right
         # of its own star. Stars for the same gene can land very close in score (e.g. pheS's
         # rank-1/2, 0.27 apart, same pocket/x) - MIN_LABEL_SEP pushes a stacked label straight up
         # (same x as the one below it) just far enough that the numbers don't touch.
@@ -376,7 +376,7 @@ def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=No
             # dropped the y-grid on every column but the first.
             ax.tick_params(axis="y", left=False, labelleft=False)
         stylia.label(ax, xlabel="", ylabel="Docking score" if show_yaxis else "", abc=abc)
-        # Horizontal gridlines only, to help read off docking-score values - panel C only.
+        # Horizontal gridlines only, to help read off docking-score values - panel c only.
         # visible=True is required, not just axis="y": with visible left as the matplotlib
         # default (None), grid() toggles off the axis it's given whenever rcParams already
         # started it enabled (stylia's default), which is exactly this case.
@@ -391,7 +391,7 @@ def plot_gene_panel(ax, gene, color, docking_df=None, abc=None, shrink_factor=No
         stylia.label(ax, xlabel="", ylabel="", abc=abc)
         ax.grid(False)
     # Full rectangle border (all four spines - default visible, so nothing to disable) instead of
-    # just the bottom+left "L" panel B uses.
+    # just the bottom+left "L" panel b uses.
     if abc is not None:
         boost_abc_fontsize(ax, shrink_factor)
 
@@ -428,10 +428,10 @@ def main():
         f"grid, got {len(genes)}."
     )
 
-    # UNIT_HEIGHT_FRACTION is the per-ratio-unit height that made a C row come out at its
+    # UNIT_HEIGHT_FRACTION is the per-ratio-unit height that made a c row come out at its
     # original absolute size (5 units -> 0.12375*6/18*5 = 0.20625 of total height). Keeping this
-    # unit fixed while shrinking just ROW_HEIGHT_RATIOS[0] (B's ratio) means B's plot area shrinks
-    # without touching C's rows at all - create_figure()'s height is the *total* figure height,
+    # unit fixed while shrinking just ROW_HEIGHT_RATIOS[0] (b's ratio) means b's plot area shrinks
+    # without touching c's rows at all - create_figure()'s height is the *total* figure height,
     # not a per-row height, so it's recomputed from the (now smaller) ratio sum.
     UNIT_HEIGHT_FRACTION = 0.12375 * 6 / 18
     n_d_panels = len(PROPERTIES)
@@ -441,21 +441,21 @@ def main():
     row1_first_ax = None
     for i, prop in enumerate(PROPERTIES):
         ax = axs.next()
-        # Panel B label sits on the first (MW) panel only - titles draw outside the axes
+        # panel b label sits on the first (MW) panel only - titles draw outside the axes
         # bounding box, so this doesn't shift its alignment with the other 4 panels in the row.
-        plot_property(ax, prop, libraries, abc="B" if i == 0 else None, shrink_factor=shrink_factor)
+        plot_property(ax, prop, libraries, abc="b" if i == 0 else None, shrink_factor=shrink_factor)
         if i == 0:
             row1_first_ax = ax
 
-    # Panel C: 3 rows x 7 columns, one cell per gene (alphabetical), each titled with its
+    # panel c: 3 rows x 7 columns, one cell per gene (alphabetical), each titled with its
     # gene-colored circle - content deferred (empty), per request. gene_row_axes groups the 7
     # axes per row so all of a row's axes can be repositioned together below (a single row's
     # axes all share the same y0/y1, coming from one gridspec row).
     # Docking percentiles cover all 21 genes (compute_docking_percentiles() runs over every
     # pocket) - now plotted for every gene, not just alaS.
     docking_percentiles = load_docking_percentiles()
-    # snapshot_index rows are also used here (not just in panel D below) - each panel D
-    # rendered snapshot's exact pocket/score gets a matching marker in that gene's own panel C
+    # snapshot_index rows are also used here (not just in panel d below) - each panel d
+    # rendered snapshot's exact pocket/score gets a matching marker in that gene's own panel c
     # plot, so a reader can trace one directly from the other.
     snapshot_index = load_docking_snapshot_index()
     snapshot_rows_by_gene = defaultdict(list)
@@ -467,18 +467,18 @@ def main():
         ax = axs.next()
         docking_df = gene_docking_stats(docking_percentiles, gene)
         plot_gene_panel(ax, gene, gene_colors[gene], docking_df=docking_df,
-                         abc="C" if i == 0 else None, shrink_factor=shrink_factor,
+                         abc="c" if i == 0 else None, shrink_factor=shrink_factor,
                          show_yaxis=(i % len(PROPERTIES) == 0),
                          snapshot_rows=snapshot_rows_by_gene.get(gene))
         gene_row_axes[i // len(PROPERTIES)].append(ax)
     ax_bottom = gene_row_axes[0][0]
 
-    # Panel D: 1 row x 7 columns, the top-7 best-compound PyMOL docking snapshots overall (see
+    # panel d: 1 row x 7 columns, the top-7 best-compound PyMOL docking snapshots overall (see
     # figure_2_calculations.py's compute_docking_snapshots() - a fixed count by global score,
     # repeats allowed, not one slot per gene) - any leftover columns (if the index has fewer than
     # 7 rows) stay empty, visible-frame placeholders. d_row_axes is kept (mirroring
     # gene_row_axes) so this row can be repositioned below, independent of whatever hspace gives
-    # the C3-D gap. snapshot_index itself was already loaded above, for panel C's markers.
+    # the c3-d gap. snapshot_index itself was already loaded above, for panel c's markers.
     d_row_axes = []
     for i in range(n_d_panels):
         ax = axs.next()
@@ -488,7 +488,7 @@ def main():
             row = snapshot_index.iloc[i]
             image_path = os.path.join(plots_dir, "docking_snapshots", row["filename"])
             plot_docking_snapshot(ax, i + 1, image_path, row["library"], row["score"])
-        stylia.label(ax, xlabel="", ylabel="", abc="D" if i == 0 else None)
+        stylia.label(ax, xlabel="", ylabel="", abc="d" if i == 0 else None)
         if i == 0:
             boost_abc_fontsize(ax, shrink_factor)
         d_row_axes.append(ax)
@@ -499,17 +499,17 @@ def main():
     # stylia.save_figure()'s own dpi/transparent/bbox_inches settings) instead of going through it.
     plt.tight_layout()
     # wspace pulled in from matplotlib's ~0.2 default so more of the row's fixed total width goes
-    # to each panel's actual plot area rather than the gaps between the 5 columns (panel B's
+    # to each panel's actual plot area rather than the gaps between the 5 columns (panel b's
     # subplots were reading as too narrow).
     fig.subplots_adjust(hspace=0.6, wspace=0.08)
 
-    # Measure, directly from matplotlib's own layout, (1) how far panel B's title sits from the
+    # Measure, directly from matplotlib's own layout, (1) how far panel b's title sits from the
     # left edge of what will become the saved SVG's own viewBox, and (2) the real gap between
-    # row 1 (B) and row 2 (C) - both expressed in points relative to the tight bbox that
+    # row 1 (b) and row 2 (c) - both expressed in points relative to the tight bbox that
     # bbox_inches="tight" crops to (pad_inches=0 below makes that crop's origin exactly the SVG's
     # own (0, 0), so no extra offset needs accounting for). merge_with_scheme() then only has to
-    # multiply these by its own mm-per-point scale factor - this is what keeps the A/B/C labels
-    # aligned and the A-B/B-C gaps equal without hardcoding any panel-specific measurements that
+    # multiply these by its own mm-per-point scale factor - this is what keeps the a/b/c labels
+    # aligned and the a-b/b-c gaps equal without hardcoding any panel-specific measurements that
     # would go stale the moment fonts, panel count, or layout tweaks change.
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
@@ -531,11 +531,11 @@ def main():
     # Shift both titles left by that same offset (converted into each axes' own fraction-of-width
     # units, since row 2's merged axes is 5x wider than row 1's) so they land at the tight bbox's
     # actual left edge - i.e. exactly where the widest y-axis content reaches - instead of at the
-    # frame edge. After this, label A can simply match panel_bc_x with no extra offset needed.
+    # frame edge. After this, label a can simply match panel_bc_x with no extra offset needed.
     row1_first_ax._left_title.set_x(-(b_title_offset_pt / 72) / (row1_pos.width * fig_width_in))
     ax_bottom._left_title.set_x(-(b_title_offset_pt / 72) / (row2_pos.width * fig_width_in))
-    # Panel D's first cell never had this shift applied, so its "D" label sat flush with its own
-    # frame edge (default loc="left" behavior) instead of lining up with A/B/C's shifted x - apply
+    # panel d's first cell never had this shift applied, so its "d" label sat flush with its own
+    # frame edge (default loc="left" behavior) instead of lining up with a/b/c's shifted x - apply
     # the same correction here.
     row_d_pos = d_row_axes[0].get_position()
     d_row_axes[0]._left_title.set_x(-(b_title_offset_pt / 72) / (row_d_pos.width * fig_width_in))
@@ -543,10 +543,10 @@ def main():
     gap_fraction = row1_pos.y0 - row2_pos.y1  # figure-fraction; unaffected by the later tight crop
     gap_b_c_pt = gap_fraction * fig_height_in * 72
 
-    # distributions_svg_path's own top edge (y=0) is the top of the tight bbox, i.e. the "B"
+    # distributions_svg_path's own top edge (y=0) is the top of the tight bbox, i.e. the "b"
     # title's top - NOT row 1's own axes/frame top, which sits below the title. merge_with_scheme()
-    # needs row 1's frame-top offset from that same SVG origin (not the title's) so the A-B gap
-    # (schematic content -> row 1's frame) is measured the same way as the B-C gap (row 1's frame
+    # needs row 1's frame-top offset from that same SVG origin (not the title's) so the a-b gap
+    # (schematic content -> row 1's frame) is measured the same way as the b-c gap (row 1's frame
     # -> row 2's frame), instead of accidentally comparing a label-top-referenced gap to a
     # frame-referenced one.
     row1_frame_top_in = row1_pos.y1 * fig_height_in
@@ -559,13 +559,13 @@ def main():
     natural_width_mm = tight_bbox.width * 25.4
     scale = (scheme_width_mm - 2 * MARGIN_MM) / natural_width_mm
 
-    # Panel C's 3 rows inherited whatever gap fig.subplots_adjust(hspace=...) produced above -
-    # since that same hspace also sets the B-to-C1 gap (row1_pos/row2_pos, already measured), and
-    # C's rows are taller than B's (height_ratios), the same hspace fraction yields a bigger
-    # absolute C-internal gap than the B-C1 one. Tighten just the C-internal gaps by explicitly
-    # repositioning rows 2/3 upward - independent of the B-C gap, which keeps whatever hspace gave
+    # panel c's 3 rows inherited whatever gap fig.subplots_adjust(hspace=...) produced above -
+    # since that same hspace also sets the b-to-c1 gap (row1_pos/row2_pos, already measured), and
+    # c's rows are taller than b's (height_ratios), the same hspace fraction yields a bigger
+    # absolute c-internal gap than the b-c1 one. Tighten just the c-internal gaps by explicitly
+    # repositioning rows 2/3 upward - independent of the b-c gap, which keeps whatever hspace gave
     # row 1 (already captured in gap_b_c_pt above).
-    C_ROW_GAP_SHRINK = 0.65  # fraction of the current C-row gap to keep - now that the gene-name
+    C_ROW_GAP_SHRINK = 0.65  # fraction of the current c-row gap to keep - now that the gene-name
     # legend sits fully above each row's frame (loc="lower center", see plot_gene_panel()), the
     # gap needs enough room for that legend, not just breathing room between two bare frames.
     c_row_positions = [row[0].get_position() for row in gene_row_axes]
@@ -581,8 +581,8 @@ def main():
         pos = ax.get_position()
         ax.set_position([pos.x0, pos.y0 + shift_row3, pos.width, pos.height])
 
-    # Panel D inherited the same raw hspace gap as C's rows (both ratio 5), so it needs the same
-    # tightening, cumulative on top of C3's own shift_row3 move above.
+    # panel d inherited the same raw hspace gap as c's rows (both ratio 5), so it needs the same
+    # tightening, cumulative on top of c3's own shift_row3 move above.
     d_row_pos = d_row_axes[0].get_position()
     gap_c3_d = c_row_positions[2].y0 - d_row_pos.y1
     shift_d = shift_row3 + (gap_c3_d - target_gap)
@@ -590,7 +590,7 @@ def main():
         pos = ax.get_position()
         ax.set_position([pos.x0, pos.y0 + shift_d, pos.width, pos.height])
 
-    # Panels B+C alone aren't a deliverable - only the schematic+B+C combination (figure_2.png/
+    # panels b+c alone aren't a deliverable - only the schematic+b+c combination (figure_2.png/
     # .pdf) is. Saving directly to PNG at dpi=scale*MERGED_DPI makes matplotlib's own tight-bbox
     # crop land exactly at the target (post-scale) physical size in one step, so
     # merge_with_scheme() can paste it into the composite with no further resizing.
@@ -606,9 +606,9 @@ def main():
 
 def merge_with_scheme(distributions_png_path, scale, gap_b_c_pt, row1_frame_top_offset_pt,
                        scheme_pdf_path, scheme_width_mm):
-    """Combines panel A (scheme.pdf, exported from the hand-authored Inkscape schematic) with
-    panels B+C (the property-distributions and gene-grid rows just rendered, already carrying
-    their own "B"/"C" labels via stylia.label(abc=...)) into the final figure_2.png/.pdf.
+    """Combines panel a (scheme.pdf, exported from the hand-authored Inkscape schematic) with
+    panels b+c (the property-distributions and gene-grid rows just rendered, already carrying
+    their own "b"/"c" labels via stylia.label(abc=...)) into the final figure_2.png/.pdf.
 
     Both source images are already rasters at this point - scheme.pdf via Poppler
     (render_pdf_to_png(), the same renderer behind Inkscape's own PDF preview/export) and the
@@ -620,9 +620,9 @@ def merge_with_scheme(distributions_png_path, scale, gap_b_c_pt, row1_frame_top_
     and pasting reproduces Inkscape's own PDF export exactly.
 
     gap_b_c_pt (from main(), in points relative to distributions_png_path's own origin) places the
-    A-B gap to match B/C's actual rendered row spacing, instead of an independent hardcoded
-    constant that would drift out of sync whenever the matplotlib layout changes. Label A itself
-    just matches panel_bc_x directly - main() already shifted B/C's own titles to sit at that same
+    a-b gap to match b/c's actual rendered row spacing, instead of an independent hardcoded
+    constant that would drift out of sync whenever the matplotlib layout changes. Label a itself
+    just matches panel_bc_x directly - main() already shifted b/c's own titles to sit at that same
     origin (see the row1_first_ax._left_title.set_x(...) call), so no separate offset is needed
     here.
     """
@@ -642,7 +642,7 @@ def merge_with_scheme(distributions_png_path, scale, gap_b_c_pt, row1_frame_top_
     distributions_width_mm = distributions_img.width / MERGED_DPI * 25.4
     distributions_height_mm = distributions_img.height / MERGED_DPI * 25.4
 
-    # panel_bc_y positions distributions_png_path's own origin (the "B" title's top, not row 1's
+    # panel_bc_y positions distributions_png_path's own origin (the "b" title's top, not row 1's
     # frame - see the row1_frame_top_offset_pt docstring note above), so it's offset backwards by
     # row 1's own frame-top offset - that's what makes (scheme content -> row 1 frame) end up the
     # same distance apart as (row 1 frame -> row 2 frame), instead of comparing a label-top gap to
@@ -652,13 +652,13 @@ def merge_with_scheme(distributions_png_path, scale, gap_b_c_pt, row1_frame_top_
     points_to_mm = 25.4 / 72
     gap_b_c_mm = gap_b_c_pt * points_to_mm * scale
     row1_frame_top_offset_mm = row1_frame_top_offset_pt * points_to_mm * scale
-    panel_bc_x = MARGIN_MM  # flush against the same margin as label A, instead of centered (which
-                            # pushed B/C inward by half of the old fixed-fraction leftover width)
+    panel_bc_x = MARGIN_MM  # flush against the same margin as label a, instead of centered (which
+                            # pushed b/c inward by half of the old fixed-fraction leftover width)
     panel_bc_y = scheme_content_bottom_mm + gap_b_c_mm - row1_frame_top_offset_mm
 
     total_width_mm = scheme_width_mm
-    # MARGIN_MM of blank space below panel D too, matching the breathing room already used on
-    # the top/left/right (panel A's own top margin, panel_bc_x) instead of the content ending
+    # MARGIN_MM of blank space below panel d too, matching the breathing room already used on
+    # the top/left/right (panel a's own top margin, panel_bc_x) instead of the content ending
     # flush with the canvas edge.
     total_height_mm = panel_bc_y + distributions_height_mm + MARGIN_MM
     mm_to_px = lambda v: round(v * MERGED_DPI / 25.4)  # noqa: E731
@@ -669,16 +669,16 @@ def merge_with_scheme(distributions_png_path, scale, gap_b_c_pt, row1_frame_top_
 
     draw = ImageDraw.Draw(canvas)
     label_font = ImageFont.truetype(LABEL_FONT_PATH, round(LABEL_SIZE_PT * MERGED_DPI / 72))
-    draw.text((mm_to_px(panel_bc_x), mm_to_px(MARGIN_MM)), "A", font=label_font, fill="black")
+    draw.text((mm_to_px(panel_bc_x), mm_to_px(MARGIN_MM)), "a", font=label_font, fill="black")
 
     png_path = os.path.join(plots_dir, "figure_2.png")
     pdf_path = os.path.join(plots_dir, "figure_2.pdf")
     canvas.save(png_path)
     canvas.save(pdf_path, "PDF", resolution=float(MERGED_DPI))
 
-    print(f"Panel A (scheme): {scheme_width_mm:.1f} mm wide (content to {scheme_content_bottom_mm:.1f} mm)")
-    print(f"Panels B+C (distributions): {distributions_width_mm:.1f} x {distributions_height_mm:.1f} mm (scaled by {scale:.4f})")
-    print(f"A-B gap: {gap_b_c_mm:.2f} mm, B-C gap: {gap_b_c_mm:.2f} mm")
+    print(f"panel a (scheme): {scheme_width_mm:.1f} mm wide (content to {scheme_content_bottom_mm:.1f} mm)")
+    print(f"panels b+c (distributions): {distributions_width_mm:.1f} x {distributions_height_mm:.1f} mm (scaled by {scale:.4f})")
+    print(f"a-b gap: {gap_b_c_mm:.2f} mm, b-c gap: {gap_b_c_mm:.2f} mm")
     print(f"Total: {total_width_mm:.1f} x {total_height_mm:.1f} mm")
     print(f"Saved to {png_path}")
     print(f"Saved to {pdf_path}")

@@ -33,7 +33,7 @@ plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_1")
 os.makedirs(plots_dir, exist_ok=True)
 
 # ===========================================================================
-# Panel A: protein structures + VI/PDB/ChEMBL/pocket circles
+# Panel a: protein structures + VI/PDB/ChEMBL/pocket circles
 # ===========================================================================
 
 # Load pocket detection data
@@ -118,9 +118,9 @@ ZOOM_DICT = {
     "aspS": 1.4,
     "gatA": 1.6,
     "gatB": 1.4,
-    "thrS": 0.5,
+    "thrS": 0.85,
     "ileS": 1.3,
-    "valS": 1.2,
+    "valS": 1.0,
     "leuS": 1.3,
     "gltS": 1.4,
     "proS": 1.35,
@@ -178,6 +178,21 @@ def show_zoomed_image(ax, img, zoom=1.0):
         img = img[y0:y1, x0:x1]
 
     img = autocrop_to_content(img)
+
+    if zoom < 1:
+        # Mirror image of the zoom>1 crop-in above, but applied after autocrop (padding
+        # before autocrop would just get stripped straight back off): pad the
+        # already-tightly-cropped content with whitespace so its canvas grows by 1/zoom,
+        # shrinking how much of the fixed grid cell the protein itself fills.
+        h2, w2 = img.shape[:2]
+        pad_h = int(h2 / zoom) - h2
+        pad_w = int(w2 / zoom) - w2
+        pad_val = 1.0 if np.issubdtype(img.dtype, np.floating) else 255
+        pad_widths = [(pad_h // 2, pad_h - pad_h // 2), (pad_w // 2, pad_w - pad_w // 2)]
+        if img.ndim == 3:
+            pad_widths.append((0, 0))
+        img = np.pad(img, pad_widths, mode="constant", constant_values=pad_val)
+
     ax.imshow(img, interpolation="none", resample=False)
     # adjustable="datalim" keeps the axes' own box fixed at its GridSpec-assigned
     # rectangle and pads the data view instead — otherwise matplotlib's default
@@ -593,7 +608,7 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
 
 
 # ===========================================================================
-# Master composite: structures (panel A, left) + heatmaps (panels B/C/D, right)
+# Master composite: structures (panel a, left) + heatmaps (panels b/c/d, right)
 # ===========================================================================
 
 ROW_HEIGHT_SCALE = 0.9  # shrinks unused vertical margin in width-constrained structure/circle rows
@@ -622,7 +637,7 @@ def render_master_figure(proteins=PROTEINS, show_grids=False):
     fig.patch.set_facecolor("white")
     master_gs = fig.add_gridspec(1, 2, width_ratios=[STRUCT_WIDTH_FRAC, HEATMAP_WIDTH_FRAC], wspace=0.15)
 
-    # --- Left: structures + circles grid (panel A) ---
+    # --- Left: structures + circles grid (panel a) ---
     left_gs = master_gs[0, 0].subgridspec(2 * n_bands, N_COLS, height_ratios=height_ratios, hspace=0.0, wspace=0.0)
     first_structure_ax = None
     left_cells = iter((row, col) for row in range(2 * n_bands) for col in range(N_COLS))
@@ -644,40 +659,40 @@ def render_master_figure(proteins=PROTEINS, show_grids=False):
 
     stylia.label(first_structure_ax, xlabel="", ylabel="")
 
-    # --- Right: SeqId / structural RMSD / PocketVec heatmaps (panels B/C/D) ---
+    # --- Right: SeqId / structural RMSD / PocketVec heatmaps (panels b/c/d) ---
     right_gs = master_gs[0, 1].subgridspec(3, 1, hspace=0.0)
     nc = stylia.NamedColors()
 
     seqid_cmap = stylia.FadingColormap("crimson", transformation=None).cmap
     b_dax = plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[0, 0])), matrix, gene_labels, seqid_cmap,
                                      CBAR_VMIN, CBAR_VMAX, "Sequence identity (%)",
-                                     ticks=np.arange(CBAR_VMIN, CBAR_VMAX + 1, 5), line_color=nc.crimson, abc="B")
+                                     ticks=np.arange(CBAR_VMIN, CBAR_VMAX + 1, 5), line_color=nc.crimson, abc="b")
 
-    # Different color family from panel B (cobalt vs crimson) so the two panels are
+    # Different color family from panel b (cobalt vs crimson) so the two panels are
     # visually distinct at a glance; still reversed so dark reads as "more similar" here
     # too, even though for RMSD that means a LOW value.
     struct_cmap = stylia.FadingColormap("cobalt", transformation=None).cmap.reversed()
     plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[1, 0])), struct_matrix, gene_labels, struct_cmap,
                              STRUCT_VMIN, STRUCT_VMAX, "Structural RMSD (Å)",
-                             ticks=np.arange(STRUCT_VMIN, STRUCT_VMAX + 1, 5), line_color=nc.cobalt, abc="C")
+                             ticks=np.arange(STRUCT_VMIN, STRUCT_VMAX + 1, 5), line_color=nc.cobalt, abc="c")
 
-    # Third distinct color family (lime). Reversed for the same reason as panel C — for
+    # Third distinct color family (lime). Reversed for the same reason as panel c — for
     # cosine distance, LOW value = more similar. Same tick set drives both the boxplot and
     # the colorbar (via the shared `ticks` param), so they can't drift out of sync.
     pocketvec_cmap = stylia.FadingColormap("lime", transformation=None).cmap.reversed()
     plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[2, 0])), pocketvec_matrix, gene_labels, pocketvec_cmap,
                              POCKETVEC_VMIN, POCKETVEC_VMAX, "PocketVec cosine distance",
-                             ticks=np.arange(POCKETVEC_VMIN, POCKETVEC_VMAX + 0.001, 0.02), line_color=nc.lime, abc="D")
+                             ticks=np.arange(POCKETVEC_VMIN, POCKETVEC_VMAX + 0.001, 0.02), line_color=nc.lime, abc="d")
 
-    # "A" is placed via fig.text() at panel B's own measured title height (rather than
-    # first_structure_ax.set_title(pad=...)) because panel B's "B" label sits on dax,
+    # "a" is placed via fig.text() at panel b's own measured title height (rather than
+    # first_structure_ax.set_title(pad=...)) because panel b's "b" label sits on dax,
     # which starts BELOW the boxplot (tax) appended above it — the structures grid has no
     # such panel above its top row, so the two axes' own tops don't line up on their own.
     fig.canvas.draw()
     b_title_bbox = b_dax.title.get_window_extent()
     title_y_fig = fig.transFigure.inverted().transform((0, b_title_bbox.y0))[1]
     a_x_fig = first_structure_ax.get_position().x0 - 0.015
-    fig.text(a_x_fig, title_y_fig, "A", fontweight="bold", fontsize=stylia.FONTSIZE_BIG,
+    fig.text(a_x_fig, title_y_fig, "a", fontweight="bold", fontsize=stylia.FONTSIZE_BIG,
              ha="left", va="bottom", transform=fig.transFigure)
 
     # Skips stylia.save_figure()'s wrapper (its hardcoded plt.tight_layout() call doesn't
