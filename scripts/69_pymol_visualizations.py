@@ -3,9 +3,9 @@
 One PyMOL session per gene, for the 5 tRNA synthetases with a curated pocket in
 output/selected_pockets.csv (pheS, pheT, aspS, lysS, alaS). Each session merges every curated
 pocket's structure + centroid spheres into one object (blue=CAT, teal=NON-CAT), plus its top-N
-best-scoring compounds from output/65_aggregated_docking as hidden ligand objects, all shown
-identically (orange carbons). Adapted from scripts/51_selected_pockets_visualization.py and
-scripts/47b_reference_pocket_visualization.py.
+best-scoring compounds from output/65_aggregated_docking's replicate-averaged results.csv (poses
+taken from replicate 1) as hidden ligand objects, all shown identically (orange carbons). Adapted
+from scripts/51_selected_pockets_visualization.py and scripts/47b_reference_pocket_visualization.py.
 
 Usage:
     python 69_pymol_visualizations.py [--genes pheS,aspS] [--top-n 5] [--no-surface]
@@ -89,8 +89,9 @@ def load_and_merge_structure_pocket(structure_path, pocket_pdb_path, final_name,
 
 
 def get_top_n_scores(pocket_name, top_n):
-    """Top-N (compound_id, score) pairs from output/65_aggregated_docking's report.csv, best first."""
-    report_path = os.path.join(AGGREGATED_DOCKING_DIR, pocket_name, "report.csv")
+    """Top-N (compound_id, score) pairs from output/65_aggregated_docking's results.csv (mean
+    score across N_REPLICATES Uni-Dock replicates), best first."""
+    report_path = os.path.join(AGGREGATED_DOCKING_DIR, pocket_name, "results.csv")
     if not os.path.isfile(report_path):
         return []
     report = pd.read_csv(report_path).dropna(subset=["score"]).sort_values("score", ascending=True)
@@ -99,8 +100,10 @@ def get_top_n_scores(pocket_name, top_n):
 
 def load_ligand_objects(top_scores, obj_prefix, docking_dir):
     """Loads each top_scores compound as "<obj_prefix>_top<rank>", hidden by default.
-    Returns the list of ranks successfully extracted from docking.tar.gz."""
-    tar_path = os.path.join(docking_dir, "docking.tar.gz")
+    Returns the list of ranks successfully extracted from docking/docking_1.tar.gz (poses from
+    the first of the N_REPLICATES Uni-Dock replicates - results.csv's score is already the
+    cross-replicate mean, so any single replicate's pose is a representative one to display)."""
+    tar_path = os.path.join(docking_dir, "docking", "docking_1.tar.gz")
     if not os.path.isfile(tar_path):
         print(f"    Warning: {tar_path} not found, no ligand poses loaded for this pocket.")
         return []

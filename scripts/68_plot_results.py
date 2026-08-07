@@ -5,8 +5,9 @@ protein-level UpSet plots for the 12 curated pockets. A missing input is skipped
 not fatal.
 
 Usage:
-    python 68_plot_results.py
+    python 68_plot_results.py [--annotate] [--only-upset]
 """
+import argparse
 import os
 import sys
 
@@ -28,7 +29,7 @@ OUTPUT_DIR = os.path.join(ROOT, "output", "68_plot_results")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 TOP_N = 10
-DOCKING_SCORE_THRESHOLDS = [-12, -11, -10]
+DOCKING_SCORE_THRESHOLDS = [-12, -11, -10, -9]
 RANK_THRESHOLDS = [100, 500, 1000]
 FLAG_COLS = ["has_pains", "has_brenk", "is_sim_known_ab", "nitrofuran_motif",
              "fluoroquinolone_motif", "carbepenem_motif", "betalactam_motif"]
@@ -72,7 +73,7 @@ def load_report(directory, pocket, filename="report.csv"):
 
 
 def load_real2_report(pocket):
-    """REAL round 2's report for `pocket` - the dimer pocket lives under MULTIMER_DOCKING_DIR instead."""
+    """REAL 10B's report for `pocket` - the dimer pocket lives under MULTIMER_DOCKING_DIR instead."""
     directory = MULTIMER_DOCKING_DIR if pocket == DIMER_POCKET else LIBRARIES["REAL"]
     return load_report(directory, pocket)
 
@@ -83,8 +84,8 @@ def build_present(loader, pockets):
 
 
 def load_pocket_ranks():
-    """{pocket: pd.Series(rank, indexed by compound_id)} - rank vs. the ~99,105-compound REAL
-    round-2 background library, not vs. our own aggregated set."""
+    """{pocket: pd.Series(rank, indexed by compound_id)} - rank vs. the ~100k-compound REAL
+    10B background library, not vs. our own aggregated set."""
     df = pd.read_csv(MERGED_DOCKING_SCORES_CSV, index_col="compound_id")
     rank_cols = [c for c in df.columns if c.endswith("_rank")]
     return {c.removesuffix("_rank"): df[c].dropna() for c in rank_cols}
@@ -114,6 +115,58 @@ def summarize_by_n_targets(hit_sets):
     return f"{breakdown}\nSingle-target: {single_pct:.1f}%, Multi-target: {100 - single_pct:.1f}%"
 
 
+def tighten_totals_gap(axes, fig, buffer=0.025):
+    """upsetplot reserves a wide blank column between the totals-bar panel and the matrix/
+    category-label panel (sized to fit the label text with a generous margin). Shrinks it to
+    just fit the rendered category-label text (+ `buffer`, figure-fraction) by shifting the
+    matrix + intersections panels left."""
+    totals_ax = axes.get("totals")
+    matrix_ax = axes.get("matrix")
+    if totals_ax is None or matrix_ax is None:
+        return
+    labels = matrix_ax.get_yticklabels()
+    if not labels:
+        return
+    renderer = fig.canvas.get_renderer()
+    fig_width_px = fig.get_window_extent(renderer=renderer).width
+    text_width_frac = max(t.get_window_extent(renderer=renderer).width for t in labels) / fig_width_px
+
+    new_x0 = totals_ax.get_position().x1 + text_width_frac + buffer
+    shift = matrix_ax.get_position().x0 - new_x0
+    if shift <= 0:
+        return
+    for name in ("matrix", "intersections"):
+        ax = axes.get(name)
+        if ax is None:
+            continue
+        pos = ax.get_position()
+        ax.set_position([pos.x0 - shift, pos.y0, pos.width + shift, pos.height])
+
+
+def style_upset_by_degree(upset):
+    """Colors both the intersection bars and matrix dots by degree (# proteins in the
+    intersection) - must be called before upset.plot(). Returns {degree: color} for the legend."""
+    stylia = _safe_import_stylia()
+    ac = stylia.ArticleColors()
+    palette = [ac.crimson, ac.tangerine, ac.amber, ac.lime, ac.turquoise, ac.cobalt, ac.periwinkle, ac.orchid]
+
+    degrees = sorted(set(sum(idx) for idx in upset.intersections.index))
+    degree_colors = {d: palette[(d - 1) % len(palette)] for d in degrees}
+    for d, color in degree_colors.items():
+        upset.style_subsets(min_degree=d, max_degree=d, facecolor=color)
+    return degree_colors
+
+
+def add_degree_legend(ax_bars, degree_colors):
+    """Legend mapping each degree color to '{d} target(s)', placed to the right of the bars."""
+    import matplotlib.patches as mpatches
+    handles = [
+        mpatches.Patch(color=color, label=f"{d} target{'s' if d != 1 else ''}")
+        for d, color in degree_colors.items()
+    ]
+    ax_bars.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.01, 1), borderaxespad=0, fontsize=8)
+
+
 def annotate_degree_groups(ax_bars, upset):
     """Draws a bracket + total-count label above each contiguous group of same-degree bars."""
     sizes = upset.intersections.to_numpy()
@@ -139,19 +192,32 @@ def annotate_degree_groups(ax_bars, upset):
     ax_bars.set_ylim(top=max(ax_bars.get_ylim()[1], label_y * 1.15))
 
 
-def save_protein_upset(hit_sets, title, out_path):
-    """Plain matplotlib + upsetplot, no stylia (upsetplot.plot() doesn't compose with it)."""
+def save_protein_upset(hit_sets, title, out_path, annotate=False):
+    """upsetplot manages its own figure/axes, so this can't go through stylia's create_figure()/
+    label() - but stylia's slide/article rcParams (fonts, sizes, black text) are applied first so
+    the plot still matches the rest of the report."""
     import warnings
     import matplotlib.pyplot as plt
     from upsetplot import UpSet, from_contents
     warnings.filterwarnings("ignore", category=FutureWarning, module="upsetplot")
     warnings.filterwarnings("ignore", category=UserWarning, message=".*tight_layout.*")
 
-    upset = UpSet(from_contents(hit_sets), sort_by="degree")
-    axes = upset.plot()
-    annotate_degree_groups(axes["intersections"], upset)
+    stylia = _safe_import_stylia()
+    stylia.set_format("slide")
+    stylia.set_style("article")
 
-    plt.suptitle(f"{title}\n{summarize_by_n_targets(hit_sets)}")
+    upset = UpSet(from_contents(hit_sets), sort_by="degree")
+    degree_colors = style_upset_by_degree(upset)
+    axes = upset.plot()
+    fig = plt.gcf()
+    fig.canvas.draw()  # force a layout pass so text extents below are accurate, not placeholders
+    tighten_totals_gap(axes, fig)
+    add_degree_legend(axes["intersections"], degree_colors)
+    if annotate:
+        annotate_degree_groups(axes["intersections"], upset)
+        title = f"{title}\n{summarize_by_n_targets(hit_sets)}"
+
+    plt.suptitle(title)
     plt.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close("all")
 
@@ -258,8 +324,8 @@ def plot_docking_score_boxplots(pockets, agg_scores):
     print("--- Docking score boxplots (12 curated pockets) ---")
     score_sources = [
         ("Hit Locator", "mint", build_present(lambda p: load_report(LIBRARIES["DL"], p), pockets), True),
-        ("REAL 1 - preselected", "orange", build_present(load_real_positive_scores, pockets), False),
-        ("REAL 2 - preselected", "yellow", build_present(load_real2_report, pockets), True),
+        ("REAL 10M - preselected", "orange", build_present(load_real_positive_scores, pockets), False),
+        ("REAL 10B - preselected", "yellow", build_present(load_real2_report, pockets), True),
         ("All selected", "purple", agg_scores, True),
         ("Top-10 selected", "pink", {p: s.sort_values().head(TOP_N) for p, s in agg_scores.items()}, False),
     ]
@@ -272,7 +338,7 @@ def plot_docking_score_boxplots(pockets, agg_scores):
     print(f"Saved: {out_path}")
 
 
-def _score_upsets(agg_scores, protein_pockets, suffix, label):
+def _score_upsets(agg_scores, protein_pockets, suffix, label, annotate=False):
     for threshold in DOCKING_SCORE_THRESHOLDS:
         hit_sets = {
             protein: set().union(*(
@@ -283,11 +349,12 @@ def _score_upsets(agg_scores, protein_pockets, suffix, label):
         }
         print(f"  score <= {threshold}: " + ", ".join(f"{p}={len(s)}" for p, s in hit_sets.items()))
         out_path = os.path.join(OUTPUT_DIR, f"upset_score_{abs(threshold)}{suffix}.png")
-        save_protein_upset(hit_sets, f"Docking score ≤ {threshold}{label}", out_path)
+        title_label = f"\n{label.strip()}" if label else ""
+        save_protein_upset(hit_sets, f"Docking score ≤ {threshold}{title_label}", out_path, annotate=annotate)
         print(f"  Saved: {out_path}")
 
 
-def _rank_upsets(pocket_ranks, protein_pockets, suffix, label):
+def _rank_upsets(pocket_ranks, protein_pockets, suffix, label, annotate=False):
     for rank in RANK_THRESHOLDS:
         hit_sets = {
             protein: set().union(*(
@@ -298,11 +365,12 @@ def _rank_upsets(pocket_ranks, protein_pockets, suffix, label):
         }
         print(f"  rank <= {rank}: " + ", ".join(f"{p}={len(s)}" for p, s in hit_sets.items()))
         out_path = os.path.join(OUTPUT_DIR, f"upset_rank_{rank}{suffix}.png")
-        save_protein_upset(hit_sets, f"Rank ≤ {rank} vs. REAL round-2 (~99,105){label}", out_path)
+        title_label = f"\n{label.strip()}" if label else ""
+        save_protein_upset(hit_sets, f"Rank ≤ {rank} in REAL 10B (~100k){title_label}", out_path, annotate=annotate)
         print(f"  Saved: {out_path}")
 
 
-def plot_protein_upsets(agg_scores):
+def plot_protein_upsets(agg_scores, annotate=False):
     """Runs the score/rank UpSet plots for all pockets, then again for CAT-only and NON-CAT-only."""
     pocket_ranks = load_pocket_ranks()
     variants = [("", None), ("_CAT", "CAT"), ("_NONCAT", "NON-CAT")]
@@ -312,28 +380,40 @@ def plot_protein_upsets(agg_scores):
         protein_pockets = load_protein_pockets(site_type)
 
         print(f"--- Protein-level docking score UpSet plots{label} ---")
-        _score_upsets(agg_scores, protein_pockets, suffix, label)
+        _score_upsets(agg_scores, protein_pockets, suffix, label, annotate=annotate)
 
         print(f"--- Protein-level docking rank UpSet plots{label} ---")
-        _rank_upsets(pocket_ranks, protein_pockets, suffix, label)
+        _rank_upsets(pocket_ranks, protein_pockets, suffix, label, annotate=annotate)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--annotate", action="store_true",
+                         help="Draw the per-degree bracket + count label on UpSet plots (off by default).")
+    parser.add_argument("--only-upset", action="store_true",
+                         help="Skip everything except the protein-level UpSet plots.")
+    return parser.parse_args()
 
 
 def main():
-    plot_ersilia_distributions()
-    print()
-    plot_permeability_comparison()
-    print()
-    report_nsps()
-    print()
-    report_cytotoxicity()
-    print()
-    report_eos2xeq_flags()
-    print()
+    args = parse_args()
+    if not args.only_upset:
+        plot_ersilia_distributions()
+        print()
+        plot_permeability_comparison()
+        print()
+        report_nsps()
+        print()
+        report_cytotoxicity()
+        print()
+        report_eos2xeq_flags()
+        print()
     pockets = pd.read_csv(SELECTED_POCKETS_CSV)["pocket_name"].tolist()
     agg_scores = build_present(lambda p: load_report(AGGREGATED_DOCKING_DIR, p, filename="results.csv"), pockets)
-    plot_docking_score_boxplots(pockets, agg_scores)
-    print()
-    plot_protein_upsets(agg_scores)
+    if not args.only_upset:
+        plot_docking_score_boxplots(pockets, agg_scores)
+        print()
+    plot_protein_upsets(agg_scores, annotate=args.annotate)
 
 
 if __name__ == "__main__":

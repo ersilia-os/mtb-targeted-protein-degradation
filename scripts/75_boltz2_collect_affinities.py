@@ -1,41 +1,40 @@
 #!/usr/bin/env python3
 """
-Pulls script 73's live-updated affinity results CSV from nebula via rsync, joins in
-gene_name/site_type (from pocket_sequences.csv) and smiles (from compounds.csv), and writes one
-enriched, long-format CSV for downstream consumers (e.g. the molecule-auditing explorer). Safe to
-re-run anytime during the multi-day run -- always reflects nebula's latest snapshot, no
-append/destructive logic. Stays raw/lossless (one row per pocket x compound result): does not
-merge pheS/pheT into pheST and does not aggregate to a best-score-per-gene-x-site-type -- that's
-a downstream concern (see filtered_hits_explorer/prepare_audit_input.py, which does it for
-docking scores). Also plots, per pocket with data so far, an affinity_pred_value distribution and
-an affinity_pred_value vs affinity_probability_binary scatter, as a quick model-behavior sanity
-check.
+Reads script 73's affinity results CSV (now written directly to local disk -- no longer requires
+an rsync pull from nebula), joins in gene_name/site_type (from pocket_sequences.csv) and smiles
+(from compounds.csv), and writes one enriched, long-format CSV for downstream consumers (e.g. the
+molecule-auditing explorer). Safe to re-run anytime during the multi-day run -- always reflects
+script 73's latest snapshot on disk, no append/destructive logic. Stays raw/lossless (one row per
+pocket x compound result): does not merge pheS/pheT into pheST and does not aggregate to a
+best-score-per-gene-x-site-type -- that's a downstream concern (see
+filtered_hits_explorer/prepare_audit_input.py, which does it for docking scores). Also plots, per
+pocket with data so far, an affinity_pred_value distribution (x-axis in IC50 uM, not raw log10) and
+an affinity_pred_value vs affinity_probability_binary scatter annotated with Pearson/Spearman
+correlation, as a quick model-behavior sanity check.
 
 Usage:
     python 75_boltz2_collect_affinities.py [--out-subdir boltz_results]
 """
 import argparse
 import os
-import subprocess
 import sys
 
+import numpy as np
 import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.append(os.path.join(ROOT, "src"))
 from docking_utils import _safe_import_stylia  # noqa: E402
 
-NEBULA_HOST = "nebula"
-REMOTE_DOCKING_DIR = "~/mtb-targeted-protein-degradation/output/73_boltz2_docking"
+DOCKING_DIR = os.path.join(ROOT, "output", "73_boltz2_docking")
 
 SELECTED_POCKETS_CSV = os.path.join(ROOT, "output", "selected_pockets.csv")
 POCKET_SEQUENCES_CSV = os.path.join(ROOT, "output", "71_boltz2_prepare_inputs", "pocket_sequences.csv")
 COMPOUNDS_CSV = os.path.join(ROOT, "output", "71_boltz2_prepare_inputs", "compounds.csv")
 
-PROCESSED_DIR = os.path.join(ROOT, "processed", "75_boltz2_collect_affinities")
 OUTPUT_DIR = os.path.join(ROOT, "output", "75_boltz2_collect_affinities")
 PLOTS_DIR = os.path.join(OUTPUT_DIR, "plots")
-os.makedirs(PROCESSED_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(PLOTS_DIR, exist_ok=True)
 
@@ -58,24 +57,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def pull_remote_csv(out_subdir):
-    filename = f"{out_subdir}_affinity_results.csv"
-    remote_src = f"{NEBULA_HOST}:{REMOTE_DOCKING_DIR}/{filename}"
-    local_dest = os.path.join(PROCESSED_DIR, filename)
-
-    print(f"Pulling {remote_src} -> {local_dest}")
-    result = subprocess.run(
-        ["rsync", "-av", "--partial", "--progress", remote_src, local_dest],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        print(result.stderr)
-        if os.path.isfile(local_dest):
-            mtime = pd.Timestamp(os.path.getmtime(local_dest), unit="s")
-            print(f"WARNING: rsync failed; falling back to cached copy from {mtime}")
-        else:
-            sys.exit(f"rsync failed and no cached copy exists at {local_dest}; is nebula reachable?")
-    return local_dest
+def local_csv_path(out_subdir):
+    path = os.path.join(DOCKING_DIR, f"{out_subdir}_affinity_results.csv")
+    if not os.path.isfile(path):
+        sys.exit(f"No affinity results CSV found at {path}; has script 73 written it yet?")
+    return path
 
 
 def load_raw_results(path):
@@ -144,16 +130,27 @@ def report_progress(df, pocket_sequences):
           f"{n_pockets_with_data}/{len(pocket_sequences)} pockets with any data")
 
 
+def _um_ticks(vmin, vmax):
+    """Integer log10(IC50 uM) tick positions spanning [vmin, vmax], labeled in IC50 uM (e.g.
+    0.1 uM, 1 uM, 10 uM) instead of raw log10 values -- easier to read at a glance."""
+    lo, hi = int(np.floor(vmin)), int(np.ceil(vmax))
+    ticks = list(range(lo, hi + 1))
+    labels = [f"{10 ** t:g} uM" for t in ticks]
+    return ticks, labels
+
+
 def plot_pocket_affinities(df):
-    """One PNG per pocket with data: affinity_pred_value distribution + affinity_pred_value vs
-    affinity_probability_binary scatter. Format: slide | Style: ersilia -- change with
-    stylia.set_format() / stylia.set_style()."""
+    """One PNG per pocket with data: affinity_pred_value distribution (x-axis in IC50 uM) +
+    affinity_pred_value vs affinity_probability_binary scatter annotated with Pearson/Spearman
+    correlation. Format: slide | Style: ersilia -- change with stylia.set_format() /
+    stylia.set_style()."""
     stylia = _safe_import_stylia()
     stylia.set_format("slide")
     stylia.set_style("ersilia")
     nc = stylia.NamedColors()
 
     n_written = 0
+    correlations = []
     for pocket_name, group in df.groupby("pocket_name"):
         n_before = len(group)
         group = group.dropna(subset=["affinity_pred_value", "affinity_probability_binary"])
@@ -167,11 +164,27 @@ def plot_pocket_affinities(df):
 
         ax = axs.next()
         ax.hist(group["affinity_pred_value"], color=nc.blue)
-        stylia.label(ax, xlabel="affinity_pred_value (log10 IC50, uM)", ylabel="Count",
+        ticks, tick_labels = _um_ticks(group["affinity_pred_value"].min(), group["affinity_pred_value"].max())
+        ax.set_xticks(ticks)
+        ax.set_xticklabels(tick_labels)
+        stylia.label(ax, xlabel="Predicted IC50", ylabel="Count",
                      title=f"{pocket_name}: affinity distribution (n={len(group):,})", abc="A")
+
+        r, _ = pearsonr(group["affinity_probability_binary"], group["affinity_pred_value"])
+        rho, _ = spearmanr(group["affinity_probability_binary"], group["affinity_pred_value"])
+        correlations.append({
+            "pocket_name": pocket_name,
+            "gene_name": group["gene_name"].iloc[0],
+            "site_type": group["site_type"].iloc[0],
+            "n": len(group),
+            "pearson_r": r,
+            "spearman_rho": rho,
+        })
 
         ax = axs.next()
         ax.scatter(group["affinity_probability_binary"], group["affinity_pred_value"], color=nc.purple)
+        ax.text(0.03, 0.97, f"Pearson r = {r:.2f}\nSpearman ρ = {rho:.2f}",
+                transform=ax.transAxes, ha="left", va="top")
         stylia.label(ax, xlabel="P(binder)", ylabel="affinity_pred_value (log10 IC50, uM)",
                      title=f"{pocket_name}: affinity vs P(binder)", abc="B")
 
@@ -182,10 +195,17 @@ def plot_pocket_affinities(df):
 
     print(f"\nWrote {n_written} affinity plot(s) to {PLOTS_DIR}")
 
+    corr_df = pd.DataFrame(correlations).sort_values("pocket_name").reset_index(drop=True)
+    corr_path = os.path.join(OUTPUT_DIR, "affinity_probability_correlations.csv")
+    corr_df.to_csv(corr_path, index=False)
+    print(f"\nSaved affinity_pred_value vs P(binder) correlations (Pearson/Spearman) per pocket to {corr_path}")
+    with pd.option_context("display.max_rows", None, "display.width", 200):
+        print(corr_df.to_string(index=False))
+
 
 def main():
     args = parse_args()
-    local_csv = pull_remote_csv(args.out_subdir)
+    local_csv = local_csv_path(args.out_subdir)
 
     raw_df = load_raw_results(local_csv)
     pocket_sequences = load_pocket_sequences()
