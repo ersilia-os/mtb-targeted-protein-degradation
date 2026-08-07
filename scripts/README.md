@@ -11,18 +11,18 @@ Generates a FASTA file for each of the 21 tRNA synthetases (from `data/mtb_trna_
 Programmatically downloads AF2 structures with co-crystallized ligands from [AlphaFill](https://alphafill.eu/) into `/data/structures/alphafill_database/`.
 
 ### `02_organize_structures.py`
-Organizes structure files from all sources (AlphaFold2, AlphaFold3, Chai-1, AlphaFill, SwissModel; PDBe is omitted from this automated processing) into `processed/structures/<uniprot_ac>/`, converting each from `.cif` to `.pdb` via PyMOL and then deleting the source `.cif` — only `.pdb` files remain on disk. For multi-chain files, keeps the single chain with the highest sequence coverage against the UniProt reference sequence, requiring that maximum coverage to be ≥95%; structures whose selected-chain sequence is <80% of the reference length are dropped outright, and those in the 80–95% range are kept only if the sequence is exactly continuous with (a contiguous substring of) the UniProt reference, otherwise removed. Non-protein atoms (waters, ligands, other heteroatoms) are then stripped from the retained chain. Produces the per-structure lookup table `processed/trna_synthetases_data.csv` (see aggregate table below).
+Organizes structure files from all sources (AlphaFold2, AlphaFold3, Chai-1, AlphaFill, SwissModel; PDBe is omitted from this automated processing) into `output/structures/<uniprot_ac>/`, converting each from `.cif` to `.pdb` via PyMOL and then deleting the source `.cif` — only `.pdb` files remain on disk. For multi-chain files, keeps the single chain with the highest sequence coverage against the UniProt reference sequence, requiring that maximum coverage to be ≥95%; structures whose selected-chain sequence is <80% of the reference length are dropped outright, and those in the 80–95% range are kept only if the sequence is exactly continuous with (a contiguous substring of) the UniProt reference, otherwise removed. Non-protein atoms (waters, ligands, other heteroatoms) are then stripped from the retained chain. Produces the per-structure lookup table `output/trna_synthetases_data.csv` (see aggregate table below).
 
 ### `03_align_structures.py`
-Aligns each protein's structures (Cα superimposition over the residue range shared with the reference, via Biopython) to a single reference — the first-listed AlphaFold3 model (`model_0`) for that protein — skipping AlphaFill structures (identical to AlphaFold2, so redundant to align). Per-structure RMSD against the reference is saved to `processed/alignment_rmsd_data.csv`; structures with RMSD > 10 Å are removed from `processed/structures`, `processed/aligned_structures`, and `processed/trna_synthetases_data.csv`.
+Aligns each protein's structures (Cα superimposition over the residue range shared with the reference, via Biopython) to a single reference — the first-listed AlphaFold3 model (`model_0`) for that protein — skipping AlphaFill structures (identical to AlphaFold2, so redundant to align). Per-structure RMSD against the reference is saved to `output/alignment_rmsd_data.csv`; structures with RMSD > 10 Å are removed from `output/structures`, `output/aligned_structures`, and `output/trna_synthetases_data.csv`.
 
 ### `04_relax_structures.py`
-Prepares structures for docking: protonation via PDB2PQR (AMBER force field, pH 7.0, run in the `adda4tb` conda env) followed by relaxation with PyRosetta's `FastRelax` (`ref2015` score function). Each structure is relaxed 3 times independently and the lowest-scoring (best) pose is kept. Reads the RMSD-filtered file list from `processed/alignment_rmsd_data.csv`, inputs from `processed/aligned_structures/`, outputs to `processed/relaxed_structures/<uniprot_ac>/`. Computationally intensive; re-running skips structures whose relaxed output already exists.
+Prepares structures for docking: protonation via PDB2PQR (AMBER force field, pH 7.0, run in the `adda4tb` conda env) followed by relaxation with PyRosetta's `FastRelax` (`ref2015` score function). Each structure is relaxed 3 times independently and the lowest-scoring (best) pose is kept. Reads the RMSD-filtered file list from `output/alignment_rmsd_data.csv`, inputs from `output/aligned_structures/`, outputs to `output/relaxed_structures/<uniprot_ac>/`. Computationally intensive; re-running skips structures whose relaxed output already exists.
 
 ### `05_align_relaxed_structures.py`
-Re-aligns structures after relaxation, using their unrelaxed counterparts as the alignment reference. No structures were removed at this stage, even those with high RMSD against the unrelaxed structures.
+Re-aligns each relaxed structure to its own unrelaxed counterpart (`output/aligned_structures/`) as the alignment reference (same Cα-superimposition approach as script 03). RMSDs are saved to `output/alignment_relaxed_rmsd_data.csv`; no structures are removed at this stage — the removal code path is present but commented out, since post-relaxation RMSD against the unrelaxed reference was manually confirmed to stay under the 10 Å threshold used in script 03 for every structure.
 
-**Aggregate output (scripts 02–05):** `processed/trna_synthetases_data.csv` has one row per processed structure:
+**Aggregate output (scripts 02–05):** `output/trna_synthetases_data.csv` has one row per processed structure:
 
 | **Field** | **Description** |
 |-----------|------------------|
@@ -41,15 +41,15 @@ Re-aligns structures after relaxation, using their unrelaxed counterparts as the
 ## Sequence & pocket analysis
 
 ### `06_sequence_annotation.py`
-Processes protein family/domain annotations downloaded from [InterPro](https://www.ebi.ac.uk/interpro/) (files in `data/sequences/interpro`).
+Aggregates protein family/domain annotations downloaded from [InterPro](https://www.ebi.ac.uk/interpro/) (per-protein files `data/sequences/interpro/entry-matching-<uniprot_ac>.tsv`) across all 21 tRNA synthetases into one combined table, `output/sequences/interpro_data.csv` (columns: `uniprot_ac`, `interpro_ac`, `name`, `source_database`, `type`, `integrated_into`, `integrated_signatures`, `go_terms`, `protein_length`, `matches`). Input for script 10's summary.
 
 ### `07_fetch_from_chembl.py`
-Fetches bioactivity data from [ChEMBL](https://www.ebi.ac.uk/chembl/) using UniProt AC identifiers. Data was found for only 3 of the 21 tRNA synthetases.
+Fetches ChEMBL bioactivity data (IC50-type activities only, via the `chembl_webresource_client` package) for the tRNA synthetases with a mapped ChEMBL target ID in `data/chembl_uniprot_mapping.txt`, saving one raw JSON dump per UniProt AC to `data/ligands/chembl/<uniprot_ac>.json`. Data was found for only 3 of the 21 tRNA synthetases.
 
 ### `08_detect_pockets.py`
-Detects pockets in AF2, AF3, Chai-1 and SwissModel predicted models. Following the [authors' recommendations](https://github.com/rdk/p2rank/issues/76): pockets are kept if probability (K) > 0.2, with at least the Top-3 (N) per structure retained regardless. Pockets with at least one residue below pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel) are then filtered out, discarding about 25–30% of pockets. These cut-offs are arbitrary; usual recommendations are 70 & 0.7 — this pipeline is slightly less restrictive. See also script 48, which applies the same P2Rank approach to experimental multimeric structures.
+Detects pockets in AF2, AF3, Chai-1 and SwissModel predicted models (`output/aligned_relaxed_structures/`, per `output/alignment_relaxed_rmsd_data.csv`; AlphaFill is excluded upstream since it's identical to AlphaFold2). Runs P2Rank with the `-c alphafold` config. Following the [authors' recommendations](https://github.com/rdk/p2rank/issues/76): pockets are kept if probability ≥ 0.2, plus, regardless of probability, any pocket whose P2Rank rank is < 3 — since P2Rank ranks are 1-indexed (verified against actual `_predictions.csv` output), this unconditionally keeps only ranks 1 and 2 (top-2), not the intended top-3. Pockets with at least one residue below pLDDT < 65 (AF2, AF3, Chai-1) or QSQE < 0.65 (SwissModel) are then filtered out, discarding about 25–30% of pockets. These cut-offs are arbitrary; usual recommendations are 70 & 0.7 — this pipeline is slightly less restrictive. See also script 48, which applies the same P2Rank approach to experimental multimeric structures.
 
-Summary output `processed/pocket_detection_data.csv` (one row per detected pocket and structure):
+Summary output `output/pocket_detection_data.csv` (one row per detected pocket and structure):
 
 | **Field** | **Description** |
 |-----------|------------------|
@@ -64,17 +64,19 @@ Summary output `processed/pocket_detection_data.csv` (one row per detected pocke
 | `Pocket residues (chain_resn)` | List of residues forming the pocket, with chain and residue number |
 | `B-factors` | Confidence measures: pLDDT (AF2, AF3, Chai) or QSQE (SM) |
 
+Note: the `Full path` column in the currently-committed `output/pocket_detection_data.csv` still records the pre-rename `processed/aligned_relaxed_structures/...` prefix (from before this repo's `processed/` → `output/` rename, now fixed in the scripts themselves) — treat existing values in that column as informational, not necessarily the literal current path.
+
 ### `09_prepare_pymol_visualizations.py`
-Generates one PyMOL session file (`.pse`) per protein to visualize detected pockets and their residues:
+Generates one gzipped PyMOL session file (`output/pymol_sessions/<uniprot_ac>.pse.gz`) per protein, using the post-relax/aligned structures (`output/aligned_relaxed_structures/`) with the AlphaFold2 model as reference, to visualize detected pockets and their residues:
 
 | **Element** | **Description** | **Displayed?** |
 |-------------|------------------|--------------|
 | Reference structure (AF2) | Wheat color, surface + cartoon representation | Yes |
 | Pockets detected in reference structure (AF2) | Sky-blue spheres with arbitrary size (pocket detection provides a single 3D coordinate) | Yes |
 | Residues defining each pocket in AF2 | Orange color, surface + cartoon representation | Yes |
-| Aligned structures (all but AF2) | Gray color, cartoon representation | No |
-| Pockets detected in aligned structures | Gray-colored points | No |
-| InterPro annotations | Conserved sites, domains, families, homologous superfamilies etc. (red color, surface representation) | No |
+| Aligned structures (all but AF2) | Gray color, cartoon representation | No (loaded but disabled) |
+| Pockets detected in aligned structures | Gray-colored points | No (loaded but disabled) |
+| InterPro annotations | One object per matched entry: white surface for the whole reference structure, with residues in the entry's matched range(s) colored red | No (loaded but disabled) |
 
 ### `10_organize_sequence_info.py`
 Organizes sequence annotation information. Output `processed/sequences/interpro_summary.tsv`:

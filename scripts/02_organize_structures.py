@@ -12,7 +12,7 @@ cmd.feedback("disable", "all", "warnings")
 
 root = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.abspath(os.path.join(root, "..", "data"))
-processed_dir = os.path.abspath(os.path.join(root, "..", "processed"))
+processed_dir = os.path.abspath(os.path.join(root, "..", "output"))
 
 df = pd.read_csv(os.path.join(data_dir, "mtb_trna_synthetases_bosch_2021_fig5_annotated.csv"))
 
@@ -412,7 +412,7 @@ R = []
 for fn in file_names:
     uniprot_ac = fn.split("_")[1]
     print("Finding subset indices for {0}".format(fn))
-    data = find_subset_indices_from_file(os.path.join(root, "..", "processed", "structures", uniprot_ac, fn))
+    data = find_subset_indices_from_file(os.path.join(root, "..", "output", "structures", uniprot_ac, fn))
     R += [[data[k] for k in ["file_name", "chain_id", "uniprot_ac", "n_residues", "start_resid", "end_resid", "coverage", "structure_sequence_length", "full_sequence_length", "structure_sequence", "full_sequence"]]]
 df = pd.DataFrame(R, columns=["file_name", "chain_id", "uniprot_ac", "n_residues", "start_resid", "end_resid", "coverage", "structure_sequence_length", "full_sequence_length", "sequence_structure", "full_sequence"])
 df.sort_values(by=["uniprot_ac", "file_name"], inplace=True)

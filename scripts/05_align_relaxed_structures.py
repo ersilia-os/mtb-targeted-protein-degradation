@@ -85,8 +85,8 @@ def align_structure(reference_file, mobile_file):
     # Define file paths and parameters
     full_structure_file = reference_file
     subset_structure_file = mobile_file
-    input_dir = os.path.join(root, "..", "processed", "relaxed_structures")
-    output_dir = os.path.join(root, "..", "processed", "aligned_relaxed_structures")
+    input_dir = os.path.join(root, "..", "output", "relaxed_structures")
+    output_dir = os.path.join(root, "..", "output", "aligned_relaxed_structures")
     aligned_structure_file = mobile_file.replace(input_dir, output_dir)
 
     # Sequence lengths...
@@ -98,7 +98,7 @@ def align_structure(reference_file, mobile_file):
     print("Mobile sequence length from PyMOL: ", n_res_mob2)
 
     # Define the residue range in the full structure that corresponds to the subset
-    df = pd.read_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"))
+    df = pd.read_csv(os.path.join(root, "..", "output", "trna_synthetases_data.csv"))
     mobile_file_name = os.path.basename(mobile_file)
     start_residue = df[df["file_name"] == mobile_file_name]["start_resid"].values[0]
     end_residue = df[df["file_name"] == mobile_file_name]["end_resid"].values[0]
@@ -149,9 +149,9 @@ def align_structure(reference_file, mobile_file):
 
 
 def align_all_structures(uniprot_ac):
-    input_dir = os.path.join(root, "..", "processed", "relaxed_structures", uniprot_ac)
-    output_dir = os.path.join(root, "..", "processed", "aligned_relaxed_structures", uniprot_ac)
-    aligned_dir = os.path.join(root, "..", "processed", "aligned_structures", uniprot_ac)
+    input_dir = os.path.join(root, "..", "output", "relaxed_structures", uniprot_ac)
+    output_dir = os.path.join(root, "..", "output", "aligned_relaxed_structures", uniprot_ac)
+    aligned_dir = os.path.join(root, "..", "output", "aligned_structures", uniprot_ac)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     file_names = []
@@ -179,7 +179,7 @@ def align_all_structures(uniprot_ac):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"))
+    df = pd.read_csv(os.path.join(root, "..", "output", "trna_synthetases_data.csv"))
     uniprot_acs = df["uniprot_ac"].unique()
     R = []
     for uniprot_ac in uniprot_acs:
@@ -192,15 +192,15 @@ if __name__ == "__main__":
     df = pd.DataFrame(R, columns=["uniprot_ac", "file_name", "rmsd"])
     to_remove = df[df["rmsd"] > 10]["file_name"].tolist()
     #df = df[df["rmsd"] <= 10]
-    df.to_csv(os.path.join(root, "..", "processed", "alignment_relaxed_rmsd_data.csv"), index=False)
+    df.to_csv(os.path.join(root, "..", "output", "alignment_relaxed_rmsd_data.csv"), index=False)
     # We don't remove structures here -all RMSDs 'should' be really low
     # I manually checked, there's nothing > 10
     # for fn in to_remove:
     #     uniprot_ac = fn.split("_")[1]
-    #     os.remove(os.path.join(root, "..", "processed", "structures", uniprot_ac, fn))
-    #     os.remove(os.path.join(root, "..", "processed", "aligned_structures", uniprot_ac, fn))
-    #     os.remove(os.path.join(root, "..", "processed", "relaxed_structures", uniprot_ac, fn))
-    #     os.remove(os.path.join(root, "..", "processed", "relaxed_aligned_structures", uniprot_ac, fn))
-    #     da = pd.read_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"))
+    #     os.remove(os.path.join(root, "..", "output", "structures", uniprot_ac, fn))
+    #     os.remove(os.path.join(root, "..", "output", "aligned_structures", uniprot_ac, fn))
+    #     os.remove(os.path.join(root, "..", "output", "relaxed_structures", uniprot_ac, fn))
+    #     os.remove(os.path.join(root, "..", "output", "relaxed_aligned_structures", uniprot_ac, fn))
+    #     da = pd.read_csv(os.path.join(root, "..", "output", "trna_synthetases_data.csv"))
     #     da = da[da["file_name"] != fn]
-    #     da.to_csv(os.path.join(root, "..", "processed", "trna_synthetases_data.csv"), index=False)
+    #     da.to_csv(os.path.join(root, "..", "output", "trna_synthetases_data.csv"), index=False)

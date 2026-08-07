@@ -110,16 +110,16 @@ def prepare_pymol_session(uni, directory, reference, structures, pymol_sessions,
 
 # Define paths
 root = os.path.dirname(os.path.abspath(__file__))
-aligned_dir = os.path.abspath(os.path.join(root, "..", "processed", "aligned_structures"))
-aligned_relaxed_dir = os.path.abspath(os.path.join(root, "..", "processed", "aligned_relaxed_structures"))
-detected_pockets = os.path.abspath(os.path.join(root, "..", "processed", "detected_pockets"))
-pymol_sessions = os.path.abspath(os.path.join(root, "..", "processed", "pymol_sessions"))
+aligned_dir = os.path.abspath(os.path.join(root, "..", "output", "aligned_structures"))
+aligned_relaxed_dir = os.path.abspath(os.path.join(root, "..", "output", "aligned_relaxed_structures"))
+detected_pockets = os.path.abspath(os.path.join(root, "..", "output", "detected_pockets"))
+pymol_sessions = os.path.abspath(os.path.join(root, "..", "output", "pymol_sessions"))
 
 # Create dir if necessary
 os.makedirs(pymol_sessions, exist_ok=True)
 
 # Load data
-alignment_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "processed", "pocket_detection_data.csv")))
+alignment_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "output", "pocket_detection_data.csv")))
 uniprots = sorted(set(alignment_df["Uniprot AC"]))
 
 

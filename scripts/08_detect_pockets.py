@@ -165,12 +165,12 @@ def extract_residue_confidence_mapping(pdb_file, prediction_type):
 
 # Define paths
 root = os.path.dirname(os.path.abspath(__file__))
-original_structures_dir = os.path.abspath(os.path.join(root, "..", "processed", "structures"))  # We need original structures to get the confidence values
-aligned_dir = os.path.abspath(os.path.join(root, "..", "processed", "aligned_relaxed_structures"))
-detected_pockets_dir = os.path.abspath(os.path.join(root, "..", "processed", "detected_pockets"))
+original_structures_dir = os.path.abspath(os.path.join(root, "..", "output", "structures"))  # We need original structures to get the confidence values
+aligned_dir = os.path.abspath(os.path.join(root, "..", "output", "aligned_relaxed_structures"))
+detected_pockets_dir = os.path.abspath(os.path.join(root, "..", "output", "detected_pockets"))
 
 # Load alignment RMSD data
-alignment_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "processed", "alignment_relaxed_rmsd_data.csv")))
+alignment_df = pd.read_csv(os.path.abspath(os.path.join(root, "..", "output", "alignment_relaxed_rmsd_data.csv")))
 
 # Create report
 report = []
@@ -233,4 +233,4 @@ for uniprot_ac, file_name in zip(alignment_df["uniprot_ac"], alignment_df["file_
     print("---------------  Pockets detected in: " + uniprot_ac + ", " + file_name + "   -------------")
 
 report = pd.DataFrame(report, columns=['Uniprot AC', 'File name', 'Prediction type', 'Full path', 'Pocket number', 'Pocket score', 'Pocket probability', 'Pocket centroid coordinate (x y z)', 'Pocket residues (chain_resn)', 'B-factors'])
-report.to_csv(os.path.abspath(os.path.join(root, "..", "processed", "pocket_detection_data.csv")), index=False)
+report.to_csv(os.path.abspath(os.path.join(root, "..", "output", "pocket_detection_data.csv")), index=False)

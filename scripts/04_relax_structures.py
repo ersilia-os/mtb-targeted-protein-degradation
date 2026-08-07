@@ -7,7 +7,7 @@ from pyrosetta.rosetta.protocols.relax import FastRelax
 from pyrosetta.rosetta.core.scoring import ScoreFunctionFactory
 
 root = os.path.dirname(os.path.abspath(__file__))
-processed_dir = os.path.abspath(os.path.join(root, "..", "processed"))
+processed_dir = os.path.abspath(os.path.join(root, "..", "output"))
 
 sys.path.append(os.path.join(root, "..", "src"))
 from utils.conda import SimpleConda
