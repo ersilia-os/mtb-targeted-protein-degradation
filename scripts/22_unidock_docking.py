@@ -129,7 +129,7 @@ for file, pocket_number, centroid in zip(df['File name'], df['Pocket number'], d
                                                                                    path=outpath, filter='data')
 
     # Copy pocket SD file
-    shutil.copyfile(os.path.join(root, "..", "processed", "pocketvec_PRE", label, f"pocket_{label.split('_')[-1]}.sd"), 
+    shutil.copyfile(os.path.join(root, "..", "output", "pocketvec_RUN", "pocketvec_PRE", label, f"pocket_{label.split('_')[-1]}.sd"), 
                     os.path.join(outpath, f"pocket_{label.split('_')[-1]}.sd"))
     
 

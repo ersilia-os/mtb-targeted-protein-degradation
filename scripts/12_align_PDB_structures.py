@@ -85,8 +85,8 @@ def load_pymol_session_align(session_input, session_output, structures):
 
 # Define file paths 
 root = os.path.dirname(os.path.abspath(__file__))
-pymol_sessions = os.path.join(root, "..", "processed", "pymol_sessions")
-pymol_sessions_pdbe = os.path.join(root, "..", "processed", "pymol_sessions_pdbe")
+pymol_sessions = os.path.join(root, "..", "output", "pymol_sessions")
+pymol_sessions_pdbe = os.path.join(root, "..", "output", "pymol_sessions_pdbe")
 pdb_structures = os.path.join(root, "..", "data", "structures", "pdbe_database")
 os.makedirs(pymol_sessions_pdbe, exist_ok=True)
 
@@ -110,4 +110,4 @@ for uni in sorted(os.listdir(pdb_structures)):
 
 # Store PDBe report annotations
 df = pd.DataFrame(REPORT_ALL, columns=["Uniprot ID", "PDB Structure", "Pocket", "HET RES", "Min Distance"])
-df.to_csv(os.path.join(root, "..", "processed" ,"pdbe_annotation_report.csv"), index=False, sep="\t")
+df.to_csv(os.path.join(root, "..", "output" ,"pdbe_annotation_report.csv"), index=False, sep="\t")

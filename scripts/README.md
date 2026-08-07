@@ -53,7 +53,7 @@ Summary output `output/pocket_detection_data.csv` (one row per detected pocket a
 
 | **Field** | **Description** |
 |-----------|------------------|
-| `Uniprot_AC` | Uniprot AC identifier |
+| `Uniprot AC` | Uniprot AC identifier |
 | `File name` | PDB file in which pockets have been detected |
 | `Prediction type` | The method used for protein structure prediction |
 | `Full path` | The full directory path where the PDB file is stored |
@@ -79,52 +79,48 @@ Generates one gzipped PyMOL session file (`output/pymol_sessions/<uniprot_ac>.ps
 | InterPro annotations | One object per matched entry: white surface for the whole reference structure, with residues in the entry's matched range(s) colored red | No (loaded but disabled) |
 
 ### `10_organize_sequence_info.py`
-Organizes sequence annotation information. Output `processed/sequences/interpro_summary.tsv`:
+Aggregates the per-protein InterPro data from script 06 into two files. `output/sequences/interpro_summary.tsv` — one row per InterPro accession, across all 21 tRNA synthetases:
 
 | **Field** | **Description** |
 |-----------|------------------|
 | `Accession` | InterPro Accession identifier |
 | `Name` | Name of the InterPro entry |
 | `Type` | Type of annotation (e.g., domain, conserved site, homologous superfamily) |
-| `Number of proteins` | Number of proteins associated with the InterPro entry |
-| `Average Coverage` | Average sequence coverage across the associated proteins |
+| `Number of proteins` | Number of proteins carrying this InterPro entry |
+| `Average Coverage` | Average, across those proteins, of (residues covered by the entry's matches) / (protein length) |
+| `Proteins` | Comma-separated UniProt ACs carrying this InterPro entry |
+| `Protein Coverages` | Per-protein coverage values, comma-separated in the same order as `Proteins` |
 
-The file also contains binary (1/0) columns indicating presence/absence of each annotation per protein. A manually curated companion file (Catalytic domain / ATP binding site, Anticodon Binding Domain, etc.) is at `processed/sequences/interpro_summary_curated.tsv`.
+Plus one binary (1/0) column per protein (named by UniProt AC) indicating presence/absence of that InterPro entry. A manually curated companion file, `output/sequences/interpro_summary_curated.tsv`, restricts to entries with `Average Coverage` < 0.60 (excluding broad, low-specificity domains) and inserts a `Curated annotation` column classifying each entry's `Name` by keyword match into one of: Catalytic Domain (ATP Binding Site), Anticodon Binding Domain, Editing Domain, tRNA Binding Domain, RNA Binding Domain, Other too broad/unspecified functional entities, or Other.
+
+**Caution:** the curation half of this script (from `### CURATE INTERPRO ANNOTATIONS ###` onward) hardcodes an absolute path (`/home/acomajuncosa/Documents/mtb-targeted-protein-degradation`) instead of reusing the script's own `root` variable — as currently written it will not run on a fresh checkout or a different machine. Not fixed here, since it's unrelated to the `processed/`→`output/` rename.
 
 ### `11_organize_pocket_info.py`
-Organizes pocket information together with InterPro annotations. Output `processed/pocket_detection_data_interpro.csv`:
+Joins script 08's pocket data (`output/pocket_detection_data.csv`) with script 10's curated InterPro table (`output/sequences/interpro_summary_curated.tsv`) by UniProt AC, and computes residue overlap between each detected pocket and each of that protein's (already <60%-coverage-curated) InterPro domain matches. Output `output/pocket_detection_data_interpro.tsv` — one row per pocket × InterPro-entry pair with at least one overlapping residue, carrying all of script 08's columns (see above; note the field is `Uniprot AC` with a space, not an underscore) plus:
 
 | **Field** | **Description** |
 |-----------|------------------|
-| `Uniprot_AC` | Uniprot AC identifier |
-| `File name` | PDB file in which pockets have been detected |
-| `Prediction type` | The method used for protein structure prediction (e.g., AlphaFold2, AlphaFold3) |
-| `Full path` | The full directory path where the PDB file is stored |
-| `Pocket number` | The identified pocket number within the structure |
-| `Pocket score` | The score assigned to the detected pocket |
-| `Pocket probability` | The probability value indicating confidence in pocket detection |
-| `Pocket centroid coordinate (x y z)` | The (x, y, z) coordinates of the pocket's centroid |
-| `Pocket residues (chain_resn)` | List of residues forming the pocket, with chain and residue number |
-| `Confidence score` | Confidence measures: pLDDT (AF2, AF3, Chai) or QSQE (SM) |
 | `Interpro ID` | Identifier of the matched InterPro domain |
 | `Interpro name` | Name of the matched InterPro domain |
+| `Interpro curated annotation` | The functional category assigned in script 10 (Catalytic Domain (ATP Binding Site), Anticodon Binding Domain, etc.) |
 | `Interpro Matches` | Residue ranges corresponding to the InterPro domain |
 | `Residues in pocket` | Number of residues forming the pocket |
-| `Residues in Interpro` | Number of residues forming the InterPro domain |
+| `Residues in interpro` | Number of residues forming the InterPro domain |
 | `Residues overlap` | Number of residues shared between the pocket and the InterPro domain |
-| `Coverage pocket` | Fraction of pocket residues that overlap with an InterPro domain |
+| `Coverage pocket` | Fraction of pocket residues that overlap with the InterPro domain |
 | `Coverage domain` | Fraction of InterPro domain residues overlapping with the pocket |
+| `Overall coverage domain` | Fraction of the protein's full UniProt sequence length covered by the InterPro domain match |
 
 Pocket–InterPro pairs with no overlapping residues are omitted from the file.
 
 ### `12_align_PDB_structures.py`
-Aligns experimental structures (e.g., from PDBe) to predicted models to evaluate spatial coherence between structure sources. Also checks for overlaps between detected pockets and known ligand binding sites. Results in `processed/pdbe_annotation_report.csv`.
+For every UniProt AC with PDBe structures under `data/structures/pdbe_database/`, loads that protein's PyMOL session from script 09 (`output/pymol_sessions/<uniprot_ac>.pse.gz`; not present in this checkout's local `output/` tree, possibly not synced via eosvc), aligns each PDBe structure onto the session's AlphaFold2 reference object (`cmd.align`), and for every non-water, non-standard-amino-acid heteroatom group (co-crystallized ligand) in the aligned structure, computes its minimum 3D distance to each of that protein's P2Rank pocket centroids. Saves a long-format report, `output/pdbe_annotation_report.csv` (tab-separated despite the `.csv` extension) with columns `Uniprot ID`, `PDB Structure`, `Pocket`, `HET RES`, `Min Distance`, plus a modified copy of each session (surfaces hidden, PDBe structures added) to `output/pymol_sessions_pdbe/<uniprot_ac>.pse.gz`.
 
 ### `13_prepare_PocketVec.py`
-*Not yet documented — pending individual review.*
+Prepares [PocketVec](https://github.com/sbnb-irb/pocketvec) inputs for every detected pocket: converts the full aligned/relaxed structure (`output/aligned_relaxed_structures/<uniprot_ac>/<file>.pdb`) to `.mol2`, and the single-point pocket-centroid PDB written by script 08 (`output/detected_pockets/<uniprot_ac>/<file>/pockets/pocket_<n>.pdb`) to `.sd`, both via OpenBabel, into one directory per pocket (`<file>_pocket_<n>/`) under `output/pocketvec_PRE/`. Unlike other scripts, its paths are relative to the current working directory rather than the script's own location, so it must be run with `scripts/` as the working directory. Writes into `output/pocketvec_RUN/pocketvec_PRE/` (script 22 reads from the same nested location) — the extra `pocketvec_RUN/` level, alongside the plain `processed/`→`output/` rename, matches where PocketVec's pre-computed inputs actually live on disk.
 
 ### `14_calculate_SeqId.py`
-Computes pairwise sequence identities between the 21 tRNA synthetases using global alignment (Needleman–Wunsch algorithm). Outputs a sequence identity matrix (`processed/sequences/NW_SeqAlign/SeqId_matrix.tsv`) and corresponding aligned proportions (`processed/sequences/NW_SeqAlign/Prop_matrix.tsv`).
+Computes global-alignment (Needleman–Wunsch, BLOSUM62, gap open −10/extend −1) pairwise sequence identity across the 21 tRNA synthetases **plus** 25 random Mtb proteome background proteins (`data/mtb_proteome_from_uniprot.tsv`, `random_state=42`, excluding the 21 tRNA synthetases) — a 46×46 matrix, not only the 21 tRNA synthetases against each other. Outputs `output/sequences/NW_SeqAlign/SeqId_matrix.tsv` (% identity) and `.../Prop_matrix.tsv` (fraction of aligned, non-gap positions relative to the shorter sequence), plus a heatmap plotted directly with matplotlib rather than stylia (this script predates that convention), saved to `output/plots/SeqId_matrix.png`.
 
 ### `15_calculate_StSim.py`
 Evaluates structural similarity between tRNA synthetases using Pymol. Outputs CSV files of RMSDs between all structure pairs across all 21 tRNA synthetases, in `processed/structural_comparisons`.

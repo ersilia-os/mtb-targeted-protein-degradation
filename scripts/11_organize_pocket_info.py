@@ -3,9 +3,9 @@ import os
 
 # Define paths
 root = os.path.dirname(os.path.abspath(__file__))
-outdir = os.path.abspath(os.path.join(root, "..", "processed"))
+outdir = os.path.abspath(os.path.join(root, "..", "output"))
 path_to_sequence_info = os.path.abspath(os.path.join(root, "..", "data", "sequences", "interpro"))
-path_to_sequence_summary = os.path.abspath(os.path.join(root, "..", "processed", "sequences", "interpro_summary_curated.tsv"))
+path_to_sequence_summary = os.path.abspath(os.path.join(root, "..", "output", "sequences", "interpro_summary_curated.tsv"))
 
 # Load pocket detection data
 pocket_detection_df = pd.read_csv(os.path.join(outdir, "pocket_detection_data.csv"))
