@@ -11,7 +11,7 @@ ENAMINE_SMILES = pd.read_csv("../data/Enamine/Enamine_Hit_Locator_Library_100K_S
 ENAMINE_IDs = pd.read_csv("../data/Enamine/Enamine_Hit_Locator_Library_100K_Set_plated_100160cmpds_20250629.smiles", low_memory=False, sep='\t')['Catalog ID'].tolist()
 
 # Create OUTDIR
-OUTDIR = '../processed/enamine_characterization'
+OUTDIR = '../output/enamine_characterization'
 os.makedirs(OUTDIR, exist_ok=True)
 
 print("SMILES to InChIKeys/IDs...")

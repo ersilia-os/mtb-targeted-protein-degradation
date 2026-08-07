@@ -23,15 +23,15 @@ def align_structure_with_pymol(reference_file, mobile_file):
 
 
 # Dict mapping uniprot to filename
-df = pd.read_csv("../processed/alignment_relaxed_rmsd_data.csv")
+df = pd.read_csv("../output/alignment_relaxed_rmsd_data.csv")
 uniprots = sorted(set(df["uniprot_ac"]))
 uniprot_to_filename = {i: sorted(df[df['uniprot_ac'] == i]['file_name']) for i in uniprots}
 
 # Get all possible uniprot pairs
 uni_pairs = [(i,j) for i in uniprots for j in uniprots]
 
-PATH_TO_STRUCTURES = "../processed/aligned_relaxed_structures"
-PATH_TO_OUTPUT = "../processed/structural_comparisons"
+PATH_TO_STRUCTURES = "../output/aligned_relaxed_structures"
+PATH_TO_OUTPUT = "../output/structural_comparisons"
 
 os.makedirs(PATH_TO_OUTPUT, exist_ok=True)
 

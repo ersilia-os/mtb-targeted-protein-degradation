@@ -13,11 +13,11 @@ import gzip
 import os
 
 # Load compound info
-IDs = open("../processed/enamine_characterization/IDs.txt", "r").readlines()
+IDs = open("../output/enamine_characterization/IDs.txt", "r").readlines()
 IDs = [i.strip() for i in IDs]
-ID_TO_SMILES = pickle.load(open("../processed/enamine_characterization/ID_TO_SMI.pkl", "rb"))
-IK_TO_SMILES = pickle.load(open("../processed/enamine_characterization/IK_TO_SMI.pkl", "rb"))
-ID_TO_IK = pickle.load(open("../processed/enamine_characterization/ID_TO_IK.pkl", "rb"))
+ID_TO_SMILES = pickle.load(open("../output/enamine_characterization/ID_TO_SMI.pkl", "rb"))
+IK_TO_SMILES = pickle.load(open("../output/enamine_characterization/IK_TO_SMI.pkl", "rb"))
+ID_TO_IK = pickle.load(open("../output/enamine_characterization/ID_TO_IK.pkl", "rb"))
 
 
 # Given (NAME, SMILES) create 3D conformer
@@ -41,7 +41,7 @@ input_list = [[id, ID_TO_IK[id], ID_TO_SMILES[id]]for id in IDs]
 # alphabet_upper = string.ascii_uppercase
 
 # Create output directories 
-OUTPATH = "../processed/enamine_characterization/conformations"
+OUTPATH = "../output/enamine_characterization/conformations"
 os.makedirs(os.path.join(OUTPATH), exist_ok=True)
 # for i in alphabet_upper:
 #     for j in alphabet_upper:
@@ -76,7 +76,7 @@ print("Creating a single SDF file...")
 
 # Write results in a single SDF file
 processed_molecules = 0
-with gzip.open("../processed/enamine_characterization/conformations.sdf.gz", "wt") as gzfile:
+with gzip.open("../output/enamine_characterization/conformations.sdf.gz", "wt") as gzfile:
     for mol in mols:
         if mol is not None:
             ID, IK, mol = mol

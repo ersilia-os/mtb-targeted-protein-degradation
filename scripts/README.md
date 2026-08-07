@@ -114,7 +114,7 @@ Joins script 08's pocket data (`output/pocket_detection_data.csv`) with script 1
 Pocket–InterPro pairs with no overlapping residues are omitted from the file.
 
 ### `12_align_PDB_structures.py`
-For every UniProt AC with PDBe structures under `data/structures/pdbe_database/`, loads that protein's PyMOL session from script 09 (`output/pymol_sessions/<uniprot_ac>.pse.gz`; not present in this checkout's local `output/` tree, possibly not synced via eosvc), aligns each PDBe structure onto the session's AlphaFold2 reference object (`cmd.align`), and for every non-water, non-standard-amino-acid heteroatom group (co-crystallized ligand) in the aligned structure, computes its minimum 3D distance to each of that protein's P2Rank pocket centroids. Saves a long-format report, `output/pdbe_annotation_report.csv` (tab-separated despite the `.csv` extension) with columns `Uniprot ID`, `PDB Structure`, `Pocket`, `HET RES`, `Min Distance`, plus a modified copy of each session (surfaces hidden, PDBe structures added) to `output/pymol_sessions_pdbe/<uniprot_ac>.pse.gz`.
+For every UniProt AC with PDBe structures under `data/structures/pdbe_database/`, loads that protein's PyMOL session from script 09 (`output/pymol_sessions/<uniprot_ac>.pse.gz`), aligns each PDBe structure onto the session's AlphaFold2 reference object (`cmd.align`), and for every non-water, non-standard-amino-acid heteroatom group (co-crystallized ligand) in the aligned structure, computes its minimum 3D distance to each of that protein's P2Rank pocket centroids. Saves a long-format report, `output/pdbe_annotation_report.csv` (tab-separated despite the `.csv` extension) with columns `Uniprot ID`, `PDB Structure`, `Pocket`, `HET RES`, `Min Distance`, plus a modified copy of each session (surfaces hidden, PDBe structures added) to `output/pymol_sessions_pdbe/<uniprot_ac>.pse.gz`.
 
 ### `13_prepare_PocketVec.py`
 Prepares [PocketVec](https://github.com/sbnb-irb/pocketvec) inputs for every detected pocket: converts the full aligned/relaxed structure (`output/aligned_relaxed_structures/<uniprot_ac>/<file>.pdb`) to `.mol2`, and the single-point pocket-centroid PDB written by script 08 (`output/detected_pockets/<uniprot_ac>/<file>/pockets/pocket_<n>.pdb`) to `.sd`, both via OpenBabel, into one directory per pocket (`<file>_pocket_<n>/`) under `output/pocketvec_PRE/`. Unlike other scripts, its paths are relative to the current working directory rather than the script's own location, so it must be run with `scripts/` as the working directory. Writes into `output/pocketvec_RUN/pocketvec_PRE/` (script 22 reads from the same nested location) — the extra `pocketvec_RUN/` level, alongside the plain `processed/`→`output/` rename, matches where PocketVec's pre-computed inputs actually live on disk.
@@ -123,26 +123,28 @@ Prepares [PocketVec](https://github.com/sbnb-irb/pocketvec) inputs for every det
 Computes global-alignment (Needleman–Wunsch, BLOSUM62, gap open −10/extend −1) pairwise sequence identity across the 21 tRNA synthetases **plus** 25 random Mtb proteome background proteins (`data/mtb_proteome_from_uniprot.tsv`, `random_state=42`, excluding the 21 tRNA synthetases) — a 46×46 matrix, not only the 21 tRNA synthetases against each other. Outputs `output/sequences/NW_SeqAlign/SeqId_matrix.tsv` (% identity) and `.../Prop_matrix.tsv` (fraction of aligned, non-gap positions relative to the shorter sequence), plus a heatmap plotted directly with matplotlib rather than stylia (this script predates that convention), saved to `output/plots/SeqId_matrix.png`.
 
 ### `15_calculate_StSim.py`
-Evaluates structural similarity between tRNA synthetases using Pymol. Outputs CSV files of RMSDs between all structure pairs across all 21 tRNA synthetases, in `processed/structural_comparisons`.
+Evaluates structural similarity between the 21 tRNA synthetases at the structure level: for every ordered pair of proteins (computed in both directions, not just the upper triangle), aligns every combination of their `output/aligned_relaxed_structures/` files via PyMOL's sequence-independent `cmd.super` (unlike script 12's sequence-based `cmd.align`) and records the RMSD. Output: one CSV per ordered protein pair, `output/structural_comparisons/<uniprot_ac_1>_<uniprot_ac_2>_rmsd.csv` (columns `file_name_1`, `file_name_2`, `rmsd`).
 
 ### `16_calculate_PocketVec.py`
-Calculates PocketVec descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)) from raw docking scores (docking calculations were run on an HPC cluster with CPU parallelization). 12/276 PocketVec descriptors were filtered out due to excessive presence of outlier compounds (>80), following the authors' recommendations. A PocketVec distance threshold of 0.17 is used to classify a pocket pair as similar. Descriptors are stored in `/processed/pocketvec_RUN/fps_rank.pkl`.
+Computes rank-transformed [PocketVec](https://github.com/sbnb-irb/pocketvec) descriptors ([Comajuncosa-Creus et al., Nat Commun 2024](https://www.nature.com/articles/s41467-024-52146-3)) from each pocket's raw rDock docking scores against a fixed 128-compound reference set (`output/pocketvec_RUN/pocketvec_POST/<pocket>/rDock_results_LLM/*scores*`; the docking itself ran upstream on an HPC cluster with CPU parallelization, not in this script). For each of the 276 pockets, builds a raw-score vector (ordered by `output/pocketvec_RUN/TOP128_rDock_LLM/ALL/all.pkl`) and rank-transforms it (`scipy.stats.rankdata`, `method='max'`); raw scores in (0, 50), (50, 100), and above 100 are additionally pushed to increasingly high dummy ranks (`len+1`, `len+2`, `len+3` respectively) — the script doesn't state why, but this is consistent with demoting docking runs that returned an invalid/penalty score rather than a genuine (negative) binding score. Only the rank-transformed fingerprints are saved, to `output/pocketvec_RUN/fps_rank.pkl` — the raw scores are not persisted.
+
+The outlier-pocket filtering (12/276 descriptors excluded for having >80 outlier compounds) and the 0.17 PocketVec-distance similarity threshold used by script 17's prioritization are computed separately, in `notebooks/16_PocketVec_analyses.ipynb` — not by this script.
 
 ## Protein prioritization
 
 ### `17_protein_prioritization.py`
 This script stubs out the prioritization pipeline; the logic itself is implemented in notebooks `17a_Protein_prioritization.ipynb`, `17b_Protein_prioritization_pairs.ipynb`/`17b_Protein_prioritization_triplets.ipynb`, and `17c_Protein_prioritization_individual.ipynb`. In brief: protein pairs (210) and triplets (1,330) were exhaustively enumerated and classified by PocketVec distance, global similarity (structural and sequential) and the number of pockets mapped to the catalytic domain. Global similarity thresholds: 35% sequence identity and 10 Å RMSD for sequential and structural similarity, respectively. Comparisons were extended to the pocket level (32,561 pairs, 2,499,258 triplets), collecting lenient (PocketVec distance < 0.17) and stringent (PocketVec distance < 0.14) sets of pairs (1,481 / 76) and triplets (3,880 / 807). An intra-set normalization then derives a "Prioritization score" per protein based on how often it appears across the collected sets — indicating similarity to other tRNA synthetases and potential polypharmacology.
 
-Final output `processed/protein_prioritization/final_results.tsv`:
+Final output `output/protein_prioritization/final_results.tsv`:
 
 | **Field** | **Description** |
 |-----------|------------------|
-| `Uniprot_AC` | Uniprot AC identifier |
+| `Uniprot AC` | Uniprot AC identifier |
 | `Gene name` | Standard gene name associated with the Uniprot AC identifier |
 | `Vulnerability score` | Vulnerability score derived from [Bosch et al, 2021](https://pubmed.ncbi.nlm.nih.gov/34297925/) |
 | `Score` | Prioritization score |
-| `Tier` | Protein-associated tier |
-| `sim_Tier1-5` | Number of proteins in the tier N having a PocketVec distance < 0.14 |
+| `Tier` | Protein-associated tier (1–5) |
+| `sim_Tier1` … `sim_Tier5` | Five separate columns (not one) — for the protein in this row, the number of proteins in tier *N* (1 through 5) having a PocketVec distance < 0.14 to it |
 
 ## 100k compound screening (Enamine Diversity Library HLL-100)
 
@@ -151,10 +153,10 @@ After structural characterization of the 21 essential tRNA synthetases, potentia
 Computational resources used throughout this and later screening stages: `herbert` (default host unless noted), `norrsken-gpu-wsl` (NVIDIA GeForce RTX 4090), `SBNB-IRB cluster` (HPC, `/aloy/home`).
 
 ### `18_enamine_mfps.py`
-Calculates Morgan Count Fingerprints for the 100,157 compounds of the ENAMINE Diversity Library HLL-100 (sublibrary of HLL-460). Stored in `/processed/enamine_characterization`.
+Calculates radius-3/2048-bit Morgan Count Fingerprints (RDKit `GetMorganGenerator(radius=3, fpSize=2048)`, i.e. ECFP6-equivalent) for the ENAMINE Diversity Library HLL-100 (`data/Enamine/Enamine_Hit_Locator_Library_100K_Set_plated_100160cmpds_20250629.smiles`, nominally 100,160 compounds; SMILES parsing/fingerprinting failures are silently skipped, yielding the 100,157 compounds actually saved to `X.npz`). Also saves InChIKey/SMILES lookup dictionaries (`IK_TO_SMI.pkl`, `ID_TO_SMI.pkl`, `ID_TO_IK.pkl`). Stored in `output/enamine_characterization/`.
 
 ### `19_enamine_conformations.py`
-Generates 3D conformations (ETKDGv3 + UFF energy minimization) for the 100k library, yielding 100,154 conformations (`/processed/enamine_characterization/conformations.tar.gz`). 90% of these compounds fall in the [270, 400] Da range.
+Generates 3D conformations (ETKDGv3, seed 42, + UFF energy minimization; 3 more compounds fail embedding, yielding 100,154 of the 100,157 fingerprinted compounds) for the 100k library, parallelized over 12 workers. Saves both a single gzipped multi-molecule SDF (`output/enamine_characterization/conformations.sdf.gz`) and a `.tar.gz` archive of one `.sdf` file per compound (`output/enamine_characterization/conformations.tar.gz`) — the uncompressed per-compound files are deleted after archiving. 90% of these compounds fall in the [270, 400] Da range.
 
 ### `20_unidock_ligandprep.py`
 Prepares the 100,154 3D-conformer compounds for docking via `unidocktools`' `ligandprep` (run on `norrsken-gpu-wsl`, `unidock` conda env). Output: `processed/unidock_docking/conformations_prepared`.

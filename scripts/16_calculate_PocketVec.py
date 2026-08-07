@@ -3,8 +3,8 @@ import os
 import numpy as np
 import scipy.stats as ss
 
-path = "../processed/pocketvec_RUN/pocketvec_POST"
-order = pickle.load(open("../processed/pocketvec_RUN/TOP128_rDock_LLM/ALL/all.pkl", "rb"))
+path = "../output/pocketvec_RUN/pocketvec_POST"
+order = pickle.load(open("../output/pocketvec_RUN/TOP128_rDock_LLM/ALL/all.pkl", "rb"))
 
 def rank_fp(fp):
     return ss.rankdata(fp, method='max')
@@ -41,4 +41,4 @@ for st in sorted(os.listdir(os.path.join(path))):
             elif fps_raw[st][c] > 100:
                 fps_rank[st][c] = len(fps_rank[st]) + 3
 
-pickle.dump(fps_rank, open("../processed/pocketvec_RUN/fps_rank.pkl", "wb"))
+pickle.dump(fps_rank, open("../output/pocketvec_RUN/fps_rank.pkl", "wb"))
