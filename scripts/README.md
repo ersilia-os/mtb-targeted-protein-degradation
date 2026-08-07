@@ -11,13 +11,13 @@ Generates a FASTA file for each of the 21 tRNA synthetases (from `data/mtb_trna_
 Programmatically downloads AF2 structures with co-crystallized ligands from [AlphaFill](https://alphafill.eu/) into `/data/structures/alphafill_database/`.
 
 ### `02_organize_structures.py`
-Organizes structure files from all sources (PDBe, AlphaFold2, AlphaFold3, Chai-1, AlphaFill, Swiss-Model) into `processed/structures`, stored in both `.cif` and `.pdb` formats. Ensures only one chain is saved per file and that sequences are not chunked. PDBe files are omitted from this automated processing.
+Organizes structure files from all sources (AlphaFold2, AlphaFold3, Chai-1, AlphaFill, SwissModel; PDBe is omitted from this automated processing) into `processed/structures/<uniprot_ac>/`, converting each from `.cif` to `.pdb` via PyMOL and then deleting the source `.cif` — only `.pdb` files remain on disk. For multi-chain files, keeps the single chain with the highest sequence coverage against the UniProt reference sequence, requiring that maximum coverage to be ≥95%; structures whose selected-chain sequence is <80% of the reference length are dropped outright, and those in the 80–95% range are kept only if the sequence is exactly continuous with (a contiguous substring of) the UniProt reference, otherwise removed. Non-protein atoms (waters, ligands, other heteroatoms) are then stripped from the retained chain. Produces the per-structure lookup table `processed/trna_synthetases_data.csv` (see aggregate table below).
 
 ### `03_align_structures.py`
-Aligns all structures to simplify visualization. Based on RMSD, structures that seemed far apart from the rest were removed.
+Aligns each protein's structures (Cα superimposition over the residue range shared with the reference, via Biopython) to a single reference — the first-listed AlphaFold3 model (`model_0`) for that protein — skipping AlphaFill structures (identical to AlphaFold2, so redundant to align). Per-structure RMSD against the reference is saved to `processed/alignment_rmsd_data.csv`; structures with RMSD > 10 Å are removed from `processed/structures`, `processed/aligned_structures`, and `processed/trna_synthetases_data.csv`.
 
 ### `04_relax_structures.py`
-Prepares structures for docking: protonation with PDB2PQR and relaxation with PyRosetta. Computationally intensive.
+Prepares structures for docking: protonation via PDB2PQR (AMBER force field, pH 7.0, run in the `adda4tb` conda env) followed by relaxation with PyRosetta's `FastRelax` (`ref2015` score function). Each structure is relaxed 3 times independently and the lowest-scoring (best) pose is kept. Reads the RMSD-filtered file list from `processed/alignment_rmsd_data.csv`, inputs from `processed/aligned_structures/`, outputs to `processed/relaxed_structures/<uniprot_ac>/`. Computationally intensive; re-running skips structures whose relaxed output already exists.
 
 ### `05_align_relaxed_structures.py`
 Re-aligns structures after relaxation, using their unrelaxed counterparts as the alignment reference. No structures were removed at this stage, even those with high RMSD against the unrelaxed structures.
@@ -27,11 +27,14 @@ Re-aligns structures after relaxation, using their unrelaxed counterparts as the
 | **Field** | **Description** |
 |-----------|------------------|
 | `file_name` | Name of the processed PDB structure file |
+| `chain_id` | Chain ID retained in the processed structure |
 | `uniprot_ac` | Uniprot AC identifier |
-| `n_residues` | Number of residues |
+| `n_residues` | Number of residues in the UniProt full sequence |
 | `start_resid` | First residue number (first residue is 1) of the sequence available in the PDB file, with respect to the Uniprot full sequence |
 | `end_resid` | Last residue number (first residue is 1) of the sequence available in the PDB file, with respect to the Uniprot full sequence |
 | `coverage` | Percentage sequence coverage |
+| `structure_sequence_length` | Length of the sequence found in the PDB file |
+| `full_sequence_length` | Length of the sequence found in UniProt |
 | `sequence_structure` | Sequence found in the PDB file |
 | `full_sequence` | Sequence found in UniProt |
 
