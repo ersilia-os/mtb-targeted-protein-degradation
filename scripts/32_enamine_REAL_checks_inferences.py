@@ -9,7 +9,7 @@ import os
 random.seed(42)
 root = os.path.dirname(os.path.abspath(__file__))
 
-PATH_TO_INFERENCE_OUTPUTS = os.path.join("/aloy/home/acomajuncosa/Ersilia/mtb/processed/unidock_docking/inferences_outputs")
+PATH_TO_INFERENCE_OUTPUTS = os.path.join("/aloy/home/acomajuncosa/Ersilia/mtb/output/unidock_docking/inferences_outputs")
 print("Checking inference logs...")
 for out in tqdm(sorted(os.listdir(PATH_TO_INFERENCE_OUTPUTS))):
     out = open(os.path.join(PATH_TO_INFERENCE_OUTPUTS, out), "r").readlines()
@@ -20,10 +20,10 @@ print("If no message appeared, all is good")
 print("\n\n")
 
 # Loading failed compounds
-FAILED = set(pd.read_csv(os.path.join(root, "..", "processed", "enamine_REAL_characterization", "failed_REAL.csv"), header=None)[0])
+FAILED = set(pd.read_csv(os.path.join(root, "..", "output", "enamine_REAL_characterization", "failed_REAL.csv"), header=None)[0])
 
 # Load compound info
-data = pd.read_csv(os.path.join("..", "processed", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
+data = pd.read_csv(os.path.join("..", "output", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
 
 # Loading successful compounds
 SUCCESS = set([i for i in data['id'] if i not in FAILED])
@@ -33,11 +33,11 @@ print(f"Loaded {len(FAILED)} failed compounds")
 print(f"Loaded {len(SUCCESS)} successful compounds")
 
 # Dump list of successful compounds
-PATH_TO_RESULTS = os.path.join("..", "processed", "unidock_docking", "inference_probs")
+PATH_TO_RESULTS = os.path.join("..", "output", "unidock_docking", "inference_probs")
 pickle.dump(SUCCESS, open(os.path.join(PATH_TO_RESULTS, "success_mols.pkl"), "wb"))
 
 print("Reading inference results")
-PATH_TO_INFERENCES = "/aloy/home/acomajuncosa/Ersilia/mtb/processed/unidock_docking/inferences"
+PATH_TO_INFERENCES = "/aloy/home/acomajuncosa/Ersilia/mtb/output/unidock_docking/inferences"
 os.makedirs(PATH_TO_RESULTS, exist_ok=True)
 
 # For each pocket

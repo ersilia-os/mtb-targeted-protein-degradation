@@ -8,7 +8,7 @@ import os
 
 # Load labels and pockets
 root = '.'
-PATH_TO_PROBS = os.path.join(root, "..", "processed", "unidock_docking", "inference_probs")
+PATH_TO_PROBS = os.path.join(root, "..", "output", "unidock_docking", "inference_probs")
 labels = np.array(pickle.load(open(os.path.join(PATH_TO_PROBS, "success_mols.pkl"), "rb")))
 pockets = [i.replace("_bin_01.npz", "") for i in sorted(os.listdir(PATH_TO_PROBS)) if i != "success_mols.pkl"]
 success_mols = np.array(pickle.load(open(os.path.join(PATH_TO_PROBS, "success_mols.pkl"), "rb")))
@@ -43,7 +43,7 @@ M /= stds_2
 print(f"Matrix normalized, shape: {M.shape}")
 
 # Load smiles
-df = pd.read_csv(os.path.join(root, "..", "processed", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
+df = pd.read_csv(os.path.join(root, "..", "output", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
 
 # From compound ID to SMILES
 synthons = {i: j for i, j in zip(df['id'], df['smiles'])}
@@ -139,13 +139,13 @@ print(f"{len(INACTIVES)} compounds for which none of their synthons were found t
 
 del active_synthons, active_molecules, ALL_CONSIDERED_SYNTHONS
 
-PATH_TO_INPUT_LIGANDS_FILES = os.path.join(root, "..", "processed", "unidock_REAL_docking", "input_ligands")
+PATH_TO_INPUT_LIGANDS_FILES = os.path.join(root, "..", "output", "unidock_REAL_docking", "input_ligands")
 os.makedirs(PATH_TO_INPUT_LIGANDS_FILES, exist_ok=True)
 print("Loading mol ID to split dict")
 
 # Loading mol ID to split dict
-df = pd.read_csv(os.path.join(root, "..", "..", "..", "Documents_GPU", "mtb-targeted-protein-degradation", 
-                              "processed", "enamine_REAL_characterization", "conformations", "id_to_split.tsv.gz"), sep='\t', header=None)
+df = pd.read_csv(os.path.join(root, "..", "..", "..", "Documents_GPU", "mtb-targeted-protein-degradation",
+                              "output", "enamine_REAL_characterization", "conformations", "id_to_split.tsv.gz"), sep='\t', header=None)
 
 id_to_split = {i: j for i,j in zip(df[0], df[1])}
 del df
@@ -162,12 +162,12 @@ for pocket in tqdm(pockets):
     with open(os.path.join(PATH_TO_INPUT_LIGANDS_FILES, f"input_ligands_{pocket}.txt"), "w") as outfile:
         # Active molecules
         for mol_id in sorted(ALL_CONSIDERED_MOLECULES[pocket]):
-            outfile.write(os.path.join(".", "..", "processed", "unidock_REAL_docking", "conformations_prepared", f"{id_to_split[mol_id]:02d}", mol_id + ".sdf"))
+            outfile.write(os.path.join(".", "..", "output", "unidock_REAL_docking", "conformations_prepared", f"{id_to_split[mol_id]:02d}", mol_id + ".sdf"))
             outfile.write("\n")
 
         # Inactive molecules
         for mol_id in sorted(INACTIVES):
-            outfile.write(os.path.join(".", "..", "processed", "unidock_REAL_docking", "conformations_prepared", f"{id_to_split[mol_id]:02d}", mol_id + ".sdf"))
+            outfile.write(os.path.join(".", "..", "output", "unidock_REAL_docking", "conformations_prepared", f"{id_to_split[mol_id]:02d}", mol_id + ".sdf"))
             outfile.write("\n")
 
 print("Finished!")

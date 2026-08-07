@@ -11,7 +11,7 @@ root = os.path.dirname(os.path.abspath(__file__))
 ### FIRST STEP - CHECK WHICH CONFORMATIONS FAILED
 
 # Define paths
-PATH_TO_CONFORMATIONS = os.path.join(root, "..", "..", "..", "Documents_GPU", "mtb-targeted-protein-degradation", "processed", "enamine_REAL_characterization", 'conformations')
+PATH_TO_CONFORMATIONS = os.path.join(root, "..", "..", "..", "Documents_GPU", "mtb-targeted-protein-degradation", "output", "enamine_REAL_characterization", 'conformations')
 MOLS_FAILED, MOLS_SUCCESS = [], []
 
 # For each split of 100k compounds
@@ -28,7 +28,7 @@ print(f"Total number of molecules: {len(MOLS_SUCCESS)}")
 print(f"Total number of failed molecules: {len(MOLS_FAILED)}")
 
 # Save failed molecules
-PATH_TO_FAILED = os.path.join(root, "..", "processed", "enamine_REAL_characterization", "failed_REAL.csv")
+PATH_TO_FAILED = os.path.join(root, "..", "output", "enamine_REAL_characterization", "failed_REAL.csv")
 with open(PATH_TO_FAILED, "w") as out:
     out.write("\n".join(sorted(MOLS_FAILED)))
 
@@ -42,6 +42,6 @@ sample = random.sample(IDs, 25000)
 print(f"Total number of sampled compounds: {len(sample)}")
 
 # Save results
-PATH_TO_SAMPLE = os.path.join(root, "..", "processed", "enamine_REAL_characterization", "random_sample_REAL.csv")
+PATH_TO_SAMPLE = os.path.join(root, "..", "output", "enamine_REAL_characterization", "random_sample_REAL.csv")
 with open(PATH_TO_SAMPLE, "w") as out:
     out.write("\n".join(sorted(sample)))

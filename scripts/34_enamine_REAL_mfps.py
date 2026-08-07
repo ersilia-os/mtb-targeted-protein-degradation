@@ -10,7 +10,7 @@ import os
 
 # Load smiles
 root = "."
-df = pd.read_csv(os.path.join(root, "..", "processed", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
+df = pd.read_csv(os.path.join(root, "..", "output", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
 df['index'] = df.index
 
 # Build the generator once
@@ -48,7 +48,7 @@ def calculate_ecfp6(smiles):
     return np.array(ecfp, dtype=np.int8)
 
 # ---------- Compute & save to HDF5 (compressed) ----------
-H5_OUT = os.path.join(root, "..", "processed", "enamine_REAL_characterization", "enamine_REAL_ECFP6.h5")
+H5_OUT = os.path.join(root, "..", "output", "enamine_REAL_characterization", "enamine_REAL_ECFP6.h5")
 CHUNK_ROWS = 1000000
 
 with h5py.File(H5_OUT, "w") as h5:
