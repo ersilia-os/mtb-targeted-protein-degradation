@@ -7,8 +7,8 @@ import os
 root = os.path.dirname(os.path.abspath(__file__))
 
 # Get input data
-PATH_TO_REPORTS = os.path.join(root, "..", "processed", "unidock_docking", "docking_results")
-PATH_TO_OUTPUT = os.path.join(root, "..", "processed", "unidock_docking", "binarized_reports")
+PATH_TO_REPORTS = os.path.join(root, "..", "output", "unidock_docking", "docking_results")
+PATH_TO_OUTPUT = os.path.join(root, "..", "output", "unidock_docking", "binarized_reports")
 os.makedirs(PATH_TO_OUTPUT, exist_ok=True)
 
 # Create pickle to run jobs in the cluster
@@ -39,5 +39,5 @@ for st in tqdm(sorted(os.listdir(PATH_TO_REPORTS))):
     report.to_csv(os.path.join(PATH_TO_OUTPUT, f"report_bin_{st}.csv"), index=False)
 
 # Save pickle for parallel processing
-pickle.dump(p, open(os.path.join(root, "..", "processed", "unidock_docking", "pickle.pkl"), "wb"))
+pickle.dump(p, open(os.path.join(root, "..", "output", "unidock_docking", "pickle.pkl"), "wb"))
 

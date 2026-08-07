@@ -14,12 +14,12 @@ alpha = int(sys.argv[1])
 root = os.path.dirname(os.path.abspath(__file__))
 
 # Load pickle
-st, perc = pickle.load(open(os.path.join(root, "..", "..", "processed", 'unidock_docking', 'pickle.pkl'), "rb"))[alpha]
+st, perc = pickle.load(open(os.path.join(root, "..", "..", "output", 'unidock_docking', 'pickle.pkl'), "rb"))[alpha]
 
 # Get input data
-PATH_TO_REPORTS = os.path.join(root, "..", "..", "processed", "unidock_docking", "binarized_reports")
-PATH_TO_OUTPUT = os.path.join(root, "..", "..", "processed", "unidock_docking", "models", st, perc)
-PATH_TO_EMBEDDINGS = os.path.join(root, "..", "..", "processed", "enamine_characterization")
+PATH_TO_REPORTS = os.path.join(root, "..", "..", "output", "unidock_docking", "binarized_reports")
+PATH_TO_OUTPUT = os.path.join(root, "..", "..", "output", "unidock_docking", "models", st, perc)
+PATH_TO_EMBEDDINGS = os.path.join(root, "..", "..", "output", "enamine_characterization")
 os.makedirs(PATH_TO_OUTPUT, exist_ok=True)
 
 # Load compounds and activities

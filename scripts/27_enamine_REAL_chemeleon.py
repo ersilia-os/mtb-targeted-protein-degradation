@@ -51,7 +51,7 @@ class CheMeleonFingerprint:
         return self.model.fingerprint(bmg).numpy(force=True)
 
 # Get input data
-PATH_TO_MFPS = os.path.join(root, "..", "processed", "enamine_REAL_characterization")
+PATH_TO_MFPS = os.path.join(root, "..", "output", "enamine_REAL_characterization")
 PATH_TO_DATA = os.path.join(root, "..", "data", "Enamine", "2024.07_Enamine_REAL_DB_9.6M.cxsmiles")
 
 # Load data

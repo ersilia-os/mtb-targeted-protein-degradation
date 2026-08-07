@@ -120,9 +120,7 @@ def curate_InterPro(name):
         return "Other"
     
 
-# root = os.path.dirname(os.path.abspath(__file__))
-root = "/home/acomajuncosa/Documents/mtb-targeted-protein-degradation"
-df = pd.read_csv(os.path.join(root, "output", "sequences", "interpro_summary.tsv"), sep='\t')
+df = pd.read_csv(os.path.join(root, "..", "output", "sequences", "interpro_summary.tsv"), sep='\t')
 
 # Remove those with coverage > 60
 df = df[df['Average Coverage'] < 0.60].reset_index(drop=True)
@@ -133,7 +131,7 @@ curated_annotation = [curate_InterPro(i) for i in curated_annotation]
 df.insert(2, column='Curated annotation', value=curated_annotation)
 
 # Save results
-df.to_csv(os.path.join(root, "output", "sequences", "interpro_summary_curated.tsv"), sep='\t', index=False)
+df.to_csv(os.path.join(root, "..", "output", "sequences", "interpro_summary_curated.tsv"), sep='\t', index=False)
 
 labels = sorted(set(df['Curated annotation']))
 for label in labels:
