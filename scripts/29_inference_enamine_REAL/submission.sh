@@ -8,7 +8,7 @@
 #SBATCH --array=0-275%10
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
-#SBATCH --output=./processed/unidock_docking/inferences_outputs/%x_%a.out
+#SBATCH --output=./output/unidock_docking/inferences_outputs/%x_%a.out
 #SBATCH -p sbnb_cpu_sphr,sbnb_cpu_zen3
 
 # Loads default environment configuration

@@ -13,13 +13,13 @@ alpha = int(sys.argv[1])
 root = os.path.dirname(os.path.abspath(__file__))
 
 # Load pickle
-st, perc = pickle.load(open(os.path.join(root, "..", "..", "processed", 'unidock_docking', 'pickle_bins_01.pkl'), "rb"))[alpha]
+st, perc = pickle.load(open(os.path.join(root, "..", "..", "output", 'unidock_docking', 'pickle_bins_01.pkl'), "rb"))[alpha]
 assert perc == "bin_01"
 
 # Define paths
-PATH_TO_MODELS = "/aloy/home/acomajuncosa/Ersilia/mtb/processed/unidock_docking/models"
-PATH_TO_CHUNKS = "/aloy/home/acomajuncosa/Ersilia/mtb/processed/enamine_REAL_characterization/embeddings"
-PATH_TO_OUTPUT = "/aloy/home/acomajuncosa/Ersilia/mtb/processed/unidock_docking/inferences"
+PATH_TO_MODELS = "/aloy/home/acomajuncosa/Ersilia/mtb/output/unidock_docking/models"
+PATH_TO_CHUNKS = "/aloy/home/acomajuncosa/Ersilia/mtb/output/enamine_REAL_characterization/embeddings"
+PATH_TO_OUTPUT = "/aloy/home/acomajuncosa/Ersilia/mtb/output/unidock_docking/inferences"
 
 # Load model
 model = joblib.load(os.path.join(PATH_TO_MODELS, st, perc, 'LQ_RF.joblib'))

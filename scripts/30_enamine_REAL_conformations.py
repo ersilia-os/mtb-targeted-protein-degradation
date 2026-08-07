@@ -22,7 +22,7 @@ def generate_3d_conformer(input_list):
     return [ID, mol]
 
 # Load compound info
-data = pd.read_csv(os.path.join("..", "processed", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
+data = pd.read_csv(os.path.join("..", "output", "enamine_REAL_characterization", "enamine_REAL.tsv"), sep='\t')
 ID_TO_SMILES = {i: j for i,j in zip(data['id'], data['smiles'])}
 IDs = sorted(ID_TO_SMILES)
 
@@ -38,7 +38,7 @@ for si, chunk in enumerate(chunks):
         id_to_split[cid] = si
 
 # Create output directories 
-OUTPATH = "../processed/enamine_REAL_characterization/conformations"
+OUTPATH = "../output/enamine_REAL_characterization/conformations"
 os.makedirs(os.path.join(OUTPATH), exist_ok=True)
 
 N_WORKERS = 32  # TO BE RUN IN A 32 CPU MACHINE

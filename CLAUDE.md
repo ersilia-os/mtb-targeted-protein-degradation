@@ -71,7 +71,7 @@ Script 26 lives at `scripts/26_train_models/main.py`; script 29 at `scripts/29_i
 | Host | Role |
 |------|------|
 | **herbert** | Primary compute server |
-| **norrsken-gpu-wsl** | NVIDIA RTX 4090 — docking and CheMeleon embeddings |
+| **nebula** | NVIDIA RTX 4090 — docking and CheMeleon embeddings (formerly known as norrsken-gpu-wsl) |
 | **SBNB-IRB cluster** | HPC with `/aloy/home/` — 10B inference |
 | **Google Drive** | Storage for 10B chunk results (downloaded by script 41) |
 
