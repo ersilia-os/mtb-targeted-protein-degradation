@@ -54,7 +54,7 @@ from screening_10b_utils import download_file, list_smiles_chunks
 ROOT = os.path.join(root, "..", "..")
 TMP_DIR = os.path.join(ROOT, "tmp")
 SAMPLES_DIR = os.path.join(ROOT, "processed", "figure_2b_REAL10B_samples")
-plots_dir = os.path.join(ROOT, "plots", "figure_2")
+plots_dir = os.path.join(ROOT, "output", "plots", "figure_2")
 os.makedirs(TMP_DIR, exist_ok=True)
 os.makedirs(SAMPLES_DIR, exist_ok=True)
 os.makedirs(plots_dir, exist_ok=True)
@@ -157,7 +157,7 @@ def pocket_percentiles(pocket, scores, library, uniprot_to_gene):
 
 def compute_docking_percentiles():
     banner("Loading gene mapping from figure 1's color mapping")
-    with open(os.path.join(ROOT, "plots", "figure_1", "color_mapping.json")) as f:
+    with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
         uniprot_to_gene = json.load(f)["uniprot_to_gene"]
 
     rows = []
@@ -344,7 +344,7 @@ def select_minimizing_repeats(candidates_by_gene, n):
 
 def compute_docking_snapshots():
     banner("Loading gene mapping from figure 1's color mapping")
-    with open(os.path.join(ROOT, "plots", "figure_1", "color_mapping.json")) as f:
+    with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
         uniprot_to_gene = json.load(f)["uniprot_to_gene"]
 
     banner("Finding pose-archived compound candidates (HL/REAL 10B only)")

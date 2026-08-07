@@ -29,7 +29,7 @@ stylia.set_style("article")
 
 data_dir = os.path.join(root, "..", "..", "data")
 output_dir = os.path.join(root, "..", "..", "output")
-plots_dir = os.path.join(root, "..", "..", "plots", "figure_1")
+plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_1")
 os.makedirs(plots_dir, exist_ok=True)
 
 # ===========================================================================

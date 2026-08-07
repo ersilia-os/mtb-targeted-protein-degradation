@@ -24,7 +24,7 @@ from stylia.config import get_fontsize_big, get_size
 stylia.set_format("print")
 stylia.set_style("article")
 
-plots_dir = os.path.join(root, "..", "..", "plots", "figure_2")
+plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_2")
 
 PROPERTIES = ["MW", "cLogP", "TPSA", "RotBonds", "HBA", "AromaticRings", "QED"]
 DISCRETE_PROPS = {"RotBonds", "HBA", "AromaticRings"}
@@ -148,7 +148,7 @@ def load_libraries():
 def load_gene_colors():
     """Gene->color mapping from figure 1 - reused here so protein colors stay consistent across
     figures instead of a second palette."""
-    with open(os.path.join(root, "..", "..", "plots", "figure_1", "color_mapping.json")) as f:
+    with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
         return json.load(f)["gene_to_color"]
 
 

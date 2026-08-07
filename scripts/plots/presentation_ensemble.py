@@ -37,7 +37,7 @@ GENE = "aspS"
 UNIPROT_AC = "P9WFW3"
 ALIGNED_DIR = os.path.join(ROOT, "output", "aligned_relaxed_structures", UNIPROT_AC)
 DETECTED_POCKETS_DIR = os.path.join(ROOT, "output", "detected_pockets", UNIPROT_AC)
-COLOR_MAPPING_PATH = os.path.join(ROOT, "plots", "figure_1", "color_mapping.json")
+COLOR_MAPPING_PATH = os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")
 POCKET_DATA_CSV = os.path.join(ROOT, "output", "pocket_detection_data.csv")
 OUT_PATH = os.path.join(ROOT, "tmp", f"{GENE}_{UNIPROT_AC}_aligned_structures.pse")
 
