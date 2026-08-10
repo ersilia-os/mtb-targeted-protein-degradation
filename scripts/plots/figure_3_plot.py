@@ -1,7 +1,11 @@
 """
-Figure 3: multi-target docking hits from figure_3_calculations.py. A 2-column, 5-row grid; panels a,
-b, g and h have real content so far, panels c-f are empty placeholders labeled for now, pending
-content decisions.
+Figure 3: multi-target docking hits from figure_3_calculations.py.
+
+Layout (see MOSAIC in main()): a fine-grained 8-column grid of named cells - a | b on row 0
+(a wider than b), c | f on row 1, de | f on row 2 (c and de each span the left 7 columns; f spans
+rows 1-2 in the rightmost column). "de" and "f" are each drawn into ONE mosaic cell, then
+internally split further (plot_compound_pose_block's own d/e rows; the inlined 5-column split in
+main() for f) - see those functions/that code for their own local spacing.
 
 Panel a follows the nested-overlaid-bars convention from
 notebooks/46_docking_exploration_deliverables.ipynb: one bar per protein per cutoff, drawn loosest
@@ -21,36 +25,69 @@ the rest, low-degree genes get a blank (padded-space) label instead of their rea
 declutter heuristic as that notebook - since their sector is too small for real text without
 overlapping its neighbors.
 
-Panel g is a nested 2x4 grid (figure_3_plot.py's SHOWCASE_GRID_ROWS/SHOWCASE_GRID_COLS), filled only
-in its last SHOWCASE_GRID_FILLED_COLS columns per row per request, of PyMOL renders of ONE showcase
-compound (figure_3_calculations.py's SHOWCASE_COMPOUND_ID, rank 1 by n_targets/best-score in the
-cutoff-11 multi-target hit set) docked into each hit gene's ACTUAL best-scoring pocket
-(figure_3_calculations.py's compute_showcase_compound_pockets - the same per-gene min-score pocket
-compute_gene_min_scores uses to call a hit, not merely the highest-P2Rank-probability pocket
-notebooks/46_pocket_visualisation.ipynb simplifies to). Docked-pose SDFs were only ever retained for
-14 of 276 pockets, so only the genes whose actual best pocket is among those 14 are shown here
-(currently alaS, aspS, lysS, pheS - 4 of the compound's 10 hit genes, filling the grid's 2x2 block
-exactly) - the rest have a docking score but no retained 3D pose, so they're omitted rather than
-faked. Rendering follows scripts/47b_reference_pocket_visualization.py's established PyMOL recipe
-(reference structure translucent cartoon, docked ligand pose extracted from docking.tar.gz and
-colored with the project's standard orange-carbon convention), simplified to one ligand/no pocket
-sphere/no PDB or AlphaFill overlays, and zoomed tightly on the ligand alone so all panels are framed
-comparably. Each render carries three corner badges: gene+UniProt AC (colored via figure_1's
-gene_to_color), an InterPro-derived CAT/Other/NA pocket-domain classification (real data from
-output/pocket_detection_data_interpro.tsv, not fabricated), and the docking score.
+Panel c (plot_tier_grid_placeholder) is a gray rectangle grid, TIER_GRID_ROW_LABELS rows
+(Druggability, Docking scores HL, Docking Scores REAL, Exp. tractability, Novelty) x 21 columns
+(all genes alphabetically) - the row/column structure and row labels are real (per request), but
+every cell is still an unfilled gray placeholder - the actual per-gene/per-row values (e.g. from
+the 5-tier vulnerability ranking in output/protein_prioritization/final_results.tsv, or wherever
+each row's values end up coming from) haven't been decided yet.
 
-Panel h is a rank-ordered area plot of P2Rank pocket probabilities across all 276 detected pockets
-(output/pocket_detection_data.csv, via figure_3_calculations.py's compute_pocket_scores), sorted
-probability descending - x-axis is that sort rank (1-276, arbitrary pocket identity), not a
-biological quantity.
+Panels d and e are each one full-width row for a different showcase compound -
+figure_3_calculations.py's TOP_AVG_SCORE_COMPOUND_IDS, the 2 compounds (of the cutoff-12
+multi-target hit tier, each hitting exactly 4 genes there) with the best average docking score
+across their hit genes, a criterion the user picked explicitly (AskUserQuestion) over
+best-single-score or broadest-gene-coverage alternatives. Each row is a 2D RDKit structure
+depiction (render_2d_structure, no PyMOL/stylia, per project convention for plain structure images,
+labeled with its own compound_id since two different compounds are on screen) followed by that
+compound's 4 docking-pose renders, one per hit gene, at each gene's ACTUAL best-scoring pocket
+(figure_3_calculations.py's compute_top_avg_score_compounds_pockets - the same per-gene min-score
+pocket compute_gene_min_scores uses to call a hit, not merely the highest-P2Rank-probability pocket
+notebooks/46_pocket_visualisation.ipynb simplifies to, and falling back to a gene's next-best pocket
+- flagged with a trailing "*" on that gene's badge - when the true best pocket has no retained
+pose; both compounds' hit genes turned out to already have a verified retained pose, no omissions
+needed here unlike the single-compound panel this replaced). Rendering follows
+scripts/47b_reference_pocket_visualization.py's established PyMOL recipe (reference structure
+translucent cartoon, docked ligand pose extracted from docking.tar.gz and colored with the project's
+standard orange-carbon convention), simplified to one ligand/no pocket sphere/no PDB or AlphaFill
+overlays, camera oriented + zoomed tightly on the ligand alone (cmd.orient + a fixed-size zoom box,
+no per-image autocrop) so every panel is framed at an identical, directly comparable physical scale.
+Also shown: pocket atoms within SHOWCASE_NEAR_LIGAND_CUTOFF A of the ligand as thin context sticks
+(hydrogens excluded), and detected protein-ligand H-bonds as yellow dashes (_add_hbond_dashes,
+adapted from 47b's own unused draft of the same logic). Each pose render carries a gene-name badge
+(top-left, colored via figure_1's gene_to_color) and the docking score (bottom, plain text in a
+white-boxed frame) - the InterPro CAT/Other/NA classification and each gene's UniProt AC are still
+computed/saved by compute_top_avg_score_compounds_pockets but not drawn here.
+
+Panel f is ONE merged panel (previously two separate panels, e and f, merged per request), split
+internally into 5 equally thin columns with a small gap between them (RIGHT_BLOCK_WSPACE) - the
+P2Rank probability curve, then the 4 domain bands. All 5 are oriented vertically to fit that
+tall/narrow shape: pocket_rank runs down the y-axis (rank 1, highest P2Rank probability, at the
+top), not along x, with each domain band's title rotated 90 degrees at the top of its column
+(plain horizontal text would overlap the next column over, this thin).
+
+The 1st column is a rank-ordered area plot of P2Rank pocket probabilities across all 276 detected
+pockets (output/pocket_detection_data.csv, via figure_3_calculations.py's compute_pocket_scores),
+sorted probability descending down the y-axis - that sort rank (1-276) is an arbitrary pocket
+identity, not a biological quantity.
+
+The remaining 4 columns (DOMAIN_STRIP_COLUMNS/plot_domain_strip, all real data) are domain-strip
+bands: each is one colored cell per pocket (all 276, same pocket_rank y-order as the probability
+column), in that band's own color (red/blue/amber/green) where the condition holds, white
+otherwise. Catalytic uses catalytic_confidence >= CATALYTIC_CONFIDENCE_MIN (strong ligand evidence
+for the Catalytic Domain (ATP/ligase) label); the other 3 (tRNA binding, Editing, Anticodon
+binding) have no analogous confidence score, so "present" means "InterPro label present, AND
+catalytic_confidence < CATALYTIC_CONFIDENCE_MIN" - the latter clause so a pocket already flagged
+in the Catalytic band (3 pockets carry both a catalytic and a non-catalytic label) isn't also
+flagged in these. All from figure_3_calculations.py's compute_pocket_scores, sourced from
+output/77_pocket_annotation/pocket_detection_interpro_updated.csv.
 
 Usage:
     python figure_3_plot.py [--rerun]
 """
 import argparse
 import json
+import math
 import os
-import string
 import sys
 import tarfile
 import tempfile
@@ -70,10 +107,13 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.lines import Line2D
 from pycirclize import Circos
 from pymol import cmd
+from rdkit import Chem
+from rdkit.Chem import rdCoordGen
+from rdkit.Chem.Draw import rdMolDraw2D
 from stylia.config import get_size
 from stylia.figure.figure import stylize
 
-from docking_utils import LIBRARIES
+from docking_utils import LIBRARIES, lookup_smiles
 
 # Format: print | Style: article — change with stylia.set_format() / stylia.set_style()
 stylia.set_format("print")
@@ -82,31 +122,64 @@ stylia.set_style("article")
 plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_3")
 os.makedirs(plots_dir, exist_ok=True)
 
-N_ROWS = 3
-N_COLS = 2
-# Trailing rows appended after the N_ROWS x N_COLS grid, each a single full-width panel (spanning
-# both columns) rather than split 2-up like the rows above - same total width as a and b combined.
-N_EXTRA_ROWS = 2
+# Whole-figure layout, as one literal picture (fig.subplot_mosaic) instead of hand-nested
+# gridspecs. Columns are FINE-GRAINED (8, all equal width) rather than one-column-per-panel, so
+# that b (row 0 only) and f (rows 1-2 only) - which sit in the same "right side" region but must
+# NOT be forced to the same width - can each span a different NUMBER of these fine columns
+# instead of being tied to one shared width value. Relative panel width is entirely controlled by
+# how many columns each panel spans below - no separate width-ratio list needed.
+#   a a a a a | b b b        <- b spans 3 of 8 columns (narrower), a spans 5 (wider)
+#   c c c c c c c | f        <- f spans just 1 of 8 columns, rows 1-2
+#   de de de de de de de | f
+MOSAIC = [
+    ["a", "a", "a", "a", "a", "b", "b", "b"],
+    ["c", "c", "c", "c", "c", "c", "c", "f"],
+    ["de", "de", "de", "de", "de", "de", "de", "f"],
+]
+# a/b row : tier-grid row : compound-block row. Tune by eye.
+HEIGHT_RATIOS = [0.33, 0.15, 0.5]
+# Tune by eye - no other derivation than "this is what looks right at the current MOSAIC/
+# HEIGHT_RATIOS".
+FIGURE_HEIGHT = sum(HEIGHT_RATIOS)
 
-# Row 0 (panel a/b) and the first extra row (panel g, the showcase image grid) are made taller per
-# request - rows 1-(N_ROWS-1) (the still-empty placeholders) and panel h are left as-is. A share
-# ratio alone can't do that (it only redistributes a FIXED total figure height between rows), so the
-# overall figure height is bumped too, or the taller rows' content still gets squeezed/clipped
-# against the figure's own edges regardless of how large its ratio is. Columns are 2.5:1 (a:b) rather
-# than the grid's default even split - panel a's bar chart genuinely needs the width for 21 xtick
-# labels, while panel b's roughly-square chord diagram just leaves a wide empty gutter in an equally-
-# wide column. Panel g's PyMOL structure renders need more vertical room than a simple line/area plot
-# (panel h) to read as recognizable pocket/ligand geometry rather than tiny blobs.
-ROW_HEIGHT_RATIOS = [5.5] + [1] * (N_ROWS - 1) + [6, 1]
-FIGURE_HEIGHT = 1.2
-COLUMN_WIDTH_RATIOS = [1.2, 1]
+# Panel f's 5 sub-columns (probability curve + 4 domain bands) are packed with a gap between them
+# (RIGHT_BLOCK_WSPACE) - independent of MOSAIC's own (default) row/column gaps. Widths are 4:1:1:1:1
+# (RIGHT_BLOCK_WIDTH_RATIOS), not equal - the probability curve carries a real value per pocket, the
+# 4 domain bands are just present/absent, so the curve gets more room to read, per request.
+RIGHT_BLOCK_WSPACE = 0.45
+RIGHT_BLOCK_WIDTH_RATIOS = [4, 1, 1, 1, 1]
+
+# Fraction of each of panel f's 5 sub-axes reserved, at the top, for their rotated column-header
+# xlabel (see reserve_top_header). Neither tight_layout nor constrained_layout budgets space for
+# a 90-degree-rotated xlabel - both leave it to overflow past the axes' small default labelpad,
+# straight into panel b above (confirmed empirically: the rendered label text extended ~0.10 of
+# the figure height past the axes edge, well past the ~0.06 gap tight_layout/constrained_layout
+# left there). Shrinking the plot area itself, so the label has real room to render INTO, makes
+# that space part of the figure's actual layout instead of a floating overlay that can collide
+# with a neighboring panel - tune by eye against the longest header ("Anticodon binding").
+RIGHT_BLOCK_HEADER_FRAC = 0.28
+
+# Extra headroom (axes-fraction) added on top of each label's own anchor y, so the label sits
+# with real empty space above the plot box instead of flush against it (or, for plot_pocket_scores,
+# flush against its "0"/"1" tick labels). Tune by eye.
+LABEL_GAP = 0.02
+
+
+def reserve_top_header(ax, frac):
+    """Shrink `ax` from the top by `frac` of its own height, leaving its bottom edge fixed - so a
+    later ax.set_xlabel(..., top-positioned) has real, allocated room to render into instead of
+    overflowing past the axes into whatever sits above it (see RIGHT_BLOCK_HEADER_FRAC)."""
+    pos = ax.get_position()
+    ax.set_position([pos.x0, pos.y0, pos.width, pos.height * (1 - frac)])
+    return ax
+
 
 # Loosest -> strictest, matching the draw order (background bar first, tightest cutoff on top) and
 # figure_3_calculations.py's PANEL_A_CUTOFFS/SELECTED_SET_CUTOFF.
 CUTOFFS = [-8, -9, -10, -11, -12]
 SELECTED_SET_CUTOFF = -11
 SORT_BY_CUTOFF = -11
-YLIM_MAX = 370
+YLIM_MAX = 450
 
 
 def plot_protein_hit_counts(ax):
@@ -120,12 +193,16 @@ def plot_protein_hit_counts(ax):
             ax.bar(x, row[f"count_cutoff{abs(cutoff)}"], color=palette[c], edgecolor="black",
                    linewidth=stylia.LINEWIDTH, zorder=2, label=label)
 
+    # Headroom above the tallest bar (362) so the bars themselves only fill ~80% of the axis
+    # height, leaving blank space between the bars and the top spine/legend/"a" label - without
+    # moving the legend or title from their original positions.
     ax.set_ylim(0, YLIM_MAX)
+    ax.set_xlim(-1, 21)
     ax.set_xticks(range(len(counts)))
     ax.set_xticklabels(counts["gene"], rotation=90, fontsize=stylia.FONTSIZE_SMALL)
     # Outside the axes to the right, vertically centered - no xlim padding trick needed since it
     # doesn't compete with the plot area at all.
-    ax.legend(title="Docking score", loc="center left", bbox_to_anchor=(1.0, 0.5), fontsize=stylia.FONTSIZE_SMALL)
+    ax.legend(title="Docking score", loc="upper center", bbox_to_anchor=(0.5, 1), fontsize=stylia.FONTSIZE_SMALL, framealpha=1, ncol=5)
     stylia.label(ax, xlabel="", ylabel="Number of compounds", abc="a")
 
 
@@ -208,15 +285,172 @@ def plot_circos_overlap(ax):
     stylia.label(ax, xlabel="", ylabel="", abc="b")
 
 
-def plot_pocket_scores(ax):
+def plot_pocket_scores(ax, abc):
+    # Vertical orientation (pocket_rank on the y-axis, probability on x) - this panel sits in a
+    # tall/narrow column, so pockets run top-to-bottom instead of left-to-right. y-axis inverted
+    # so rank 1 (highest probability) is at the top, matching the original left-to-right reading
+    # order.
     scores = pd.read_csv(os.path.join(plots_dir, "figure_3_pocket_scores.csv"))
     nc = stylia.NamedColors()
-    ax.plot(scores["pocket_rank"], scores["pocket_probability"], color=nc.crimson, linewidth=stylia.LINEWIDTH, zorder=2)
-    ax.fill_between(scores["pocket_rank"], scores["pocket_probability"], color=nc.crimson, alpha=0.3, zorder=1)
-    ax.set_xlim(scores["pocket_rank"].min(), scores["pocket_rank"].max())
-    ax.set_ylim(0, 1)
+    ax.plot(scores["pocket_probability"], scores["pocket_rank"], color=nc.orchid, linewidth=stylia.LINEWIDTH, zorder=2)
+    ax.fill_betweenx(scores["pocket_rank"], scores["pocket_probability"], color=nc.orchid, alpha=0.3, zorder=1)
+    ax.set_ylim(scores["pocket_rank"].max(), scores["pocket_rank"].min())
+    ax.set_xlim(0, 1)
+    # Explicit tick at 0.5 (unlabeled) in addition to the 0/1 endpoints matplotlib already picks,
+    # per request - a visible midpoint reference without cluttering the axis with a "0.5" label.
+    ax.set_xticks([0, 0.5, 1])
+    ax.set_xticklabels(["0", "", "1"])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="P2Rank prob.", ylabel="", abc=abc)
+    # Moved to the top and rotated 90 degrees, per request, to match the domain-strip columns'
+    # own xlabels (plot_domain_strip) - keeps all 5 of panel f's column headers on the same edge,
+    # in the same orientation, as real xlabels rather than free-floating ax.text.
+    ax.xaxis.set_label_position("top")
+    ax.xaxis.tick_top()
+    ax.xaxis.label.set_rotation(90)
+    # matplotlib rotates first, then aligns the ALREADY-ROTATED box - so ha (not va) centers a
+    # 90-degree label horizontally here, and va="bottom" is what anchors its rotated-bottom edge
+    # at the axis and lets it grow upward.
+    ax.xaxis.label.set_ha("center")
+    ax.xaxis.label.set_va("bottom")
+    # set_label_coords disables matplotlib's automatic label repositioning (Axis._autolabelpos),
+    # which otherwise resets this label's alignment/position on every draw - without this, the
+    # ha/va above get silently overwritten and the label ends up off-center. y=0.08 clears
+    # tick_top()'s "0"/"1" tick labels, plus LABEL_GAP on top of that so the label text itself
+    # doesn't sit flush against the tick labels either (va="bottom" anchors its own bottom edge
+    # here, so this gap is real empty space, not just tick clearance).
+    ax.xaxis.set_label_coords(0.5, 1.08 + LABEL_GAP, transform=ax.transAxes)
+
+
+# Panel f's 4 bands: column in figure_3_pocket_scores.csv -> band title -> its own "present" color
+# (one per domain type, per request), against a shared white "absent" background. Catalytic uses a
+# ligand-evidence confidence threshold (CATALYTIC_CONFIDENCE_MIN); the other 3 use plain InterPro
+# label presence, mutually exclusive with Catalytic - see figure_3_calculations.py's
+# compute_pocket_scores/CURATED_LABEL_COLUMNS. Each band is its own thin column within panel f's
+# cell (see main()), not stacked inside one shared column - per request.
+DOMAIN_STRIP_COLUMNS = [
+    ("is_catalytic", "Catalytic", "crimson"),
+    ("is_trna_binding", "tRNA binding", "cobalt"),
+    ("is_editing", "Editing", "amber"),
+    ("is_anticodon_binding", "Anticodon binding", "lime"),
+]
+
+
+def plot_domain_strip(ax, abc, column, title, color_name):
+    """One band of panel f: a thin colored cell per pocket (all 276, same pocket_rank y-order as
+    panel e - sorted by P2Rank probability descending, rank 1 at the top), in this band's own
+    color where `column` is True, white otherwise - figure_3_calculations.py's
+    compute_pocket_scores, itself from output/77_pocket_annotation/
+    pocket_detection_interpro_updated.csv. Vertical orientation (pocket_rank on y, not x) to match
+    the probability curve's own tall/narrow column, in the same panel f cell."""
+    scores = pd.read_csv(os.path.join(plots_dir, "figure_3_pocket_scores.csv"))
+    nc = stylia.NamedColors()
+    present_color = getattr(nc, color_name)
+    colors = [present_color if v else nc.white for v in scores[column]]
+    ax.barh(scores["pocket_rank"], 1, height=1.0, color=colors, edgecolor="none", zorder=2)
+    ax.set_ylim(scores["pocket_rank"].max(), scores["pocket_rank"].min())
+    ax.set_xlim(0, 1)
     ax.set_xticks([])
-    stylia.label(ax, xlabel="Pocket number", ylabel="P2Rank probability", abc="h")
+    ax.set_yticks([])
+    # Real xlabel (not free-floating ax.text), moved to the top and rotated 90 degrees - these
+    # columns are packed edge-to-edge (RIGHT_BLOCK_WSPACE), too narrow for even one word of
+    # horizontal text without overlapping the neighboring column's title, and top placement
+    # matches plot_pocket_scores' own xlabel in the same panel f cell.
+    stylia.label(ax, xlabel=title, ylabel="", abc=abc)
+    ax.xaxis.set_label_position("top")
+    ax.xaxis.label.set_rotation(90)
+    # See plot_pocket_scores' identical block for why ha="center"/va="bottom" (not the reverse).
+    ax.xaxis.label.set_ha("center")
+    ax.xaxis.label.set_va("bottom")
+    # Stops matplotlib's auto label positioning from overwriting this alignment on every draw.
+    # LABEL_GAP leaves real empty space between the label's own bottom edge (va="bottom" anchors
+    # it here) and the axes' top edge, instead of the two sitting flush against each other.
+    ax.xaxis.set_label_coords(0.5, 1.0 + LABEL_GAP, transform=ax.transAxes)
+
+
+# Row label -> figure_3_gene_summary_stats.json field -> how to grade it. "continuous_high_better"/
+# "continuous_low_better" rows are graded by equal terciles across the 21 genes (7 green/7 amber/7
+# red, ranked by that field) - a data-driven split with no invented absolute cutoff, per request
+# (AskUserQuestion) over hand-picked thresholds. "boolean" rows (Novelty, Exp. tractability) are
+# almost entirely NaN right now (only ileS/glyS have a real value - see figure_3_calculations.py's
+# NOVELTY_OVERRIDES/EXPERIMENTAL_TRACTABILITY_OVERRIDES) - NaN stays the gray placeholder color,
+# and True/False map to green/red respectively, per request.
+TIER_ROW_FIELDS = [
+    ("Druggability", "max_p2rank_prob", "continuous_high_better"),
+    ("Docking scores HL", "best_hl_docking_score", "continuous_low_better"),
+    ("Docking Scores REAL", "best_real10b_docking_score", "continuous_low_better"),
+    ("Exp. tractability", "experimental_tractability", "boolean"),
+    ("Novelty", "novelty", "boolean"),
+]
+TIER_GRID_ROW_LABELS = [label for label, _, _ in TIER_ROW_FIELDS]
+TIER_GRID_FACECOLOR = "lightgray"
+TIER_GRID_GREEN = "lime"
+TIER_GRID_AMBER = "amber"
+TIER_GRID_RED = "crimson"
+
+
+def _tercile_colors(values_by_gene, higher_is_better):
+    """Split genes into equal thirds (7/7/7 of 21) by `values_by_gene`, best third green, middle
+    third amber, worst third red - see TIER_ROW_FIELDS' comment for why terciles, not fixed
+    cutoffs."""
+    ordered_genes = sorted(values_by_gene, key=lambda g: values_by_gene[g], reverse=higher_is_better)
+    third = len(ordered_genes) // 3
+    colors = {}
+    for i, gene in enumerate(ordered_genes):
+        if i < third:
+            colors[gene] = TIER_GRID_GREEN
+        elif i < 2 * third:
+            colors[gene] = TIER_GRID_AMBER
+        else:
+            colors[gene] = TIER_GRID_RED
+    return colors
+
+
+def _boolean_color(value):
+    if isinstance(value, float) and math.isnan(value):
+        return None  # no data yet - stays TIER_GRID_FACECOLOR
+    return TIER_GRID_GREEN if value else TIER_GRID_RED
+
+
+def plot_tier_grid_placeholder(ax, abc):
+    """TIER_GRID_ROW_LABELS rows x 21 (genes, alphabetical) columns grid of rectangles, colored
+    from figure_3_calculations.py's figure_3_gene_summary_stats.json - see TIER_ROW_FIELDS for the
+    row->field mapping and grading rule. Cells with no data yet (all of Novelty/Exp. tractability
+    except ileS/glyS) stay the gray placeholder color rather than being guessed at."""
+    with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
+        genes = sorted(json.load(f)["gene_to_color"].keys())
+    with open(os.path.join(plots_dir, "figure_3_gene_summary_stats.json")) as f:
+        stats = json.load(f)
+
+    nc = stylia.NamedColors()
+    row_colors = []
+    for _, field, kind in TIER_ROW_FIELDS:
+        if kind == "boolean":
+            row_colors.append({gene: _boolean_color(stats[gene][field]) for gene in genes})
+        else:
+            values_by_gene = {gene: stats[gene][field] for gene in genes}
+            row_colors.append(_tercile_colors(values_by_gene, higher_is_better=(kind == "continuous_high_better")))
+
+    for row, colors in enumerate(row_colors):
+        for col, gene in enumerate(genes):
+            color_name = colors[gene]
+            facecolor = TIER_GRID_FACECOLOR if color_name is None else getattr(nc, color_name)
+            ax.add_patch(plt.Rectangle((col, row), 1, 1, facecolor=facecolor,
+                                        edgecolor="white", linewidth=stylia.LINEWIDTH))
+
+    ax.set_xlim(0, len(genes))
+    ax.set_ylim(0, len(TIER_GRID_ROW_LABELS))
+    ax.invert_yaxis()  # row A at the top, matching standard matrix reading order
+
+    ax.set_xticks([i + 0.5 for i in range(len(genes))])
+    ax.set_xticklabels(genes, rotation=90, fontsize=stylia.FONTSIZE_SMALL)
+    ax.set_yticks([i + 0.5 for i in range(len(TIER_GRID_ROW_LABELS))])
+    ax.set_yticklabels(TIER_GRID_ROW_LABELS)
+    stylia.label(ax, xlabel="", ylabel="", abc=abc)
+    # No outer axes border, per request - only the individual cells' own white edges (set above)
+    # remain visible.
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
 
 # Matches scripts/47b_reference_pocket_visualization.py's COLOR_LIGAND_DOCKED / notebooks/
@@ -228,13 +462,39 @@ COLOR_STRUCTURE = [0.7804, 0.8275, 0.8667]
 # Angstrom cube centered on the ligand alone (not the whole structure, unlike figure_1_plot.py's/
 # 47b's renders) so every panel-g sub-image is framed at a comparable, tightly-zoomed scale
 # regardless of each protein's own size - a framing choice, tune by eye if too tight or too sparse.
-SHOWCASE_ZOOM_BOX = 22.0
+SHOWCASE_ZOOM_BOX = 16.0
+
+# Distance cutoff for the near-ligand context sticks (not the H-bond geometry below, which has its
+# own fixed 3.5 A / 45 degree criteria).
+SHOWCASE_NEAR_LIGAND_CUTOFF = 5.0
 
 
 def _color_ligand(selection, carbon_color, color_name):
     cmd.util.cbag(selection)
     cmd.set_color(color_name, carbon_color)
     cmd.color(color_name, f"{selection} and elem C")
+
+
+def _add_hbond_dashes(receptor_sel, ligand_sel, dash_name, cutoff=3.5, angle=45):
+    """Detect donor/acceptor H-bond contacts between ligand_sel and receptor_sel, drawn as a
+    yellow dashed-line object. Adapted from scripts/47b_reference_pocket_visualization.py's own
+    (commented-out, unused there) add_hbond_dashes - same criteria (cutoff/angle) and
+    find_pairs/distance mechanics, just actually wired in here and colored yellow per request
+    instead of that draft's black. Returns the number of contacts found."""
+    nearby = f"({receptor_sel} within 6 of {ligand_sel}) and not solvent"
+    pairs = []
+    pairs += cmd.find_pairs(f"{ligand_sel} and donor", f"{nearby} and acceptor", mode=1, cutoff=cutoff, angle=angle)
+    pairs += cmd.find_pairs(f"{ligand_sel} and acceptor", f"{nearby} and donor", mode=1, cutoff=cutoff, angle=angle)
+    pairs = list(dict.fromkeys(pairs))
+    if not pairs:
+        return 0
+    cmd.delete(dash_name)
+    for a1, a2 in pairs:
+        cmd.distance(dash_name, a1, a2)
+    cmd.hide("labels", dash_name)
+    cmd.color("yellow", dash_name)
+    cmd.set("dash_width", 3, dash_name)
+    return len(pairs)
 
 
 def _zoom_to_fixed_box(selection, box_size, box_name="_zoom_box"):
@@ -257,9 +517,12 @@ def _zoom_to_fixed_box(selection, box_size, box_name="_zoom_box"):
 
 
 def render_showcase_pocket(row, rerun=False):
-    png_path = os.path.join(plots_dir, f"figure_3_showcase_{row['gene']}.png")
+    # Keyed by compound_id AND gene, not gene alone - panels c and d dock different compounds into
+    # some of the same genes (glyS, lysS, pheS, alaS all recur between the two), which would
+    # otherwise silently collide on a gene-only cache key.
+    png_path = os.path.join(plots_dir, f"figure_3_showcase_{row['compound_id']}_{row['gene']}.png")
     if os.path.exists(png_path) and not rerun:
-        print(f"Reusing existing render for {row['gene']}: {png_path}")
+        print(f"Reusing existing render for {row['compound_id']}/{row['gene']}: {png_path}")
         return png_path
 
     pymol.finish_launching(["pymol", "-cq"])
@@ -273,9 +536,9 @@ def render_showcase_pocket(row, rerun=False):
     cmd.show("cartoon", "structure")
     cmd.hide("lines", "structure")
     cmd.hide("sticks", "structure")
-    # No pocket-sphere overlay (per request) - gene identity/color is already carried by panel g's
-    # own corner badge, so the cartoon's only job here is to stay out of the ligand's way. Higher
-    # transparency than the original 0.3 for exactly that reason.
+    # No pocket-sphere overlay (per request) - gene identity/color is already carried by each
+    # render's own corner badge, so the cartoon's only job here is to stay out of the ligand's way.
+    # Higher transparency than the original 0.3 for exactly that reason.
     # cartoon_transparency, not the generic transparency setting - the latter governs surface
     # representation and is a no-op on a cartoon (confirmed by the first render still showing a
     # fully-opaque loop occluding the ligand despite "transparency" being set).
@@ -297,7 +560,30 @@ def render_showcase_pocket(row, rerun=False):
     cmd.hide("lines", "ligand")
     _color_ligand("ligand", COLOR_LIGAND_DOCKED, "ligC_docked")
 
+    # Atoms within SHOWCASE_NEAR_LIGAND_CUTOFF A of the ligand, as sticks (element-colored, carbons
+    # tinted to match the cartoon so they read as "protein" rather than a second ligand) - literal
+    # per-atom distance, not byres-expanded to whole residues (tried that first - full side chains
+    # reaching in from outside the cutoff radius buried the ligand in an unreadable thicket).
+    # Explicit hydrogens (present in these relaxed structures) are excluded - at this zoom every C-H
+    # bond became its own visible stick, still overwhelming the ligand even without byres. Thinner
+    # than the ligand's own default stick_radius so the pocket reads as context, not competing with
+    # the ligand for attention. cartoon_transparency only affects the cartoon representation, so
+    # these sticks stay fully opaque regardless of that setting.
+    cmd.select("near_ligand", f"(structure within {SHOWCASE_NEAR_LIGAND_CUTOFF} of ligand) and not hydro")
+    cmd.show("sticks", "near_ligand")
+    cmd.hide("lines", "near_ligand")
+    cmd.set("stick_radius", 0.1, "near_ligand")
+    _color_ligand("near_ligand", COLOR_STRUCTURE, "near_ligand_color")
+    cmd.delete("near_ligand")
+
+    # Protein-ligand H-bond interactions, as yellow dashes (see _add_hbond_dashes) - the identified
+    # "interactions" requested, on top of (not instead of) the near-ligand context sticks above.
+    _add_hbond_dashes("structure", "ligand", "hbonds")
+
     cmd.bg_color("white")
+    # orthoscopic=1 -> true orthographic (parallel-projection) camera, not perspective - required at
+    # this render's tight zoom, since a perspective camera would visibly distort/skew the ligand's
+    # apparent geometry as the view gets this close.
     cmd.set("orthoscopic", 1)
     cmd.set("depth_cue", 0)
     cmd.set("ray_trace_fog", 0)
@@ -313,6 +599,12 @@ def render_showcase_pocket(row, rerun=False):
     # visible instead of still reading as near-opaque.
     cmd.set("transparency_mode", 2)
     cmd.set("antialias", 2)
+    # orient (not just zoom) to the ligand - without this, the camera keeps whatever default view
+    # angle the loaded structure's own coordinate frame happens to have, which for some proteins
+    # (e.g. lysS) looks down the ligand's long axis almost end-on instead of showing it spread out.
+    # cmd.orient() rotates to align the selection's own principal axes with the screen, which reads
+    # as "flat"/extended for a small molecule regardless of the structure's native orientation.
+    cmd.orient("ligand")
     _zoom_to_fixed_box("ligand", box_size=SHOWCASE_ZOOM_BOX)
     cmd.ray(1200, 1200)
     cmd.png(png_path, dpi=600)
@@ -320,16 +612,33 @@ def render_showcase_pocket(row, rerun=False):
     return png_path
 
 
-# Panel g's nested grid: SHOWCASE_GRID_COLS wide, filled only in its last SHOWCASE_GRID_FILLED_COLS
-# columns per row (per request - mimics a reference layout where the first columns are reserved for
-# other content this repo doesn't have yet), SHOWCASE_GRID_ROWS tall. 4 genes currently have a
-# retained pose, filling exactly a 2x2 block in the last 2 of 4 columns.
-SHOWCASE_GRID_ROWS = 2
-SHOWCASE_GRID_COLS = 4
-SHOWCASE_GRID_FILLED_COLS = 2
+def render_2d_structure(compound_id, smiles, rerun=False):
+    # No PyMOL, no stylia (RDKit structure images are drawn plain, per project convention) - just a
+    # cached RDKit depiction, same cache-by-file-existence idiom as render_showcase_pocket. Drawing
+    # style matches the molecule-auditing skill's svg_for() (CoordGen coordinates, transparent
+    # background), via the Cairo PNG backend instead of SVG to embed like every other raster image
+    # in this file - padding/bondLineWidth deviate from that skill's exact values per request
+    # (smaller molecule within the same canvas, thicker bonds).
+    png_path = os.path.join(plots_dir, f"figure_3_structure2d_{compound_id}.png")
+    if os.path.exists(png_path) and not rerun:
+        print(f"Reusing existing 2D structure render for {compound_id}: {png_path}")
+        return png_path
+    mol = Chem.MolFromSmiles(smiles)
+    rdCoordGen.AddCoords(mol)
+    d = rdMolDraw2D.MolDraw2DCairo(500, 500)
+    o = d.drawOptions()
+    o.clearBackground = False
+    # Back to RDKit's own default padding (0.05 per side, molecule fills 1-2*0.05=0.9 of the
+    # canvas) - the earlier 0.1625 (shrunk to 75% size) was reverted per request ("my bad").
+    o.padding = 0.05
+    o.bondLineWidth = 3
+    rdMolDraw2D.PrepareAndDrawMolecule(d, mol)
+    d.FinishDrawing()
+    d.WriteDrawingText(png_path)
+    return png_path
 
 
-def _corner_badge(sub_ax, dot_color, label, loc, anchor_point):
+def _corner_badge(sub_ax, dot_color, label, loc, anchor_point, markersize=stylia.MARKERSIZE):
     # Reuses figure_1_plot.py's colored-circle Line2D-handle-as-legend trick (already used
     # project-wide for gene color coding), called multiple times per axes via add_artist() so each
     # corner badge survives the next call instead of replacing it (ax.legend() alone only keeps the
@@ -339,7 +648,7 @@ def _corner_badge(sub_ax, dot_color, label, loc, anchor_point):
     # track the image's own corners regardless of that padding.
     handle = [Line2D([0], [0], marker="o", color="w", label=label,
                       markerfacecolor=dot_color, markeredgecolor="black", markeredgewidth=0.5,
-                      markersize=stylia.MARKERSIZE)]
+                      markersize=markersize)]
     legend = sub_ax.legend(handles=handle, loc=loc, bbox_to_anchor=anchor_point,
                             bbox_transform=sub_ax.transData, frameon=True,
                             framealpha=0.85, edgecolor="black", fontsize=stylia.FONTSIZE_SMALL,
@@ -347,101 +656,106 @@ def _corner_badge(sub_ax, dot_color, label, loc, anchor_point):
     sub_ax.add_artist(legend)
 
 
-def plot_showcase_strip(ax, rerun=False):
+def _draw_compound_pose_row(fig, row_subgs, compound_rank, abc, rerun=False):
+    """Draws one compound's 2D structure + one docking-pose render per hit gene into the given
+    1xN row_subgs slice (already positioned by the caller - this function only fills it in)."""
     # keep_default_na=False - otherwise pandas silently reads the literal string "NA" in
-    # interpro_categories back as a real NaN (pandas' own default missing-value token list).
-    pockets = pd.read_csv(os.path.join(plots_dir, "figure_3_showcase_compound_pockets.csv"), keep_default_na=False)
-    pockets = pockets[pockets["has_pose"]].sort_values("gene").reset_index(drop=True)
+    # interpro_categories (unused here but present in the shared CSV schema) back as a real NaN.
+    pockets = pd.read_csv(os.path.join(plots_dir, "figure_3_top_avg_score_compounds_pockets.csv"),
+                           keep_default_na=False)
+    pockets = pockets[pockets["compound_rank"] == compound_rank].sort_values("gene").reset_index(drop=True)
+    compound_id = pockets["compound_id"].iloc[0]
 
     with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
         gene_to_color = json.load(f)["gene_to_color"]
-    nc = stylia.NamedColors()
 
-    fig = ax.figure
-    pos = ax.get_position()
-    subgs = ax.get_subplotspec().subgridspec(SHOWCASE_GRID_ROWS, SHOWCASE_GRID_COLS, wspace=0.05, hspace=0.15)
-    ax.remove()
+    # Column 0: 2D structure - no PyMOL badges/score (they don't apply to the whole-compound cell),
+    # no border, and no compound_id title, per request.
+    smiles = lookup_smiles([compound_id], "REAL")[compound_id]
+    struct_ax = stylize(fig.add_subplot(row_subgs[0, 0]))
+    struct_img = mpimg.imread(render_2d_structure(compound_id, smiles, rerun=rerun))
+    struct_ax.imshow(struct_img)
+    struct_ax.axis("off")
+    struct_ax.set_aspect("equal", adjustable="datalim")
+    stylia.label(struct_ax, xlabel="", ylabel="", abc=abc)
 
-    first_col = SHOWCASE_GRID_COLS - SHOWCASE_GRID_FILLED_COLS
+    # Columns 1-N: one docking-pose render per hit gene (border, gene-name badge, docking-score
+    # text) for visual consistency across the whole figure.
     for i, row in pockets.iterrows():
-        grid_row, grid_col = divmod(i, SHOWCASE_GRID_FILLED_COLS)
-        sub_ax = stylize(fig.add_subplot(subgs[grid_row, first_col + grid_col]))
+        sub_ax = stylize(fig.add_subplot(row_subgs[0, i + 1]))
         img = mpimg.imread(render_showcase_pocket(row, rerun=rerun))
-
-        # Inline autocrop-to-content, same convention as panel b's circos crop, but the threshold is
-        # scaled for mpimg.imread's float32-in-[0,1] PNG data rather than panel b's uint8 ARGB buffer.
-        nonwhite = np.where((img[..., :3] < 250 / 255).any(axis=2))
-        y0, y1 = nonwhite[0].min(), nonwhite[0].max()
-        x0, x1 = nonwhite[1].min(), nonwhite[1].max()
-        img = img[y0:y1 + 1, x0:x1 + 1]
 
         sub_ax.imshow(img)
         sub_ax.axis("off")
-        # Same fix as figure_1_plot.py's show_zoomed_image: without this, imshow's default aspect
-        # handling shrinks/repositions the AXES BOX to match the image, leaving blank axes-fraction
-        # padding around the actually-visible image - and the corner badges below anchor to that
-        # full (padded) box via bbox_to_anchor, not the visible image, so they'd float off it.
         sub_ax.set_aspect("equal", adjustable="datalim")
 
-        # imshow's default (origin="upper") data extent puts (0, 0) at the image's top-left corner
-        # and (w, h) at its bottom-right - these are the pixel-space anchor points _corner_badge uses.
         img_h, img_w = img.shape[:2]
+        sub_ax.add_patch(plt.Rectangle((-0.5, -0.5), img_w, img_h, fill=False,
+                                        edgecolor="black", linewidth=stylia.LINEWIDTH))
 
-        _corner_badge(sub_ax, gene_to_color[row["gene"]], f"{row['gene']} ({row['uniprot_ac']})",
-                      loc="upper left", anchor_point=(0, 0))
+        gene_label = row["gene"] + ("" if row["is_true_best_pocket"] else "*")
+        _corner_badge(sub_ax, gene_to_color[row["gene"]], gene_label,
+                      loc="upper left", anchor_point=(0, 0), markersize=stylia.MARKERSIZE * 0.5)
 
-        # CAT/Other/NA - real InterPro-derived classification from figure_3_calculations.py's
-        # compute_showcase_compound_pockets (output/pocket_detection_data_interpro.tsv), not
-        # fabricated. Filled dot when this pocket has any curated annotation, open dot for NA.
-        interpro_label = row["interpro_categories"]
-        interpro_color = "white" if interpro_label == "NA" else nc.lime
-        _corner_badge(sub_ax, interpro_color, interpro_label, loc="upper right", anchor_point=(img_w, 0))
+        sub_ax.text(img_w / 2, img_h * 0.97, f"Docking score: {row['score']:.2f}",
+                    ha="center", va="bottom", fontsize=stylia.FONTSIZE, color="black",
+                    bbox=dict(facecolor="white", edgecolor="black", alpha=0.85, boxstyle="square,pad=0.25"))
 
-        _corner_badge(sub_ax, nc.amber, f"Docking score: {row['score']:.3f}",
-                      loc="lower left", anchor_point=(0, img_h))
+        stylia.label(sub_ax, xlabel="", ylabel="", abc=None)
 
-        stylia.label(sub_ax, xlabel="", ylabel="", abc="g" if i == 0 else None)
 
-    # va="top" (text drawn BELOW y, i.e. inside panel g's own row) rather than va="bottom" at the
-    # same y - the row boundary sits right against the row above it, and va="bottom" would draw
-    # upward into that neighboring row's own margin/labels.
-    compound_id = pockets["compound_id"].iloc[0]
-    fig.text((pos.x0 + pos.x1) / 2, pos.y1, f"Compound {compound_id} (EnamineREAL10B)",
-              ha="center", va="top", fontsize=stylia.FONTSIZE_SMALL)
+# Tight, independent of the outer gridspec's own hspace (which still governs the a/b-to-c and
+# d-to-e gaps) - panels c and d are merged into ONE outer gridspec row specifically so this value
+# only affects the c-d boundary, per request to shrink just that gap.
+COMPOUND_BLOCK_HSPACE = 0.05
+
+
+def plot_compound_pose_block(ax, label_c, label_d, rerun=False):
+    """Panels c and d: one row each (2D structure + docking poses), sharing ONE outer gridspec row
+    so their own hspace (COMPOUND_BLOCK_HSPACE) can be set independently of the gaps above/below."""
+    fig = ax.figure
+    outer_subgs = ax.get_subplotspec().subgridspec(2, 1, hspace=COMPOUND_BLOCK_HSPACE)
+    ax.remove()
+
+    for i, (compound_rank, abc) in enumerate([(1, label_c), (2, label_d)]):
+        pockets = pd.read_csv(os.path.join(plots_dir, "figure_3_top_avg_score_compounds_pockets.csv"),
+                               keep_default_na=False)
+        n_cols = 1 + (pockets["compound_rank"] == compound_rank).sum()  # 2D structure + one pose per hit gene
+        row_subgs = outer_subgs[i, 0].subgridspec(1, n_cols, wspace=0.05)
+        _draw_compound_pose_row(fig, row_subgs, compound_rank, abc, rerun=rerun)
 
 
 def main(rerun=False):
-    # Bypasses stylia.create_figure() (a plain nrows x ncols grid, every cell the same span) since
-    # the trailing N_EXTRA_ROWS need a single axes spanning both columns instead of two split cells
-    # - built by hand the same way figure_1_plot.py's more complex layouts are, then each axes is
-    # run through stylia's own stylize() so it still matches every other panel's look.
+    # One declarative picture (MOSAIC) instead of hand-nested gridspecs - see its own comment
+    # above. Each returned axes is addressed by name (axd["a"], axd["f"], ...), so which letter
+    # is which panel is readable directly below, not dependent on call order.
     size = get_size()
     fig = plt.figure(figsize=(size, FIGURE_HEIGHT * size))
     fig.patch.set_facecolor("white")
-    gs = fig.add_gridspec(N_ROWS + N_EXTRA_ROWS, N_COLS,
-                           height_ratios=ROW_HEIGHT_RATIOS, width_ratios=COLUMN_WIDTH_RATIOS)
+    axd = fig.subplot_mosaic(MOSAIC, height_ratios=HEIGHT_RATIOS, gridspec_kw={"wspace": 0.3, "hspace": 0.3})
+    for ax in axd.values():
+        stylize(ax)
 
-    labels = iter(string.ascii_lowercase[:N_ROWS * N_COLS + N_EXTRA_ROWS])
-    for row in range(N_ROWS):
-        for col in range(N_COLS):
-            label = next(labels)
-            ax = stylize(fig.add_subplot(gs[row, col]))
-            if label == "a":
-                plot_protein_hit_counts(ax)
-            elif label == "b":
-                plot_circos_overlap(ax)
-            else:
-                stylia.label(ax, xlabel="", ylabel="", abc=label)
-    # Images row placed before the P2Rank distribution row (per request: showcase images sit
-    # between the a/b row and the pocket-score distribution) - labels are assigned by physical
-    # position, so the showcase strip is now "g" and the distribution is now "h".
-    for extra_row in range(N_EXTRA_ROWS):
-        next(labels)
-        ax = stylize(fig.add_subplot(gs[N_ROWS + extra_row, :]))
-        if extra_row == 0:
-            plot_showcase_strip(ax, rerun=rerun)
-        else:
-            plot_pocket_scores(ax)
+    plot_protein_hit_counts(axd["a"])
+    plot_circos_overlap(axd["b"])
+    plot_tier_grid_placeholder(axd["c"], abc="c")
+    plot_compound_pose_block(axd["de"], label_c="d", label_d="e", rerun=rerun)
+
+    # Panel f: probability curve + 4 domain bands, packed into axd["f"]'s cell as 5 tight columns
+    # (RIGHT_BLOCK_WSPACE) - same subgridspec-on-one-cell technique plot_compound_pose_block uses
+    # for "de" above, just inlined here since it's only used once. RIGHT_BLOCK_WIDTH_RATIOS gives
+    # the probability curve (a real value, not a present/absent band like the other 4) more room
+    # to read, per request.
+    right_block_gs = axd["f"].get_subplotspec().subgridspec(1, 1 + len(DOMAIN_STRIP_COLUMNS),
+                                                              width_ratios=RIGHT_BLOCK_WIDTH_RATIOS,
+                                                              wspace=RIGHT_BLOCK_WSPACE)
+    axd["f"].remove()
+    fig.canvas.draw()  # positions must be final before reserve_top_header reads them via get_position()
+    ax = reserve_top_header(stylize(fig.add_subplot(right_block_gs[0, 0])), RIGHT_BLOCK_HEADER_FRAC)
+    plot_pocket_scores(ax, abc="f")
+    for i, (column, title, color_name) in enumerate(DOMAIN_STRIP_COLUMNS):
+        ax = reserve_top_header(stylize(fig.add_subplot(right_block_gs[0, 1 + i])), RIGHT_BLOCK_HEADER_FRAC)
+        plot_domain_strip(ax, abc=None, column=column, title=title, color_name=color_name)
 
     for ext in ("png", "pdf"):
         output_path = os.path.join(plots_dir, f"figure_3.{ext}")
@@ -452,7 +766,7 @@ def main(rerun=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--rerun", action="store_true", default=False,
-                         help="Force PyMOL re-rendering of panel g's showcase-compound PNGs, "
-                              "even if they already exist")
+                         help="Force PyMOL/RDKit re-rendering of panels c/d's showcase-compound "
+                              "PNGs, even if they already exist")
     args = parser.parse_args()
     main(rerun=args.rerun)
