@@ -26,7 +26,11 @@ Run `./run_all.sh`, or steps individually (`01`-`05`, `09`, `10` = plain python3
 ## Pocket-centroid clustering (`09_cluster_pockets.py`)
 Ported from `scripts/plots/figure_1_calculations.py`'s approach: per protein, sort pocket-instances by `Pocket score` descending, greedily accept a pocket as a new distinct site only if its centroid is farther than a **fixed 6.14 Å** from every already-accepted centroid (`POCKET_DEDUP_DISTANCE_THRESHOLD`, empirically derived in `notebooks/08_coherence_detected_pockets.ipynb`). Every pocket-instance (accepted or not) is then assigned to its nearest accepted site to produce a full `spatial_cluster_id` per instance; site IDs are renumbered by size (largest = 1). Resulting per-protein distinct-pocket counts match `figure_1_calculations.py`'s `gene_to_unique_pocket_count` exactly.
 
-This replaced an earlier hierarchical-clustering approach that cut at the single biggest gap in the merge-distance sequence — that heuristic wasn't robust (the final merge is almost always the largest distance overall, so the biggest gap tends to sit near the top of the dendrogram, inflating the threshold and merging spatially distinct pockets together; verified on pheT, where it had merged pocket-instances up to 28 Å apart into one "cluster").
+## AlphaFill ligand evidence (`08_extract_alphafill_evidence.py`)
+Ligand coordinates are re-fetched immediately after each pocket's own `cmd.align` call, since `cmd.align` mutates the AlphaFill object's real atom positions on every iteration — checking against a coordinate fetched before that pocket's alignment would compare it to the wrong pocket. Matches `07_align_and_extract_ligands.py`'s pattern. `11_build_pymol_sessions.py` computes ligand proximity independently via its own PyMOL alignment and doesn't read these evidence CSVs.
+
+## `has_direct_ligand_evidence`
+Pocket-level: `yes` only if *this specific* (protein, structure file, pocket number) has a direct-PDB ligand within the proximity cutoff.
 
 ## `catalytic_confidence` (0-4)
 **0** whenever the pocket lacks the curated Catalytic Domain label — no ligand evidence can raise it above 0 without that label.

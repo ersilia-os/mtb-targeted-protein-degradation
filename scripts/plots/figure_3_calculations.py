@@ -47,7 +47,9 @@ from docking_utils import LIBRARIES, build_matrix, load_scores, lookup_smiles
 
 ROOT = os.path.join(root, "..", "..")
 plots_dir = os.path.join(ROOT, "output", "plots", "figure_3")
+data_dir = os.path.join(plots_dir, "data")
 os.makedirs(plots_dir, exist_ok=True)
+os.makedirs(data_dir, exist_ok=True)
 
 CUTOFFS = [-10, -11, -12]
 MIN_TARGETS = 4
@@ -128,7 +130,7 @@ def compute_multi_target_hits(gene_scores):
                                ascending=[False] + [True] * len(gene_cols))
         out = out.reset_index(names="compound_id")
 
-        out_path = os.path.join(plots_dir, f"figure_3_multi_target_hits_cutoff{abs(cutoff)}.csv")
+        out_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(cutoff)}.csv")
         out.to_csv(out_path, index=False)
         print(f"  Saved {len(out):,} row(s) to {out_path}")
 
@@ -144,7 +146,7 @@ def compute_protein_hit_counts(gene_scores):
     counts.index.name = "gene"
     counts = counts.reset_index()
 
-    out_path = os.path.join(plots_dir, "figure_3_protein_hit_counts.csv")
+    out_path = os.path.join(data_dir, "figure_3_protein_hit_counts.csv")
     counts.to_csv(out_path, index=False)
     print(counts.to_string(index=False))
     print(f"Saved to {out_path}")
@@ -179,7 +181,7 @@ def compute_gene_summary_stats(gene_scores):
     # others, same as the circos plot"), persisted here instead of being discarded after rendering.
     # SELECTED_SET_CUTOFF must stay equal to figure_3_plot.py's CIRCOS_CUTOFF for these to match.
     # Requires compute_multi_target_hits to have already written this cutoff's hits CSV.
-    hits_path = os.path.join(plots_dir, f"figure_3_multi_target_hits_cutoff{abs(SELECTED_SET_CUTOFF)}.csv")
+    hits_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(SELECTED_SET_CUTOFF)}.csv")
     selected = pd.read_csv(hits_path)
     circos_gene_cols = [c.removeprefix("score_") for c in selected.columns if c.startswith("score_")]
     hit_sets = {g: set(selected.loc[selected[f"score_{g}"] <= SELECTED_SET_CUTOFF, "compound_id"])
@@ -205,7 +207,7 @@ def compute_gene_summary_stats(gene_scores):
     }
     print(json.dumps(result, indent=2))
 
-    out_path = os.path.join(plots_dir, "figure_3_gene_summary_stats.json")
+    out_path = os.path.join(data_dir, "figure_3_gene_summary_stats.json")
     with open(out_path, "w") as f:
         json.dump(result, f, indent=2)
     print(f"Saved {len(result)} gene(s) to {out_path}")
@@ -256,7 +258,7 @@ def compute_pocket_scores():
     for col, mask in has_label.items():
         out[col] = mask & ~out["is_catalytic"]
 
-    out_path = os.path.join(plots_dir, "figure_3_pocket_scores.csv")
+    out_path = os.path.join(data_dir, "figure_3_pocket_scores.csv")
     out.to_csv(out_path, index=False)
     print(f"Saved {len(out):,} row(s) to {out_path}")
 
@@ -350,7 +352,7 @@ TOP_AVG_SCORE_COMPOUND_IDS = ["s_271570____28264988____28567424", "s_51____13974
 def compute_top_avg_score_compounds_pockets():
     banner("Locating TOP_AVG_SCORE_COMPOUND_IDS's actual best-scoring pocket per hit gene")
 
-    hits_path = os.path.join(plots_dir, "figure_3_multi_target_hits_cutoff12.csv")
+    hits_path = os.path.join(data_dir, "figure_3_multi_target_hits_cutoff12.csv")
     hits = pd.read_csv(hits_path)
 
     uniprot_to_gene, gene_to_uniprot = _load_gene_uniprot_maps()
@@ -371,14 +373,14 @@ def compute_top_avg_score_compounds_pockets():
         all_rows.extend(rows)
 
     out = pd.DataFrame(all_rows)
-    out_path = os.path.join(plots_dir, "figure_3_top_avg_score_compounds_pockets.csv")
+    out_path = os.path.join(data_dir, "figure_3_top_avg_score_compounds_pockets.csv")
     out.to_csv(out_path, index=False)
     print(f"  {out['has_pose'].sum()}/{len(out)} gene(s) have a retained docked pose.")
     print(f"Saved {len(out):,} row(s) to {out_path}")
 
 
 def compute_selected_set_protein_hits():
-    hits_path = os.path.join(plots_dir, f"figure_3_multi_target_hits_cutoff{abs(SELECTED_SET_CUTOFF)}.csv")
+    hits_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(SELECTED_SET_CUTOFF)}.csv")
     selected = pd.read_csv(hits_path)
     gene_cols = [c.removeprefix("score_") for c in selected.columns if c.startswith("score_")]
 
@@ -392,7 +394,7 @@ def compute_selected_set_protein_hits():
         rows.append(row)
     counts = pd.DataFrame(rows)
 
-    out_path = os.path.join(plots_dir, "figure_3_selected_set_protein_hit_counts.csv")
+    out_path = os.path.join(data_dir, "figure_3_selected_set_protein_hit_counts.csv")
     counts.to_csv(out_path, index=False)
     print(counts.to_string(index=False))
     print(f"Saved to {out_path}")
