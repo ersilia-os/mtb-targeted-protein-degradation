@@ -11,7 +11,7 @@ discussion in this script's originating conversation on why method="min" was cho
 "average" tie-handling). Per compound, percentiles-of-percentiles are then computed across the
 276 pockets: p1, p10, p25, p50, p75, p90, p99.
 
-Threshold (human-approved, from conversation): p75 > 0.90, i.e. the compound ranks in the top 10%
+Threshold: p75 > 0.90, i.e. the compound ranks in the top 10%
 of predicted probability in AT LEAST 25% of the 276 pockets. This is a deliberately pocket-level
 (not protein-level) definition of "systematic" - a compound can pass by scoring consistently well
 across many pockets of just 1-2 heavily-represented proteins (e.g. P9WFS9 alone contributes 40 of
@@ -59,7 +59,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 PERCENTILE_LEVELS = [1, 10, 25, 50, 75, 90, 99]
 FILTER_LEVEL = 75
-FILTER_THRESHOLD = 0.90  # human-approved cutoff: top-10% percentile in >=25% of pockets
+FILTER_THRESHOLD = 0.90  # top-10% percentile in >=25% of pockets
 
 PROTEIN_RE = re.compile(r"^[^_]+_(P9W[A-Z0-9]+)_")
 
