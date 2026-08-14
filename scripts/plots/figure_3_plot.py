@@ -24,7 +24,10 @@ sits fully inside the previous one instead of a standard grouped/stacked layout.
 figure_3_calculations.py's SELECTED_SET_CUTOFF multi-target hit set (compounds already selected as
 hitting >= MIN_TARGETS genes at that cutoff), not the full screened library - so the y-axis ceiling
 is that set's own size, and every bar height is a count out of that fixed total. Proteins sorted by
-their compound count at cutoff -11, descending.
+their compound count at cutoff -11, descending. Bars are colored with stylia's FadingColormap
+("crimson" preset), sampled evenly across CUTOFFS - near-white for the loosest/outermost cutoff
+(-8, most compounds) fading to vivid red for the strictest/innermost cutoff (-12, fewest but
+best-scoring compounds), per request over the previous arbitrary categorical palette.
 
 Panel b is a chord (Circos) diagram of pairwise protein hit overlap, at CIRCOS_CUTOFF, within that
 same selected set - following notebooks/46_docking_exploration_IIIa_colors.ipynb's precedent
@@ -35,12 +38,17 @@ the rest, low-degree genes get a blank (padded-space) label instead of their rea
 declutter heuristic as that notebook - since their sector is too small for real text without
 overlapping its neighbors.
 
-Panel c (plot_tier_grid_placeholder) is a gray rectangle grid, TIER_GRID_ROW_LABELS rows
-(Druggability, Docking scores HL, Docking Scores REAL, Exp. tractability, Novelty) x 21 columns
-(all genes alphabetically) - the row/column structure and row labels are real (per request), but
-every cell is still an unfilled gray placeholder - the actual per-gene/per-row values (e.g. from
-the 5-tier vulnerability ranking in output/protein_prioritization/final_results.tsv, or wherever
-each row's values end up coming from) haven't been decided yet.
+Panel c (plot_tier_grid_placeholder, name kept despite no longer being a pure placeholder) is a
+TIER_GRID_ROW_LABELS rows (Druggability, Docking scores HL, Docking Scores REAL, Exp.
+tractability, Novelty) x 21 columns (all genes alphabetically) grid, colored from
+figure_3_calculations.py's figure_3_gene_summary_stats.json - see TIER_ROW_FIELDS for the
+row->field mapping. The 3 continuous rows (Druggability, both Docking scores rows) are graded by
+equal terciles across the 21 genes (green/amber/red for best/middle/worst third, _tercile_colors)
+- a data-driven split, no invented absolute cutoff, per request over hand-picked thresholds. The 2
+boolean rows (Exp. tractability, Novelty) map True/False to green/red (_boolean_color) but are
+almost entirely NaN right now (only ileS/glyS have a real value - see figure_3_calculations.py's
+NOVELTY_OVERRIDES/EXPERIMENTAL_TRACTABILITY_OVERRIDES), staying the gray placeholder color rather
+than being guessed at.
 
 Panels d and e are each one full-width row for a different showcase compound -
 figure_3_calculations.py's TOP_AVG_SCORE_COMPOUND_IDS, the 2 compounds (of the cutoff-12
@@ -247,6 +255,15 @@ RIGHT_BLOCK_WIDTH_RATIOS = [4, 1, 1, 1, 1]
 # different absolute height.
 RIGHT_BLOCK_HEADER_FRAC = 0.13
 
+# Vertical gap between panel c's 5 stacked rows (P2Rank prob. + 4 domain bands) - independent of
+# MOSAIC's own (default) row/column gaps, same role as RIGHT_BLOCK_WSPACE above but for rows.
+ROW_BLOCK_HSPACE = 0.6
+
+# Row heights for panel c's 5 stacked rows: P2Rank prob. gets 4 parts, each of the 4 domain bands
+# gets 1 part (8 parts total) - so the probability curve occupies exactly 4/8 = 1/2 of the total
+# stack height, per request, versus an equal 1/5 split.
+ROW_BLOCK_HEIGHT_RATIOS = [4, 1, 1, 1, 1]
+
 # Extra headroom (axes-fraction) added on top of each label's own anchor y, so the label sits
 # with real empty space above the plot box instead of flush against it (or, for plot_pocket_scores,
 # flush against its "0"/"1" tick labels). Tune by eye.
@@ -274,7 +291,7 @@ def plot_protein_hit_counts(ax):
     counts = pd.read_csv(os.path.join(data_dir, "figure_3_selected_set_protein_hit_counts.csv"))
     counts = counts.sort_values(f"count_cutoff{abs(SORT_BY_CUTOFF)}", ascending=False).reset_index(drop=True)
 
-    palette = stylia.CategoricalPalette("npg").get(len(CUTOFFS))
+    palette = stylia.FadingColormap("crimson").sample(len(CUTOFFS))
     for x, row in counts.iterrows():
         for c, cutoff in enumerate(CUTOFFS):
             label = str(cutoff) if x == 0 else None
@@ -327,8 +344,16 @@ def _build_cropped_circos_image(matrix, cmap, label_size):
     circos = Circos.chord_diagram(
         matrix, space=2, cmap=cmap,
         label_kws=dict(size=label_size),
-        link_kws=dict(ec="black", lw=1, alpha=1),
+        link_kws=dict(ec="white", lw=0, alpha=1),
     )
+    # chord_diagram() hardcodes each sector's outer arc border (ec="black", lw=0.5) with no kwarg
+    # to override it - drop straight to the underlying Patch objects (2 per sector's outer track:
+    # a borderless facecolor patch, then a fill-less edgecolor patch drawn on top - see pycirclize's
+    # Track.axis()) and zero their linewidth before rendering, to match the borderless links above.
+    for sector in circos.sectors:
+        for track in sector.tracks:
+            for patch in track.patches:
+                patch.set_linewidth(0)
     fig_circos = circos.plotfig(figsize=(8, 8), dpi=CIRCOS_DPI)
     canvas = FigureCanvas(fig_circos)
     canvas.draw()
@@ -414,6 +439,28 @@ def plot_circos_overlap(ax):
     stylia.label(ax, xlabel="", ylabel="")
 
 
+def plot_pocket_scores_row(ax):
+    """Panel c's 1st row (of 5, alongside the 4 plot_domain_strip_row bands, per request) -
+    pocket_rank on the x-axis (not y), probability on y, to match the other stacked rows'
+    horizontal orientation. Transposed from plot_pocket_scores' original narrow/tall column
+    layout, used when this content lived under panel f."""
+    scores = pd.read_csv(os.path.join(data_dir, "figure_3_pocket_scores.csv"))
+    nc = stylia.NamedColors()
+    ax.plot(scores["pocket_rank"], scores["pocket_probability"], color=nc.orchid, linewidth=stylia.LINEWIDTH, zorder=2)
+    ax.fill_between(scores["pocket_rank"], scores["pocket_probability"], color=nc.orchid, alpha=0.3, zorder=1)
+    ax.set_xlim(scores["pocket_rank"].min(), scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    # Explicit tick at 0.5 (unlabeled) in addition to the 0/1 endpoints, per request - a visible
+    # midpoint reference without cluttering the axis with a "0.5" label.
+    ax.set_yticks([0, 0.5, 1])
+    ax.set_yticklabels(["0", "", "1"])
+    stylia.label(ax, xlabel="", ylabel="P2Rank prob.")
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+
+
 def plot_pocket_scores(ax):
     # Vertical orientation (pocket_rank on the y-axis, probability on x) - this panel sits in a
     # tall/narrow column, so pockets run top-to-bottom instead of left-to-right. y-axis inverted
@@ -465,36 +512,30 @@ DOMAIN_STRIP_COLUMNS = [
 ]
 
 
-def plot_domain_strip(ax, column, title, color_name):
-    """One band of panel f: a thin colored cell per pocket (all 276, same pocket_rank y-order as
-    panel e - sorted by P2Rank probability descending, rank 1 at the top), in this band's own
-    color where `column` is True, white otherwise - figure_3_calculations.py's
-    compute_pocket_scores, itself from output/77_pocket_annotation/
-    pocket_detection_interpro_updated.csv. Vertical orientation (pocket_rank on y, not x) to match
-    the probability curve's own tall/narrow column, in the same panel f cell."""
+def plot_domain_strip_row(ax, column, title, color_name):
+    """One row of panel c (4 stacked rows total, 1 per DOMAIN_STRIP_COLUMNS entry, per request) -
+    a thin colored cell per pocket (all 276, same pocket_rank x-order - sorted by P2Rank
+    probability descending, rank 1 leftmost), in this band's own color where `column` is True,
+    white otherwise - figure_3_calculations.py's compute_pocket_scores, itself from
+    output/77_pocket_annotation/pocket_detection_interpro_updated.csv. Horizontal orientation
+    (pocket_rank on x, not y) to fit panel c's wide/short box - transposed from this band's
+    original narrow/tall side-by-side-column layout, used when this content lived under panel f.
+    Row label sits at the standard left-of-axis y-position (horizontal, not rotated) since a
+    stacked row has room for it, unlike the packed narrow columns the top-rotated label convention
+    was designed for."""
     scores = pd.read_csv(os.path.join(data_dir, "figure_3_pocket_scores.csv"))
     nc = stylia.NamedColors()
     present_color = getattr(nc, color_name)
     colors = [present_color if v else nc.white for v in scores[column]]
-    ax.barh(scores["pocket_rank"], 1, height=1.0, color=colors, edgecolor="none", zorder=2)
-    ax.set_ylim(scores["pocket_rank"].max(), scores["pocket_rank"].min())
-    ax.set_xlim(0, 1)
+    ax.bar(scores["pocket_rank"], 1, width=1.0, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(scores["pocket_rank"].min(), scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
     ax.set_xticks([])
     ax.set_yticks([])
-    # Real xlabel (not free-floating ax.text), moved to the top and rotated 90 degrees - these
-    # columns are packed edge-to-edge (RIGHT_BLOCK_WSPACE), too narrow for even one word of
-    # horizontal text without overlapping the neighboring column's title, and top placement
-    # matches plot_pocket_scores' own xlabel in the same panel f cell.
-    stylia.label(ax, xlabel=title, ylabel="")
-    ax.xaxis.set_label_position("top")
-    ax.xaxis.label.set_rotation(90)
-    # See plot_pocket_scores' identical block for why ha="center"/va="bottom" (not the reverse).
-    ax.xaxis.label.set_ha("center")
-    ax.xaxis.label.set_va("bottom")
-    # Stops matplotlib's auto label positioning from overwriting this alignment on every draw.
-    # LABEL_GAP leaves real empty space between the label's own bottom edge (va="bottom" anchors
-    # it here) and the axes' top edge, instead of the two sitting flush against each other.
-    ax.xaxis.set_label_coords(0.5, 1.0 + LABEL_GAP, transform=ax.transAxes)
+    stylia.label(ax, xlabel="", ylabel=title)
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
 
 
 # Row label -> figure_3_gene_summary_stats.json field -> how to grade it. "continuous_high_better"/
@@ -542,39 +583,42 @@ def _boolean_color(value):
 
 
 def plot_tier_grid_placeholder(ax):
-    """TIER_GRID_ROW_LABELS rows x 21 (genes, alphabetical) columns grid of rectangles, colored
+    """21 (genes, alphabetical) rows x TIER_GRID_ROW_LABELS columns grid of rectangles, colored
     from figure_3_calculations.py's figure_3_gene_summary_stats.json - see TIER_ROW_FIELDS for the
-    row->field mapping and grading rule. Cells with no data yet (all of Novelty/Exp. tractability
-    except ileS/glyS) stay the gray placeholder color rather than being guessed at."""
+    column->field mapping and grading rule. Genes-as-rows (transposed from this panel's original
+    genes-as-columns layout) to fit panel f's narrow/tall box after the c/f content switch - 21
+    gene rows read fine down a tall axis, whereas 21 gene columns didn't fit this box's narrow
+    width. Cells with no data yet (all of Novelty/Exp. tractability except ileS/glyS) stay the gray
+    placeholder color rather than being guessed at."""
     with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
         genes = sorted(json.load(f)["gene_to_color"].keys())
     with open(os.path.join(data_dir, "figure_3_gene_summary_stats.json")) as f:
         stats = json.load(f)
 
     nc = stylia.NamedColors()
-    row_colors = []
+    col_colors = []
     for _, field, kind in TIER_ROW_FIELDS:
         if kind == "boolean":
-            row_colors.append({gene: _boolean_color(stats[gene][field]) for gene in genes})
+            col_colors.append({gene: _boolean_color(stats[gene][field]) for gene in genes})
         else:
             values_by_gene = {gene: stats[gene][field] for gene in genes}
-            row_colors.append(_tercile_colors(values_by_gene, higher_is_better=(kind == "continuous_high_better")))
+            col_colors.append(_tercile_colors(values_by_gene, higher_is_better=(kind == "continuous_high_better")))
 
-    for row, colors in enumerate(row_colors):
-        for col, gene in enumerate(genes):
+    for col, colors in enumerate(col_colors):
+        for row, gene in enumerate(genes):
             color_name = colors[gene]
             facecolor = TIER_GRID_FACECOLOR if color_name is None else getattr(nc, color_name)
             ax.add_patch(plt.Rectangle((col, row), 1, 1, facecolor=facecolor,
                                         edgecolor="white", linewidth=stylia.LINEWIDTH))
 
-    ax.set_xlim(0, len(genes))
-    ax.set_ylim(0, len(TIER_GRID_ROW_LABELS))
-    ax.invert_yaxis()  # row A at the top, matching standard matrix reading order
+    ax.set_xlim(0, len(TIER_GRID_ROW_LABELS))
+    ax.set_ylim(0, len(genes))
+    ax.invert_yaxis()  # first gene (alphabetical) at the top
 
-    ax.set_xticks([i + 0.5 for i in range(len(genes))])
-    ax.set_xticklabels(genes, rotation=90, fontsize=stylia.FONTSIZE_SMALL)
-    ax.set_yticks([i + 0.5 for i in range(len(TIER_GRID_ROW_LABELS))])
-    ax.set_yticklabels(TIER_GRID_ROW_LABELS)
+    ax.set_yticks([i + 0.5 for i in range(len(genes))])
+    ax.set_yticklabels(genes, fontsize=stylia.FONTSIZE_SMALL)
+    ax.set_xticks([i + 0.5 for i in range(len(TIER_GRID_ROW_LABELS))])
+    ax.set_xticklabels(TIER_GRID_ROW_LABELS, rotation=90, fontsize=stylia.FONTSIZE_SMALL)
     stylia.label(ax, xlabel="", ylabel="")
     # No outer axes border, per request - only the individual cells' own white edges (set above)
     # remain visible.
@@ -882,40 +926,33 @@ def main(rerun=False, subpanels=None):
         plot_circos_overlap(ax)
         save_panel(fig, "b", paddings["b"])
 
-    if "c" in subpanels:
-        fig, ax = plt.subplots(figsize=sizes["c"])
+    if "f" in subpanels:
+        # Tier grid, labeled "f" (was "c") - c/f letters swapped per request so each panel's
+        # content sits under the letter matching its own native box shape in panel_layout.csv.
+        fig, ax = plt.subplots(figsize=sizes["f"])
         fig.patch.set_facecolor("white")
         stylize(ax)
         plot_tier_grid_placeholder(ax)
-        save_panel(fig, "c", paddings["c"])
+        save_panel(fig, "f", paddings["f"])
 
     if "d" in subpanels:
         plot_compound_pose_panel("d", sizes["d"], compound_rank=1, padding=paddings["d"], rerun=rerun)
     if "e" in subpanels:
         plot_compound_pose_panel("e", sizes["e"], compound_rank=2, padding=paddings["e"], rerun=rerun)
 
-    if "f" in subpanels:
-        # Panel f: probability curve + 4 domain bands, packed into one figure as 5 tight columns
-        # (RIGHT_BLOCK_WSPACE). RIGHT_BLOCK_WIDTH_RATIOS gives the probability curve (a real
-        # value, not a present/absent band like the other 4) more room to read, per request.
-        fig = plt.figure(figsize=sizes["f"])
+    if "c" in subpanels:
+        # P2Rank probability curve + 4 domain bands, labeled "c" (was "f") - see the swap note
+        # above. 5 stacked full-width rows (ROW_BLOCK_HSPACE gap between them) - replaces the
+        # narrow-box side-by-side-column layout this used under panel f.
+        fig = plt.figure(figsize=sizes["c"])
         fig.patch.set_facecolor("white")
-        # Nothing is anchored at the bottom here (plot_pocket_scores moves ticks to the top,
-        # plot_domain_strip has no ticks at all) - matplotlib's stock default bottom margin
-        # (rcParams["figure.subplot.bottom"], normally 0.11) would otherwise go unused, since
-        # reserve_top_header's manual ax.set_position() calls make tight_layout() back off for
-        # this whole figure (see the "not compatible with tight_layout" warning) and leave stock
-        # defaults in charge of every edge it doesn't itself touch.
-        fig.subplots_adjust(bottom=0.02)
-        right_block_gs = fig.add_gridspec(1, 1 + len(DOMAIN_STRIP_COLUMNS),
-                                           width_ratios=RIGHT_BLOCK_WIDTH_RATIOS, wspace=RIGHT_BLOCK_WSPACE)
-        axes = [stylize(fig.add_subplot(right_block_gs[0, i])) for i in range(1 + len(DOMAIN_STRIP_COLUMNS))]
-        fig.canvas.draw()  # positions must be final before reserve_top_header reads them via get_position()
-        plot_pocket_scores(reserve_top_header(axes[0], RIGHT_BLOCK_HEADER_FRAC))
+        row_gs = fig.add_gridspec(1 + len(DOMAIN_STRIP_COLUMNS), 1,
+                                   height_ratios=ROW_BLOCK_HEIGHT_RATIOS, hspace=ROW_BLOCK_HSPACE)
+        plot_pocket_scores_row(stylize(fig.add_subplot(row_gs[0, 0])))
         for i, (column, title, color_name) in enumerate(DOMAIN_STRIP_COLUMNS):
-            ax = reserve_top_header(axes[1 + i], RIGHT_BLOCK_HEADER_FRAC)
-            plot_domain_strip(ax, column=column, title=title, color_name=color_name)
-        save_panel(fig, "f", paddings["f"])
+            ax = stylize(fig.add_subplot(row_gs[1 + i, 0]))
+            plot_domain_strip_row(ax, column=column, title=title, color_name=color_name)
+        save_panel(fig, "c", paddings["c"])
 
 
 if __name__ == "__main__":
