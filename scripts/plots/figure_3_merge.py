@@ -1,6 +1,9 @@
 """
-Merges figure_3's 6 standalone panel PDFs (Fig_3a.pdf ... Fig_3f.pdf, from figure_3_plot.py) into
-one master PDF, each panel placed at its own (x, y) from output/plots/figure_3/panel_layout.csv.
+Merges figure_3's 5 standalone panel PDFs (Fig_3a.pdf, Fig_3b.pdf, Fig_3c.pdf, Fig_3d.pdf,
+Fig_3e.pdf - the original panel e's showcase compound merged into panel d, and the tier grid
+(formerly panel f) relabeled "e" to keep the letters contiguous, per request - from
+figure_3_plot.py) into one master PDF, each panel placed at its own (x, y) from
+output/plots/figure_3/panel_layout.csv.
 
 x/y are top-left origin, y growing downward (page-layout convention) - converted below to PDF's
 own bottom-left/y-up coordinate space for placement. Each panel PDF already saves at EXACTLY its
@@ -25,7 +28,7 @@ from pypdf import PdfReader, PdfWriter, Transformation
 plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_3")
 panel_layout_path = os.path.join(plots_dir, "panel_layout.csv")
 
-PANEL_LETTERS = ["a", "b", "c", "d", "e", "f"]
+PANEL_LETTERS = ["a", "b", "c", "d", "e"]  # former "f" (tier grid) relabeled "e", per request
 CM_TO_PT = 72 / 2.54
 
 
