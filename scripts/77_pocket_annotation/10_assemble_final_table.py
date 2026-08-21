@@ -40,6 +40,14 @@ def load_support(ac):
     return m
 
 
+def load_aars_class(ac):
+    path = os.path.join(output_dir, "{}_annotation_table_categorized.csv".format(ac))
+    if not os.path.exists(path) or "aars_class" not in pd.read_csv(path, nrows=0).columns:
+        return "N/A (not computed)"
+    df = pd.read_csv(path, keep_default_na=False)
+    return df["aars_class"].iloc[0] if len(df) else "N/A (not computed)"
+
+
 def pocket_labels_and_support(pocket_residues, support_by_category):
     labels = []
     support_col_values = {}
@@ -73,6 +81,7 @@ if __name__ == "__main__":
     clusters = pd.read_csv(os.path.join(output_dir, "pocket_clusters.csv"), keep_default_na=False)
 
     support_cache = {}
+    class_cache = {}
     rows = []
     for _, prow in pockets_df.iterrows():
         ac = prow["Uniprot AC"]
@@ -81,6 +90,8 @@ if __name__ == "__main__":
 
         if ac not in support_cache:
             support_cache[ac] = load_support(ac)
+        if ac not in class_cache:
+            class_cache[ac] = load_aars_class(ac)
         pocket_residues = parse_pocket_residues(prow["Pocket residues (chain_resn)"])
         labels, support_vals = pocket_labels_and_support(pocket_residues, support_cache[ac])
 
@@ -112,7 +123,7 @@ if __name__ == "__main__":
             "Uniprot AC": ac, "Gene": genes.get(ac, ""), "File name": file_name,
             "Prediction type": prow["Prediction type"], "Pocket number": pocket_number,
             "Pocket score": prow["Pocket score"], "Pocket probability": prow["Pocket probability"],
-            "curated_labels": "|".join(labels),
+            "curated_labels": "|".join(labels), "aars_class": class_cache[ac],
         }
         row.update(support_vals)
         row["has_direct_ligand_evidence"] = "yes" if not d_sub.empty else "no"

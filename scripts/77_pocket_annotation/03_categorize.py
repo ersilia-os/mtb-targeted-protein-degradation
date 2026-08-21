@@ -165,6 +165,30 @@ def categorize(uniprot_ac, accession, name, go_terms_str):
     return "Other/Unclassified", hits, "none"
 
 
+# aaRS Class I / Class II, detected from InterPro entry names (Eriani et al. 1990 classification,
+# as discussed in Klipcan et al. 2010, https://doi.org/10.4061/2010/983503). Class II entries are
+# unambiguous ("class II" never appears as a substring of anything else), but a naive "class I"
+# substring match would false-positive on IPR010978, "Class I and II aminoacyl-tRNA synthetase,
+# tRNA-binding arm" - a domain shared by both classes, present on many of these proteins regardless
+# of their own class. Excluded via negative lookahead. gatA/gatB (not classical aaRSs - see the
+# GatCAB amidotransferase note above) correctly fall out as "N/A" since neither has any
+# class-mentioning InterPro entry at all; no hardcoded per-protein override needed.
+AARS_CLASS_II_PATTERN = re.compile(r"\bclass[- ]?II\b", re.IGNORECASE)
+AARS_CLASS_I_PATTERN = re.compile(r"\bclass[- ]?I\b(?!\s*and\s*II)", re.IGNORECASE)
+
+
+def detect_aars_class(entry_names):
+    is_class_i = any(AARS_CLASS_I_PATTERN.search(n) for n in entry_names)
+    is_class_ii = any(AARS_CLASS_II_PATTERN.search(n) for n in entry_names)
+    if is_class_i and is_class_ii:
+        return "Ambiguous (both class I and II entries found)"
+    if is_class_i:
+        return "Class I"
+    if is_class_ii:
+        return "Class II"
+    return "N/A (not a classical aaRS)"
+
+
 if __name__ == "__main__":
     in_path = os.path.join(output_dir, "{}_annotation_table.csv".format(UNIPROT_AC))
     df = pd.read_csv(in_path, keep_default_na=False)
@@ -182,9 +206,13 @@ if __name__ == "__main__":
     df["category_matched_go_terms"] = matched_go
     df["category_source"] = category_sources
 
+    aars_class = detect_aars_class(df["name"].tolist())
+    df["aars_class"] = aars_class
+
     out_path = os.path.join(output_dir, "{}_annotation_table_categorized.csv".format(UNIPROT_AC))
     df.to_csv(out_path, index=False)
     print("Categorized {} entries -> {}".format(len(df), out_path))
+    print("aaRS class: {}".format(aars_class))
     print(df[["accession", "name", "type", "specificity", "start", "end", "category"]].to_string(index=False))
 
     # entry_support_count: per (residue, category), how many distinct entries

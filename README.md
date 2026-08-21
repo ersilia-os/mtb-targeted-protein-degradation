@@ -71,7 +71,7 @@ For the full script-by-script pipeline documentation — data sources, threshold
 
 We're developing BacPROTAC-based degraders targeting 21 essential tRNA synthetases in *Mycobacterium tuberculosis*. For each of these tRNA synthetases:
 
-1. Sequence annotation via InterPro.
+1. Sequence annotation via InterPro (domain annotation and pocket-domain overlap were later redone/corrected in `scripts/77_pocket_annotation/`, coexisting with the original scripts 06/09/10/11/12 — see `scripts/README.md`).
 2. Structural characterization: 
     - Data sources: AF2, AF3, Chai-1, SwissModel, etc.
     - Relaxation: PyRosetta
