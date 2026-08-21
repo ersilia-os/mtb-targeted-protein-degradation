@@ -59,19 +59,15 @@ print(f"Matched Vulnerability Index for {len(gene_to_vi)}/{len(genes_sorted)} ge
 print(f"Genome-wide VI range (n={len(vi_df)}): [{vi_genome_min}, {vi_genome_max}]")
 
 banner("COUNTING EXPERIMENTAL PDB STRUCTURES")
-# data/structures/pdbe_database/<uniprot_ac>/<uniprot_ac>_updated/*_updated.cif — one file per
-# experimental PDB entry (the sibling *_archive-PDB folder holds the same entries as legacy .ent
-# files, so counting the "_updated" folder alone avoids double-counting).
-pdbe_dir = os.path.join(data_dir, "structures", "pdbe_database")
-gene_to_pdb_count = {}
-for uid in uniprot_order:
-    gene = uniprot_to_gene[uid]
-    updated_dir = os.path.join(pdbe_dir, uid, f"{uid}_updated")
-    if os.path.isdir(updated_dir):
-        pdb_codes = {f.split("_updated")[0] for f in os.listdir(updated_dir) if f.endswith(".cif")}
-        gene_to_pdb_count[gene] = len(pdb_codes)
-    else:
-        gene_to_pdb_count[gene] = 0
+# Live UniProt PDB cross-references, fetched by scripts/77_pocket_annotation/04_query_pdb_xrefs.py
+# (output/77_pocket_annotation/pdb_xrefs.json). Supersedes the older local
+# data/structures/pdbe_database/ snapshot, which undercounts: that snapshot predates several
+# PDB entries deposited since it was downloaded (e.g. pheS/pheT: 7 in the stale local snapshot
+# vs. 12 in a live UniProt query, confirmed 2026-08).
+pdb_xrefs_path = os.path.join(output_dir, "77_pocket_annotation", "pdb_xrefs.json")
+with open(pdb_xrefs_path) as f:
+    pdb_xrefs = json.load(f)
+gene_to_pdb_count = {uniprot_to_gene[uid]: len(pdb_xrefs[uid]["pdb_ids"]) for uid in uniprot_order}
 print(f"PDB counts by gene: {gene_to_pdb_count}")
 
 banner("COUNTING CHEMBL BINDERS")
@@ -147,41 +143,98 @@ with open(color_mapping_path, "w") as f:
     json.dump(mappings, f, indent=2)
 print(f"Saved to {color_mapping_path}")
 
-banner("STRUCTURAL RMSD MATRIX: pooling output/structural_comparisons/ CSVs (both directions)")
-# Upper triangle: mean RMSD between the two proteins (pooled, both directions).
-# Diagonal: min RMSD between structures of the same protein — not yet computed anywhere
-# in the pipeline (scripts/15_calculate_StSim.py only does cross-protein pairs) and slow
-# (~1600 superpositions), so left as a placeholder 0 for now.
-# Lower triangle: min RMSD between the two proteins (pooled, both directions).
-COMPARISONS_DIR = os.path.join(output_dir, "structural_comparisons")
-pair_rmsds = {}
+banner("STRUCTURAL RMSD MATRIX: global (coverage-filtered min, upper) vs local (min, lower)")
+# scripts/15c_calculate_StSim_global_local_coverage.py's output: every structure
+# combination for each pair, both cmd.super (global) and cealign (local) RMSD, each with
+# its own coverage (aligned_residues / min(res_1, res_2)). Files are named by UniProt AC
+# STRING sort (ac_lo < ac_hi), NOT by uniprot_order's gene-name order, so that pair must
+# be re-sorted independently for the file lookup below.
+#
+# Upper triangle: global (cmd.super) min RMSD, restricted to combinations with
+# global_coverage >= 10% - a plain unfiltered min is misleading (e.g. cysS1/lysS hit
+# 0.63 A from a ~5% coverage fluke, see conversation/notebook notes). 30% was tried
+# first but discards 73/210 pairs entirely (every combination fails the cutoff); 10%
+# only fails for 4 pairs (tyrS/glyS, proS/gatA, pheT/gatA, aspS/gatA - three involve
+# gatA, which genuinely doesn't share fold architecture with the rest of the set) -
+# those 4 cells are left as NaN (no reliable global comparison), not silently
+# backfilled with the unfiltered value.
+# Lower triangle: local (cealign) min RMSD, no coverage filter (cealign doesn't force a
+# global correspondence, so it isn't prone to the same low-coverage/low-RMSD artifact).
+# Diagonal: placeholder 0 (self-comparison data now exists in the same source files as
+# self-pairs, but incorporating it here is a separate, not-yet-made decision).
+GLOBAL_COVERAGE_MIN = 0.10
+COMPARISONS_DIR = os.path.join(output_dir, "structural_comparisons_full")
+pair_global_min = {}
+pair_local_min = {}
+no_reliable_global = []
 for uid1, uid2 in itertools.combinations(uniprot_order, 2):
-    values = []
-    for a, b in [(uid1, uid2), (uid2, uid1)]:
-        path = os.path.join(COMPARISONS_DIR, f"{a}_{b}_rmsd.csv")
-        if os.path.exists(path):
-            values.extend(pd.read_csv(path)["rmsd"].tolist())
-    if not values:
-        raise FileNotFoundError(f"No structural comparison file found for {uid1}/{uid2}")
-    pair_rmsds[frozenset((uid1, uid2))] = values
-    print(f"{uniprot_to_gene[uid1]}/{uniprot_to_gene[uid2]}: {len(values)} pooled comparisons "
-          f"(mean={np.mean(values):.2f}, min={np.min(values):.2f})")
+    ac_lo, ac_hi = sorted((uid1, uid2))
+    path = os.path.join(COMPARISONS_DIR, f"{ac_lo}_{ac_hi}_global_local.csv")
+    df = pd.read_csv(path)
+
+    filtered = df[df["global_coverage"] >= GLOBAL_COVERAGE_MIN]
+    if len(filtered):
+        pair_global_min[frozenset((uid1, uid2))] = filtered["global_rmsd"].min()
+    else:
+        pair_global_min[frozenset((uid1, uid2))] = np.nan
+        no_reliable_global.append((uniprot_to_gene[uid1], uniprot_to_gene[uid2]))
+
+    pair_local_min[frozenset((uid1, uid2))] = df["local_rmsd"].min()
+
+    print(f"{uniprot_to_gene[uid1]}/{uniprot_to_gene[uid2]}: {len(df)} combinations "
+          f"(global min @>={GLOBAL_COVERAGE_MIN:.0%} cov={pair_global_min[frozenset((uid1, uid2))]:.2f}, "
+          f"local min={pair_local_min[frozenset((uid1, uid2))]:.2f})")
+
+print(f"Pairs with no combination clearing {GLOBAL_COVERAGE_MIN:.0%} global coverage "
+      f"(left as NaN): {no_reliable_global}")
 
 n = len(uniprot_order)
-struct_matrix = np.zeros((n, n))
+struct_matrix = np.full((n, n), np.nan)
 for i, uid_i in enumerate(uniprot_order):
     for j, uid_j in enumerate(uniprot_order):
         if i == j:
             struct_matrix[i, j] = 0.0
         elif i < j:
-            struct_matrix[i, j] = np.mean(pair_rmsds[frozenset((uid_i, uid_j))])
+            struct_matrix[i, j] = pair_global_min[frozenset((uid_i, uid_j))]
         else:
-            struct_matrix[i, j] = np.min(pair_rmsds[frozenset((uid_i, uid_j))])
+            struct_matrix[i, j] = pair_local_min[frozenset((uid_i, uid_j))]
 
 struct_matrix_df = pd.DataFrame(struct_matrix, index=uniprot_order, columns=uniprot_order)
 struct_output_path = os.path.join(plots_dir, "structural_similarity_matrix.tsv")
 struct_matrix_df.to_csv(struct_output_path, sep="\t")
 print(f"Saved to {struct_output_path}")
+
+banner("SEQUENCE IDENTITY MATRIX: global (upper) vs local (lower)")
+# Upper triangle: global (Needleman-Wunsch) identity, scripts/14_calculate_SeqId.py's
+# SeqId_matrix.tsv. Lower triangle: local (Smith-Waterman) identity, the same script's
+# LocalSeqId_matrix.tsv. Diagonal: self-identity (~100%, meaningfully computed by both
+# aligners already - no placeholder needed, unlike the structural matrix's diagonal).
+global_seqid_df = pd.read_csv(os.path.join(output_dir, "sequences", "NW_SeqAlign", "SeqId_matrix.tsv"), sep="\t", index_col=0)
+global_seqid_df.columns = global_seqid_df.columns.str.strip()
+global_seqid_df.index = global_seqid_df.index.str.strip()
+local_seqid_df = pd.read_csv(os.path.join(output_dir, "sequences", "SW_LocalSeqAlign", "LocalSeqId_matrix.tsv"), sep="\t", index_col=0)
+local_seqid_df.columns = local_seqid_df.columns.str.strip()
+local_seqid_df.index = local_seqid_df.index.str.strip()
+
+seqid_labels = [f"{uid} (tRNA)" for uid in uniprot_order]
+global_seqid_matrix = global_seqid_df.loc[seqid_labels, seqid_labels].values
+local_seqid_matrix = local_seqid_df.loc[seqid_labels, seqid_labels].values
+
+n = len(uniprot_order)
+seqid_matrix = np.zeros((n, n))
+for i in range(n):
+    for j in range(n):
+        if i == j:
+            seqid_matrix[i, j] = global_seqid_matrix[i, j]
+        elif i < j:
+            seqid_matrix[i, j] = global_seqid_matrix[i, j]
+        else:
+            seqid_matrix[i, j] = local_seqid_matrix[i, j]
+
+seqid_matrix_df = pd.DataFrame(seqid_matrix, index=uniprot_order, columns=uniprot_order)
+seqid_output_path = os.path.join(plots_dir, "sequence_identity_matrix.tsv")
+seqid_matrix_df.to_csv(seqid_output_path, sep="\t")
+print(f"Saved to {seqid_output_path}")
 
 banner("POCKETVEC MATRIX: min cosine distance over deduplicated pockets")
 # Mirrors notebooks/16_PocketVec_analyses.ipynb's own convention: off-diagonal = min

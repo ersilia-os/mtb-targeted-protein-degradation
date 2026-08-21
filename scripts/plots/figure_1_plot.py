@@ -466,19 +466,14 @@ def cleanup_intermediate_files(store_pymol, remove_pngs):
 
 genes_sorted = sorted(uniprot_to_gene.values())
 
-# scripts/14_calculate_SeqId.py's output: pairwise Needleman-Wunsch (BLOSUM62) sequence
-# identity, computed over the 21 tRNA synthetases plus 25 background Mtb proteins. Only
-# the 21 tRNA synthetases are kept for this heatmap.
-seqid_df = pd.read_csv(os.path.join(output_dir, "sequences", "NW_SeqAlign", "SeqId_matrix.tsv"), sep="\t", index_col=0)
-seqid_df.columns = seqid_df.columns.str.strip()
-seqid_df.index = seqid_df.index.str.strip()
+# scripts/plots/figure_1_calculations.py's output: pairwise sequence identity — upper
+# triangle = global (Needleman-Wunsch, scripts/14_calculate_SeqId.py's SeqId_matrix.tsv),
+# lower triangle = local (Smith-Waterman, that same script's LocalSeqId_matrix.tsv),
+# diagonal = self-identity (~100%, meaningfully computed by both aligners already).
+seqid_df = pd.read_csv(os.path.join(plots_dir, "sequence_identity_matrix.tsv"), sep="\t", index_col=0)
+alphabetical_order = seqid_df.index.tolist()  # already alphabetical by gene name
 
-trna_labels = [label for label in seqid_df.index if "(tRNA)" in label]
-uniprot_order = [label.replace(" (tRNA)", "") for label in trna_labels]
-alphabetical_order = sorted(uniprot_order, key=lambda uid: uniprot_to_gene[uid])
-alphabetical_labels = [f"{uid} (tRNA)" for uid in alphabetical_order]
-
-matrix = seqid_df.loc[alphabetical_labels, alphabetical_labels].values
+matrix = seqid_df.loc[alphabetical_order, alphabetical_order].values
 gene_labels = [uniprot_to_gene[uid] for uid in alphabetical_order]
 
 # scripts/plots/figure_1_calculations.py's output: pairwise structural comparison —
@@ -497,14 +492,32 @@ pocketvec_df = pd.read_csv(os.path.join(plots_dir, "pocketvec_similarity_matrix.
 pocketvec_matrix = pocketvec_df.loc[alphabetical_order, alphabetical_order].values
 
 CBAR_VMIN = 20
-CBAR_VMAX = 40
+CBAR_VMAX = 40  # values above 40 (up to ~67% for local identity) saturate
 STRUCT_VMIN = 0
-STRUCT_VMAX = 25
+STRUCT_VMAX = 20  # axis/colorbar/distribution extent
+STRUCT_GRADIENT_MAX = 8  # local RMSD's true max (7.79) - full color gradient covers all of local, flat white beyond
 POCKETVEC_VMIN = 0.12
-POCKETVEC_VMAX = 0.20
+POCKETVEC_VMAX = 0.22  # covers all but 1.4% of pairs (true max ~0.225)
 
 
-def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ticks, line_color, abc=None):
+def clipped_gradient_cmap(cmap, vmin, vmax, gradient_max, n=256):
+    """Compress cmap's full gradient into [vmin, gradient_max]; hold its end color flat for (gradient_max, vmax]."""
+    frac = (gradient_max - vmin) / (vmax - vmin)
+    n_gradient = max(1, int(round(n * frac)))
+    colors_gradient = cmap(np.linspace(0, 1, n_gradient))
+    end_color = cmap(1.0)
+    colors_flat = np.tile(end_color, (n - n_gradient, 1))
+    return mcolors.ListedColormap(np.vstack([colors_gradient, colors_flat]))
+
+
+def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ticks, line_color, abc=None,
+                             dist_values=None, overlay_values=None, dist_vmax=None):
+    # Copy (not mutate) the caller's colormap - some pairs may have no reliable value
+    # (e.g. panel c's 10%-coverage-filtered global RMSD, NaN for pairs where nothing
+    # clears the cutoff) and should render as a distinct grey "no data" cell rather than
+    # being confusable with a real value at the colormap's pale end.
+    cmap = cmap.copy()
+    cmap.set_bad(color="#BBBBBB")
     im = ax.imshow(matrix, cmap=cmap, vmin=vmin, vmax=vmax)
 
     ax.set_xticks(range(len(labels)))
@@ -525,7 +538,10 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
     # a shared axis's labels, so alignment is matched explicitly via xlim instead
     # (imshow's default extent for n categories is exactly [-0.5, n-0.5]).
     tax = divider.append_axes("top", size="20%", pad=0.05)
+    # NaN-safe (e.g. panel c's 4 pairs with no coverage-filtered global value) - dropped
+    # rather than plotted, so the boxplot summarizes only the pairs with real data.
     box_data = [np.delete(matrix[:, i], i) for i in range(n)]
+    box_data = [d[~np.isnan(d)] for d in box_data]
     bp = tax.boxplot(
         box_data, positions=range(n), widths=0.6, whis=(0, 100), showfliers=False, patch_artist=True,
         boxprops=dict(edgecolor="black", linewidth=stylia.LINEWIDTH),
@@ -573,27 +589,60 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
     # (upper-triangle values, i.e. one value per protein pair — excludes the diagonal
     # self-comparison). Appended after the colorbar, so it sits further left, outermost.
     # sharey=cax ties its value axis directly to the colorbar's own axis — no second,
-    # redundant set of tick labels for the same quantity.
-    dax = divider.append_axes("left", size="20%", pad=0.03, sharey=cax)
-    pairwise_values = matrix[np.triu_indices(n, k=1)]
+    # redundant set of tick labels for the same quantity. Not used when dist_vmax is
+    # given (the density panel then needs its own, wider range - see below).
+    dax = divider.append_axes("left", size="20%", pad=0.03, sharey=None if dist_vmax is not None else cax)
+    # dist_values overrides the default (upper-triangle) source for the main filled
+    # curve - e.g. panel b passes the lower triangle (local identity) here instead.
+    pairwise_values = dist_values if dist_values is not None else matrix[np.triu_indices(n, k=1)]
+    pairwise_values = pairwise_values[~np.isnan(pairwise_values)]  # e.g. panel c's 4 no-data pairs
+    # dist_vmax lets the density panel's own y-range extend past the heatmap/colorbar's
+    # vmax - needed when the plotted quantity's full distribution doesn't fit the
+    # heatmap's (deliberately narrower, for cell contrast) color range: without this, a
+    # KDE evaluated only up to vmax would show a curve still rising at the edge rather
+    # than its true peak-and-decline shape, and would look artificially truncated.
+    y_max = dist_vmax if dist_vmax is not None else vmax
     kde = gaussian_kde(pairwise_values)
-    y = np.linspace(vmin, vmax, 200)
+    y = np.linspace(vmin, y_max, 200)
     density = kde(y)
     # Baseline (zero density) sits against the colorbar side (dax's right edge); the
     # curve bulges away from it, toward the outer margin (dax's left edge).
     dax.plot(-density, y, color=line_color, linewidth=stylia.LINEWIDTH)
     # Fill under the curve with the same colormap/scale as the heatmap's colorbar
     # instead of a flat color, so the fill's color at a given height directly mirrors
-    # what that value looks like on the heatmap/colorbar.
+    # what that value looks like on the heatmap/colorbar. Extent intentionally stays
+    # vmin/vmax (not y_max) even when dist_vmax is set, so the fill only covers the
+    # heatmap's own color-mapped range - the curve *line* above that (if any) is left
+    # unfilled, honestly showing it's outside what the heatmap itself can represent.
     gradient = np.linspace(vmin, vmax, 256).reshape(-1, 1)
     grad_im = dax.imshow(gradient, cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto",
                           origin="lower", extent=[-density.max(), 0, vmin, vmax])
     clip_vertices = np.column_stack([np.concatenate([-density, [0, 0]]), np.concatenate([y, [y[-1], y[0]]])])
     grad_im.set_clip_path(Polygon(clip_vertices, closed=True, transform=dax.transData))
-    dax.set_xlim(-density.max() * 1.02, 0)
+
+    # Optional second distribution (e.g. global identity/RMSD, overlaid on the main
+    # curve) as a thin dashed BLACK line on the same axis - no fill, just a lightweight
+    # reference for comparison against the main curve.
+    max_density = density.max()
+    if overlay_values is not None:
+        overlay_values = overlay_values[~np.isnan(overlay_values)]
+        overlay_density = gaussian_kde(overlay_values)(y)
+        dax.plot(-overlay_density, y, color="black", linewidth=stylia.LINEWIDTH * 0.5, linestyle="--")
+        max_density = max(max_density, overlay_density.max())
+
+    dax.set_xlim(-max_density * 1.02, 0)
     dax.set_xticks([])
-    dax.tick_params(axis="y", labelleft=False, left=False)
-    for spine in ("top", "right", "left"):
+    if dist_vmax is not None:
+        # dax now has its own scale, different from the heatmap/colorbar's - needs its
+        # own visible tick labels (previously relied entirely on cax's, right next to
+        # it, since both shared one scale) so the reader can see the two panels differ.
+        dax.set_ylim(vmin, y_max)
+        dax.tick_params(axis="y", labelleft=True, left=True, labelsize=stylia.FONTSIZE_SMALL,
+                         length=2, width=stylia.LINEWIDTH)
+        dax.spines["left"].set_linewidth(stylia.LINEWIDTH)
+    else:
+        dax.tick_params(axis="y", labelleft=False, left=False)
+    for spine in ("top", "right") + (() if dist_vmax is not None else ("left",)):
         dax.spines[spine].set_visible(False)
     dax.set_axisbelow(True)
     dax.grid(visible=True, linewidth=stylia.LINEWIDTH * 0.5, color="#DDDDDD", alpha=0.6)
@@ -664,17 +713,39 @@ def render_master_figure(proteins=PROTEINS, show_grids=False):
     nc = stylia.NamedColors()
 
     seqid_cmap = stylia.FadingColormap("crimson", transformation=None).cmap
+    seqid_n = matrix.shape[0]
+    # Main filled curve = local identity (lower triangle); thin dashed overlay = global
+    # identity (upper triangle), for direct comparison on the same axis. Local identity
+    # reaches up to ~67% (11% of pairs exceed CBAR_VMAX=40) - clipped so the KDE reflects
+    # an honest pile-up at the boundary rather than silently truncating; global identity
+    # already fits entirely within CBAR_VMAX, so its clip is a no-op.
+    seqid_local_values = np.clip(matrix[np.tril_indices(seqid_n, k=-1)], CBAR_VMIN, CBAR_VMAX)
+    seqid_global_values = np.clip(matrix[np.triu_indices(seqid_n, k=1)], CBAR_VMIN, CBAR_VMAX)
     b_dax = plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[0, 0])), matrix, gene_labels, seqid_cmap,
                                      CBAR_VMIN, CBAR_VMAX, "Sequence identity (%)",
-                                     ticks=np.arange(CBAR_VMIN, CBAR_VMAX + 1, 5), line_color=nc.crimson, abc="b")
+                                     ticks=np.arange(CBAR_VMIN, CBAR_VMAX + 1, 5), line_color=nc.crimson, abc="b",
+                                     dist_values=seqid_local_values, overlay_values=seqid_global_values)
 
     # Different color family from panel b (cobalt vs crimson) so the two panels are
     # visually distinct at a glance; still reversed so dark reads as "more similar" here
-    # too, even though for RMSD that means a LOW value.
-    struct_cmap = stylia.FadingColormap("cobalt", transformation=None).cmap.reversed()
+    # too, even though for RMSD that means a LOW value. Gradient itself is compressed
+    # into [0, STRUCT_GRADIENT_MAX] and held flat (white) beyond that, out to
+    # STRUCT_VMAX - so the axis/colorbar reads to 20 while the color only distinguishes
+    # differences within the tighter, more informative 0-10 Å range.
+    struct_cmap_full = stylia.FadingColormap("cobalt", transformation=None).cmap.reversed()
+    struct_cmap = clipped_gradient_cmap(struct_cmap_full, STRUCT_VMIN, STRUCT_VMAX, STRUCT_GRADIENT_MAX)
+    struct_n = struct_matrix.shape[0]
+    # Distribution panel: main filled curve = local RMSD (lower triangle), single shared
+    # 0-20 scale with the heatmap/colorbar (no second axis). Only 2/206 (~1%) global
+    # values exceed 20 (max ~22), so no clipping needed for the overlay KDE either.
+    # Global RMSD (upper triangle) is overlaid as a thin dashed black line, same
+    # convention as panel b.
+    struct_local_values = struct_matrix[np.tril_indices(struct_n, k=-1)]
+    struct_global_values = struct_matrix[np.triu_indices(struct_n, k=1)]
     plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[1, 0])), struct_matrix, gene_labels, struct_cmap,
                              STRUCT_VMIN, STRUCT_VMAX, "Structural RMSD (Å)",
-                             ticks=np.arange(STRUCT_VMIN, STRUCT_VMAX + 1, 5), line_color=nc.cobalt, abc="c")
+                             ticks=np.arange(STRUCT_VMIN, STRUCT_VMAX + 1, 5), line_color=nc.cobalt, abc="c",
+                             dist_values=struct_local_values, overlay_values=struct_global_values)
 
     # Third distinct color family (lime). Reversed for the same reason as panel c — for
     # cosine distance, LOW value = more similar. Same tick set drives both the boxplot and
