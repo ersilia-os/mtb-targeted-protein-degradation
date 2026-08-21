@@ -68,7 +68,7 @@ for uni, seq in zip(mtb_proteome['Entry'], mtb_proteome['Sequence']):
 # Get all proteins
 uniprots = sorted([i for i in uniprot_to_sequence if i in tRNAs]) + sorted([i for i in uniprot_to_sequence if i not in tRNAs])
 
-# Create and configure the aligner
+# Create and configure the global aligner (Needleman-Wunsch)
 aligner = PairwiseAligner()
 aligner.mode = 'global'  # Needleman–Wunsch algorithm
 
@@ -76,27 +76,42 @@ aligner.mode = 'global'  # Needleman–Wunsch algorithm
 aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
 
 # Set gap penalties
-aligner.open_gap_score = -10  
+aligner.open_gap_score = -10
 aligner.extend_gap_score = -1
 
-# Identity matrix
+# Local aligner (Smith-Waterman) - same substitution matrix/gap scores, only the mode
+# differs, so a shared conserved patch isn't diluted by unrelated flanking sequence the
+# way it is under a forced end-to-end global alignment.
+local_aligner = PairwiseAligner()
+local_aligner.mode = 'local'  # Smith-Waterman algorithm
+local_aligner.substitution_matrix = aligner.substitution_matrix
+local_aligner.open_gap_score = aligner.open_gap_score
+local_aligner.extend_gap_score = aligner.extend_gap_score
+
+# Identity matrices
 identity_matrix = np.zeros((len(uniprots), len(uniprots)))
 prop_matrix = np.zeros((len(uniprots), len(uniprots)))
+local_identity_matrix = np.zeros((len(uniprots), len(uniprots)))
+local_prop_matrix = np.zeros((len(uniprots), len(uniprots)))
 identity_dict = {}
 identity_prop = {}
 
-# Compute pairwise identities
+# Compute pairwise identities (global and local, in the same pass over each pair)
 for i in range(len(uniprots)):
     for j in range(i, len(uniprots)):
 
-        # Align sequences
         seq1 = uniprot_to_sequence[uniprots[i]]
         seq2 = uniprot_to_sequence[uniprots[j]]
+
+        # Global (Needleman-Wunsch)
         alignment = aligner.align(seq1, seq2)[0]  # Take the best alignment
         aligned_seq1, aligned_seq2 = [k for k in alignment]
-
-        # Calculate sequence identity
         identity, prop = calculate_identity(aligned_seq1, aligned_seq2)
+
+        # Local (Smith-Waterman)
+        local_alignment = local_aligner.align(seq1, seq2)[0]
+        local_aligned_seq1, local_aligned_seq2 = [k for k in local_alignment]
+        local_identity, local_prop = calculate_identity(local_aligned_seq1, local_aligned_seq2)
 
         # Store results
         identity_matrix[i, j] = identity
@@ -108,6 +123,11 @@ for i in range(len(uniprots)):
         identity_prop[(uniprots[i], uniprots[j])] = prop
         identity_prop[(uniprots[j], uniprots[i])] = prop
 
+        local_identity_matrix[i, j] = local_identity
+        local_identity_matrix[j, i] = local_identity
+        local_prop_matrix[i, j] = local_prop
+        local_prop_matrix[j, i] = local_prop
+
 # Create labels for the matrix
 labels = [i + " (tRNA)" if i in tRNAs else i for i in uniprots]
 
@@ -118,14 +138,32 @@ identity_df.to_csv("../output/sequences/NW_SeqAlign/SeqId_matrix.tsv", sep="\t")
 prop_df = pd.DataFrame(prop_matrix, index=labels, columns=labels)
 prop_df.to_csv("../output/sequences/NW_SeqAlign/Prop_matrix.tsv", sep="\t")
 
-# Plot
+# Save the local identity/proportion matrices
+os.makedirs("../output/sequences/SW_LocalSeqAlign", exist_ok=True)
+local_identity_df = pd.DataFrame(local_identity_matrix, index=labels, columns=labels)
+local_identity_df.to_csv("../output/sequences/SW_LocalSeqAlign/LocalSeqId_matrix.tsv", sep="\t")
+local_prop_df = pd.DataFrame(local_prop_matrix, index=labels, columns=labels)
+local_prop_df.to_csv("../output/sequences/SW_LocalSeqAlign/LocalProp_matrix.tsv", sep="\t")
+
+# Plot - global
 size = 5
 plt.figure(figsize=(8, 8))
 plt.imshow(identity_matrix, vmin=0)
 plt.xticks(range(len(labels)), labels, rotation=90, size=size)
 plt.yticks(range(len(labels)), labels, size=size)
-plt.title("Pairwise Sequence Identity", pad=12)
+plt.title("Pairwise Sequence Identity (global, Needleman-Wunsch)", pad=12)
 plt.colorbar(shrink=0.8, label="Identity (%)")
 plt.tight_layout()
 plt.savefig("../output/plots/SeqId_matrix.png", dpi=300, bbox_inches='tight')
+# plt.show()
+
+# Plot - local
+plt.figure(figsize=(8, 8))
+plt.imshow(local_identity_matrix, vmin=0)
+plt.xticks(range(len(labels)), labels, rotation=90, size=size)
+plt.yticks(range(len(labels)), labels, size=size)
+plt.title("Pairwise Sequence Identity (local, Smith-Waterman)", pad=12)
+plt.colorbar(shrink=0.8, label="Identity (%)")
+plt.tight_layout()
+plt.savefig("../output/plots/LocalSeqId_matrix.png", dpi=300, bbox_inches='tight')
 # plt.show()
