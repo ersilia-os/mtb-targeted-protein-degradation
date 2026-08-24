@@ -27,7 +27,7 @@ Usage:
     python 73_boltz2_docking.py --pockets swissmodel_P9WFU3_model_0_pocket_1 \\
         --max-compounds 1 --out-subdir smoke_test
 
-    # Full production run (11 pockets x 1,095 compounds) -- only after the smoke test is reviewed.
+    # Full production run (12 pockets x 1,095 compounds) -- only after the smoke test is reviewed.
     python 73_boltz2_docking.py
 """
 import argparse

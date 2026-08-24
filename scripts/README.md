@@ -272,7 +272,18 @@ Prepares the ~99k compound conformations for docking via `unidocktools`' `ligand
 Docks the 276 pocket structures against the ~99k compound set with Uni-Dock (_fast_ search, _vina_ scoring, `nebula`). Output: `processed/unidock_REAL_docking_2/docking_results`, one `report.csv` per pocket.
 
 ### `47_docking_summary.py`
-Console reporting tool, per gene, summarizing for every candidate pocket of a given tRNA synthetase: P2Rank pocket probability, InterPro domain annotation, AlphaFill co-crystallized-ligand evidence, structural confidence (minimum pLDDT for AF2/AF3/Chai-1 models, or GMQE for SwissModel models), and docking score percentiles (0.01%, 0.1%, 1%) from both docking libraries (100k Enamine DL and the ~99k Enamine REAL set). Used to manually curate one reference pocket per tRNA synthetase, recorded in `output/reference_pocket.csv`, which is consumed by downstream hit-selection scripts.
+Console reporting tool, per gene, summarizing for every candidate pocket of a given tRNA synthetase: P2Rank pocket probability, InterPro domain annotation, AlphaFill co-crystallized-ligand evidence, structural confidence (minimum pLDDT for AF2/AF3/Chai-1 models, or GMQE for SwissModel models), and docking score percentiles (0.01%, 0.1%, 1%) from both docking libraries (100k Enamine DL and the ~99k Enamine REAL set). Used to manually curate one reference pocket per tRNA synthetase — the script prints instructions to record the choice in `output/reference_pocket_catalytic.csv` and `output/reference_pocket_noncatalytic.csv` (both `gene_name, pocket_name`; neither is written by this script itself), which are consumed by downstream hit-selection scripts.
+
+### `47b_reference_pocket_visualization.py`
+Builds one PyMOL session per manually-curated reference pocket (script 47's `output/reference_pocket_catalytic.csv`/`_noncatalytic.csv`, both checked automatically and merged into one session if a gene has both) for visual QC of that curation. For a given gene it loads the reference structure and pocket-centroid sphere, then overlays: the top-`TOP_N_LIGANDS` (5) best-scoring REAL round-2 docked poses (extracted from `docking.tar.gz`), every UniProt-cross-referenced experimental PDB structure (full biological assembly, aligned onto the reference via `cmd.align` restricted to one chain's pocket residues), the local AlphaFill structure with its transplanted ligands (same pocket-residue-restricted `cmd.align`), and optionally user-supplied homolog PDB structures (`--homologs` CSV) aligned via whole-chain `cmd.super` — chosen over `cmd.align`/`cmd.cealign` after empirically comparing RMSDs for this use case, per the script's own docstring.
+
+**Inputs:** `output/reference_pocket_catalytic.csv`/`_noncatalytic.csv`, `output/pocket_detection_data.csv`, `output/aligned_relaxed_structures/`, `output/detected_pockets/`, `data/structures/alphafill_database/<uniprot_ac>/<uniprot_ac>.cif`, REAL round-2 docking results (`docking_utils.py`'s `LIBRARIES`/`load_gene_map`), plus live UniProt/RCSB REST API queries for cross-referenced PDB structures.
+
+**Outputs:** `output/47b_reference_pocket_visualization/session_<uniprot_ac>_<gene>.pse`, with downloaded structures cached under `output/47b_reference_pocket_visualization/pdb_structures/<uniprot_ac>/` and `homolog_structures/<uniprot_ac>/` so repeat runs don't re-fetch them.
+
+**Hardcoded parameters:** `TOP_N_LIGANDS = 5`; a fixed RGB per structure source (reference structure, docked/PDB/AlphaFill/homolog ligands); a 21-entry `UNIPROT_IDS_ORDERED` list giving each gene a consistent color from a tab20/tab20b palette; a fixed 100 Å zoom box.
+
+Complete and documented (full `--help`); one H-bond-dashing helper is left commented out as an intentionally-disabled feature, not an unfinished TODO.
 
 ### `48_detect_pocket_multimers.py`
 Complements the UniProt-AC-keyed, single-chain pipeline (script 08) with a standalone script keyed by PDB code, characterizing pockets in real, potentially multi-chain experimental structures (e.g. to check whether a candidate pocket sits at a subunit interface). Invoked as `python 48_detect_pocket_multimers.py --pdb-codes 6XYZ,7ABC`. For each PDB code:
@@ -303,45 +314,244 @@ Outputs are stored under `output/48_detect_pocket_multimers/`. Aggregate `pocket
 
 Verified on three real PDB codes spanning a homodimer (1HXW), a heterotetramer (7K98) and a monomer (5W25): ligand/water stripping, multi-chain retention, cross-chain interface pocket detection and RCSB metadata all behaved as expected, and re-running the script is a no-op on already-completed stages.
 
+## Experimental multimer structures: receptor prep, docking & visualization
+
+### `49_unidock_proteinprep_multimers.py`
+Prepares script 48's stripped multimer structures for Uni-Dock, mirroring script 21's approach for the single-chain pipeline with one addition: script 48 skips PDB2PQR protonation/PyRosetta relaxation (pocket detection doesn't need them), so its stripped structures have no explicit hydrogens — unlike script 21's inputs, already protonated+relaxed by script 04. This script runs PDB2PQR (pH 7.0, AMBER force field, `adda4tb` conda env) first, then `unidocktools proteinprep` (`unidock_tools` conda env), so `proteinprep`'s RDKit-based charge/H-bond typing has explicit hydrogens to work with. Invoked as `python 49_unidock_proteinprep_multimers.py --pdb-codes 7K98,6XYZ`; resumable per PDB code (skips if the `.pdbqt` already exists). Depending on the installed `unidock_tools` build, `proteinprep` may shell out to AmberTools' `pdb4amber` — confirmed on `nebula`, resolved with `conda install -c conda-forge ambertools`.
+
+**Inputs:** `output/48_detect_pocket_multimers/stripped_structures/<pdb_code>.pdb`.
+
+**Outputs:** `output/49_unidock_proteinprep_multimers/<pdb_code>/<pdb_code>.pdb` (protonated) and `.pdbqt` (prepared receptor).
+
+### `50_unidock_docking_multimers.py`
+Docks one multimer receptor/pocket at a time against the same 99,105-compound Enamine REAL round-2 set used by scripts 44–46, so scores stay directly comparable — same box size (22.5 Å), seed (42), search mode (`fast`) and scoring function (`vina`) as script 46's `run_unidock` (also `max_gpu_memory=22000`, `num_modes=1`, `cpu=32`, `batch=500`). Resolves the receptor from script 49's output and the pocket centroid from `output/48_detect_pocket_multimers/pocket_detection_data.csv`; per-compound scores are parsed from the output SDFs' `ENERGY` field into `report.csv`, and the raw `docking/`/`logs.log` outputs are compressed to `.tar.gz` and deleted afterward. Resumable per pocket, via the same `REPORT_MIN_ROWS = 99105` completeness check script 46 uses to skip already-finished pockets. Must run on a GPU machine inside the `unidock_tools` conda env.
+
+**Inputs:** `output/49_unidock_proteinprep_multimers/<pdb_code>/<pdb_code>.pdbqt`, `output/48_detect_pocket_multimers/pocket_detection_data.csv`, `output/unidock_REAL_docking_2/conformations_prepared/` (or its `.tar`).
+
+**Outputs:** `output/50_unidock_docking_multimers/<pdb_code>_pocket_<n>/report.csv` (compound, score), plus `docking.tar.gz`, `logs.tar.gz`, `input_ligands.txt`.
+
+### `51_selected_pockets_visualization.py`
+Builds one combined PyMOL session covering every pocket curated in `output/selected_pockets.csv` (`gene_name, site_type, pocket_name, comment`) — the file that supersedes script 47's single-reference-pocket curation once multiple catalytic/non-catalytic sites per gene are being tracked (also consumed by `scripts/plots/figure_3_plot.py`/`figure_4_plot.py`). Each pocket becomes a merged structure + pocket-centroid-sphere object (`POCKET_SPHERE_COLOR = "blue"`, `POCKET_SPHERE_SCALE = 10`; surface representation by default, cartoon via `--no-surface`) plus its top-`--top-n` (default 5) best-scoring docked ligands, loaded but hidden (`cmd.disable`) so the session stays uncluttered by default. Branches per pocket on whether `pocket_name` contains `"_model_"` to resolve either the monomeric pipeline's structures/docking (scripts 04–08, 44–46) or the multimeric/experimental-PDB pipeline's (scripts 48–50).
+
+**Inputs:** `output/selected_pockets.csv`; monomeric pockets: `output/aligned_relaxed_structures/`, `output/detected_pockets/`, `output/pocket_detection_data.csv`, `LIBRARIES["REAL"]`; multimeric pockets: `output/48_detect_pocket_multimers/{stripped_structures,detected_pockets,pocket_detection_data.csv}`, `output/50_unidock_docking_multimers/`.
+
+**Outputs:** `output/51_selected_pockets_visualization/session_selected_pockets.pse`.
+
 ---
+
+## Catalytic/non-catalytic hit selection (100k/9.56M/10M scale)
+
+Scripts 52–56 share `src/docking_utils.py`'s helpers (`LIBRARIES`, `build_matrix`, `load_scores`, `load_real_negative_scores`/`load_real_positive_scores`, `lookup_smiles`, `sample_prescreened_smiles`, `compute_properties`, `save_upset`, `plot_score_boxplots`/`_multi`, `plot_profiling`, `plot_tsne`) and `src/default.py`'s `RANDOM_SEED = 42`. `compute_properties` computes MW/cLogP/TPSA/HBD/HBA/RotBonds/AromaticRings/QED (RDKit) and `is_pains` (RDKit PAINS A+B+C `FilterCatalog`).
+
+### `52_CAT_promiscuous.py`
+Multi-target hit-overlap ("promiscuity") analysis over the 4 catalytic (CAT) reference pockets (pheS, aspS, lysS, alaS — pheT has no CAT reference) against the 99,105-compound REAL round-2 screen. For each of `TOP_NS = [100, 1_000, 10_000]`: saves an UpSet plot of per-gene top-N overlap, and prints observed-vs-expected-by-chance counts for compounds hitting k=2,3,4 targets (expected = `top_n**k / M**(k-1)`, M = library size). Every compound hitting ≥2 targets within the top-1,000 (`PROFILING_TOP_N`/`PROFILING_MIN_TARGETS`) is saved with per-gene score/rank, SMILES and physicochemical properties, then profiled against a random `BG_SAMPLE_SIZE = 20,000`-compound REAL background (seed 42): a physchem plot, an ECFP4 t-SNE plot, and per-gene raw-score boxplots (fixed order `BOXPLOT_GENE_ORDER = ["pheS","aspS","lysS","alaS"]`) against the 100k DL library and the REAL round-1 negative set.
+
+**Inputs:** `output/reference_pocket_catalytic.csv`; `LIBRARIES["REAL"]`/`LIBRARIES["DL"]` docking reports; REAL round-1 negative scores.
+
+**Outputs**, `output/52_CAT_promiscuous/`:
+
+| **File** | **Description** |
+|-----------|------------------|
+| `<genes>_CAT_upset_top{100,1000,10000}.png` | Per-top-N UpSet overlap plot |
+| `<genes>_REAL_CAT_multi_target_top{100,1000,10000}.csv` | `compound, smiles, n_targets`, `score_<gene>`/`rank_<gene>` per gene, plus physicochemical properties |
+| `<genes>_REAL_CAT_scores.png` / `_profiling.png` / `_tsne.png` | Score boxplots / physchem profile / t-SNE, for the ≥2-target top-1,000 subset |
+
+### `53_CAT_selective.py`
+Selectivity analysis for the same 4 CAT pockets, using rank-transformed docking scores (ascending, 0=best) against the 4 target pockets vs. the other 223 non-target pockets (also excluding pheT's own 13 pockets, since pheT is pheS's obligate PheRS partner). Selects ~500 compounds total via 5 complementary metrics, each capped at 50 except the last (`METRIC_CONFIGS`):
+
+* **m1** — `max_target_rank` ascending, excluding `nontarget_p50 < 20,000` (max potency, low selectivity bar)
+* **m2** — same, excluding `nontarget_p50 < 50,000` (max potency, high selectivity bar)
+* **m3** — `nontarget_p10 − max_target_rank` descending, excluding `max_target_rank > 20,000`, a non-positive gap, or `nontarget_p50 < 20,000` (potency + selectivity gap)
+* **m4** — `nontarget_p1` descending, excluding `max_target_rank > 20,000` (potency + max selectivity)
+* **m5** — "diversity rescue": `top2_rank ≤ 20,000` and `nontarget_p50 ≥ 50,000`, not already selected by m1–m4, deduplicated to one compound per novel Murcko scaffold, capped at `500 − len(m1–m4 selection)`
+
+Then builds UpSet plots (`UPSET_THRESHOLDS = [100, 1_000, 10_000]`, intersected with the selected set), score boxplots, physchem profiling and t-SNE for the full selection, plus a console report of overlap with script 52's top-1,000 multi-target list.
+
+**Inputs:** `output/reference_pocket_catalytic.csv`, `LIBRARIES["REAL"]` (all 276 pockets, split target/non-target by UniProt AC), `LIBRARIES["DL"]`, REAL round-1 negative scores.
+
+**Outputs**, `output/53_CAT_selective/`: `<genes>_REAL_CAT.csv` (`smiles, top2_rank, max_target_rank`, `rank_<gene>` per gene, `nontarget_p1/p5/p10/p50`, `m1`..`m5`, `selected` [which metric picked it], physicochemical properties), plus the same `_upset_top{100,1000,10000}.png`/`_scores.png`/`_profiling.png`/`_tsne.png` outputs as script 52.
+
+### `54_NONCAT_promiscuous.py`
+NON-CAT counterpart of script 52, over `output/selected_pockets.csv`'s 8 `site_type == "NON-CAT"` rows rather than a reference-pocket file — merging pheS+pheT into one "pheST" target (3 pockets: `alphafold3_P9WFU3_model_2_pocket_2`, `7K98_pocket_6`, `alphafold2_P9WFU1_model_0_pocket_1`) so there are 4 targets total, matching CAT's target count (pheST 3 pockets, aspS 2, lysS 1, alaS 2). A target's "top-N hit" is the union of its own pockets' top-N compound sets. For `TOP_NS = [100, 1_000]` (no top-10,000 here): per-target hit-set sizes, UpSet plots, observed-vs-expected-by-chance per exact target combination, and a final ≥2-target selection that additionally **excludes** compounds already CAT-promiscuous one level up — NON-CAT top-100 excludes script 52's CAT top-1,000 list, NON-CAT top-1,000 excludes CAT top-10,000 (`CAT_EXCLUSION_CSV`). Also reports (informational only) overlap with script 53's ~500 CAT-selective compounds, then profiling/boxplots/t-SNE for the top-1,000 selection.
+
+**Inputs:** `output/selected_pockets.csv`, `output/52_CAT_promiscuous/alaS_aspS_lysS_pheS_REAL_CAT_multi_target_top{1000,10000}.csv`, `output/53_CAT_selective/alaS_aspS_lysS_pheS_REAL_CAT.csv`, `LIBRARIES["REAL"]` (monomeric pockets) and `output/50_unidock_docking_multimers/` (the `7K98_pocket_6` multimer pocket).
+
+**Outputs**, `output/54_NONCAT_promiscuous/`: `<targets>_NONCAT_upset_top{100,1000}.png`, `<targets>_REAL_NONCAT_multi_target_top{100,1000}.csv` (per-pocket `score_<pocket>`/`rank_<pocket>` for all 8 pockets, `n_targets`, `targets_hit`, SMILES, physchem properties), plus `_scores.png`/`_profiling.png`/`_tsne.png` for the top-1,000 subset.
+
+### `55_REAL10M_promiscuous.py`
+Pocket-level (not protein-level) promiscuity screen over the `bin_01` surrogate model's predicted probabilities (scripts 29/37) for the full 9.56M-compound Enamine REAL library, across all 276 pockets independently. Per pocket, raw probabilities are rank-transformed to a [0,1] percentile (`scipy.stats.rankdata(method="min")`); per compound, percentiles-of-percentiles are computed across the 276 pockets at `PERCENTILE_LEVELS = [1,10,25,50,75,90,99]`. Filter: `p75 > 0.90` (`FILTER_LEVEL`/`FILTER_THRESHOLD`) — a compound ranking in the top 10% of predicted probability in ≥25% of the 276 pockets, deliberately more permissive than scripts 52–54's ≥2-distinct-gene requirement. Also reports (diagnostic only, doesn't affect the filter) `n_distinct_proteins_top10`: the number of distinct proteins (of 21) where the compound is top-10% in ≥1 of that protein's own pockets — UniProt AC parsed from each pocket filename via `PROTEIN_RE = r"^[^_]+_(P9W[A-Z0-9]+)_"`.
+
+**Inputs:** per-pocket probability `.npz` files and `success_mols.pkl` (fixed compound order) under `output/unidock_docking/inference_probs/`; SMILES looked up from the `"REAL_ROUND1"` library.
+
+**Outputs**, `output/55_identify_promiscuous_enamine_REAL/`: `promiscuous_hits.csv` (`id, smiles, p1, p10, p25, p50, p75, p90, p99, n_distinct_proteins_top10`) and `promiscuous_indices.pkl` (row indices into `success_mols.pkl`, reused by script 56).
+
+### `56_NONCAT_top100_REAL10M.py`
+Selects the top-100 non-promiscuous docking hits per NON-CAT pocket — 7 of the 8 `output/selected_pockets.csv` NON-CAT pockets, excluding the dimer-interface pocket `DIMER_POCKET = "7K98_pocket_6"`. Per pocket: loads its Enamine REAL **round-1** (10M) docking report, sorts ascending by score, drops any compound flagged by script 55's `promiscuous_hits.csv`, keeps the top `TOP_N = 100` and prints the 100th-place cutoff score. The 7 per-pocket tables are concatenated **without deduplication** — a compound landing in multiple pockets' top-100 appears once per pocket, reported explicitly rather than treated as an error. Also builds a per-pocket boxplot across 5 reference score distributions (Hit Locator DL, REAL round-1 negatives/positives, REAL round-2 pre-screened, and this script's own "REAL 1 – selected").
+
+**Inputs:** `output/selected_pockets.csv`, `output/55_identify_promiscuous_enamine_REAL/promiscuous_hits.csv`, the REAL round-1 docking results directory, `LIBRARIES["DL"]`, `LIBRARIES["REAL"]`.
+
+**Outputs**, `output/56_NONCAT_top100_selection/`: `top100_per_noncat_pocket.csv` (`gene_name, pocket_name, rank, compound, score, smiles`, physicochemical properties), plus `noncat_score_boxplots.png`, `noncat_top100_physchem_profile.png`, `noncat_top100_tsne.png`.
+
+## Non-catalytic hit selection & docking at 10B scale
+
+### `57_NONCAT_REAL10B_selective.py`
+Identifies, for each of the 7 curated NON-CAT pockets (`output/selected_pockets.csv`, excluding the dimer pocket `DIMER_POCKET = "7K98_pocket_6"`), Enamine REAL 10B compounds selective for that pocket's target protein: top-1% predicted probability (`ind_1.npz`, the 99th-percentile threshold from the external screen) for that pocket, but *not* top-1% for any pocket belonging to a **different** protein — only set membership survives from the external screen, there's no continuous score to rank by. pheS/pheT are mutually exempted from counting as each other's "background" (`PARTNER_AC_OF = {"P9WFU3": "P9WFU1", "P9WFU1": "P9WFU3"}`, symmetric heterodimer exemption). Iterates all `N_CHUNKS = 994` pre-computed screening chunks from the external `gcadda4tb-enamine-real-screening` repo (read directly from `~/github/gcadda4tb-enamine-real-screening/output`, not copied in); for each chunk, opens `{chunk}.tar` and reads every pocket's `{pocket}_ind_1.npz` via `src/screening_10b_utils.py`'s `load_ind1`, computes `target_idx − union(background_idx)`, and writes one CSV per pocket per chunk. Resumable (skips chunks whose all-pocket output already exists); each chunk's ID→SMILES mapping (~90MB, downloaded on demand from a shared Google Drive folder via a service account) is deleted after use to keep `tmp/` bounded across all 994 chunks.
+
+**Inputs:** `output/selected_pockets.csv`; `output/pocket_detection_data.csv` (via `get_pocket_to_ac()`); per-chunk `.tar` archives from the external screening repo's own output; per-chunk SMILES/ID mappings from Google Drive.
+
+**Outputs:** `output/57_NONCAT_selective_10B/{gene}_{pocket}/{chunk}.csv` (`chunk, index, compound_id, smiles, ind1_threshold, gene_name, pocket_name`).
+
+### `58_NONCAT_REAL10B_conformations.py`
+Consolidates script 57's output: for each of the 7 NON-CAT pockets, concatenates all chunk CSVs, drops duplicate `compound_id`s (57's 994 chunks span 3 overlapping Enamine families), and randomly caps each pocket at `MAX_PER_POCKET = 100_000` (a random sample, `random_state=RANDOM_SEED`, since there's no score to rank by). Merges across pockets and drops any compound selective for more than one distinct pocket (kept for none). Generates a 3D conformer (RDKit ETKDGv3 + UFF minimization, seed 42) per surviving unique compound, using `N_WORKERS = 16` parallel workers.
+
+**Inputs:** `output/selected_pockets.csv`; `output/57_NONCAT_selective_10B/{gene}_{pocket}/*.csv`.
+
+**Outputs:** `output/58_generate_conformations_noncat_selective_10B/merged_selective_hits.csv`; per-compound SDFs at `output/58_generate_conformations_noncat_selective_10B/conformations/{compound_id}.sdf` (written atomically via a `.part` temp file + `os.replace`; resumable, skips SDFs already on disk including guarding against 0-byte truncated files from a killed prior run).
+
+### `59_NONCAT_REAL10B_ligandprep.py`
+Wraps script 58's conformers for docking via `unidocktools ligandprep` (`unidock_tools` conda env, `--batch_size 100`), mirroring script 45's approach: writes an index of all conformer SDF paths, runs `ligandprep` in batches, then rewrites the index restricted to files that survived preparation. Runs once over all conformers regardless of pocket — script 60 builds per-pocket subsets from this shared output.
+
+**Inputs:** `output/58_generate_conformations_noncat_selective_10B/conformations/*.sdf`.
+
+**Outputs:** `output/59_unidock_ligandprep_noncat_selective_10B/conformations_prepared/`, `output/59_unidock_ligandprep_noncat_selective_10B/input_ligands.txt`.
+
+### `60_NONCAT_REAL10B_docking.py`
+Docks script 59's prepared ligands against each of the 7 NON-CAT pockets as **per-compound subset docking**: each pocket only docks the compounds scripts 57/58 selected as selective for it, not a full cross-matrix. For each target, reuses an already-prepared `.pdbqt` receptor from the prior round-2 REAL docking (`output/unidock_REAL_docking_2/docking_results/`) if available, otherwise prepares one fresh via `unidocktools proteinprep` from `output/aligned_relaxed_structures/`. Box center comes from `output/pocket_detection_data.csv`; docking itself matches script 46's round-2 REAL docking settings — box size 22.5 Å, seed 42, `search_mode="fast"`, `scoring="vina"`, `cpu=32` — reusing script 46's own `run_unidock`/`extract_score_from_sdf`/`generate_report` helpers. Resumable per pocket (`report.csv` exists → skip) and per receptor (`.pdbqt` already prepared → skip). Must run inside the `unidock_tools` conda env on a GPU machine.
+
+**Inputs:** `output/selected_pockets.csv`, `output/pocket_detection_data.csv`, `output/58_generate_conformations_noncat_selective_10B/merged_selective_hits.csv`, `output/59_unidock_ligandprep_noncat_selective_10B/conformations_prepared/`, `output/unidock_REAL_docking_2/docking_results/` (receptor reuse), `output/aligned_relaxed_structures/` (fallback receptor prep).
+
+**Outputs:** `output/60_unidock_docking_noncat_selective_10B/docking_results/{pocket_name}/` — `report.csv` (compound, score), `docking.tar.gz`, `logs.tar.gz`.
+
+### `61_NONCAT_top100_REAL10B.py`
+Per NON-CAT pocket (again excluding the dimer pocket), sorts script 60's `report.csv` ascending by score and greedily selects the top `TARGET_N = 100` compounds under a strict "no synthon reused" constraint (`MAX_SYN = 1`, stricter than scripts 33/54's caps) — compound IDs' synthon segments parsed via `compound_id.split("____")[1:]`. Also builds a 6-group score-distribution boxplot (script 56's 5 groups — Hit Locator, REAL round-1 negatives/positives, REAL round-2 all, REAL round-1 selected — plus this script's own new "REAL 2 – selected" group), a physicochemical profiling plot, and an ECFP4 t-SNE plot of the selection vs. a background sampled evenly (`BG_SAMPLE_PER_POCKET = 2_000` per pocket) from script 57's *raw* per-pocket selective-hit pools (not script 58's capped pool).
+
+**Inputs:** `output/selected_pockets.csv`; `output/57_NONCAT_selective_10B/`; `output/60_unidock_docking_noncat_selective_10B/docking_results/{pocket}/report.csv`; `output/58_generate_conformations_noncat_selective_10B/merged_selective_hits.csv` (SMILES lookup); `output/56_NONCAT_top100_selection/top100_per_noncat_pocket.csv`; `LIBRARIES["DL"]`, `LIBRARIES["REAL"]`, REAL round-1 positive/negative sets.
+
+**Outputs:** `output/61_docking_top100_diverse_selection/top100_diverse_per_pocket.csv` (`compound_id, smiles, score, pocket_name`), plus `top100_diverse_score_boxplots.png`, `top100_diverse_physchem_profile.png`, `top100_diverse_tsne.png`. Prints a warning per pocket if fewer than `TARGET_N` compounds could be selected.
+
+## Hit aggregation & full 12-pocket cross-matrix docking
+
+### `62_aggregate_hits.py`
+Merges the 5 independently-generated hit lists from scripts 52–61 into one deduplicated table — not itself a final hit list (script 61's REAL-10B branch only covers a partial screen of the full non-catalytic search space). For each compound, tracks which source(s) it came from (semicolon-joined, e.g. `"cat_promiscuous;cat_selective"`) and warns if the same compound ID shows conflicting SMILES across sources (keeps the first-seen SMILES). Computes physicochemical/PAINS properties for the aggregated set (`compute_properties`) and produces profiling and t-SNE (ECFP4) plots split by source (`SOURCE_ORDER = ["cat_promiscuous", "cat_selective", "noncat_promiscuous", "noncat_top100_10m", "noncat_top100_10b"]`, one fixed color each) — unlike scripts 52–54/56/61, there's no single shared background library across all 5 sources, so sources are plotted directly against each other instead.
+
+**Inputs:** `output/52_CAT_promiscuous/alaS_aspS_lysS_pheS_REAL_CAT_multi_target_top1000.csv`, `output/53_CAT_selective/alaS_aspS_lysS_pheS_REAL_CAT.csv`, `output/54_NONCAT_promiscuous/alaS_aspS_lysS_pheST_REAL_NONCAT_multi_target_top1000.csv`, `output/56_NONCAT_top100_selection/top100_per_noncat_pocket.csv`, `output/61_docking_top100_diverse_selection/top100_diverse_per_pocket.csv`.
+
+**Outputs**, `output/62_aggregate_hits/`: `aggregated_hits.csv` (`compound_id, smiles, source, MW, cLogP, TPSA, HBD, HBA, RotBonds, AromaticRings, QED, is_pains` — 2,923 rows, the final aggregated set every downstream script builds on), `aggregated_hits_physchem_profile.png`, `aggregated_hits_tsne.png`.
+
+### `63_aggregated_conformations.py`
+Generates a 3D conformer (RDKit ETKDGv3 + UFF, same mechanism as scripts 44/58) for every compound in script 62's aggregated hit list, using `N_WORKERS = 16` parallel workers and seed 42.
+
+**Inputs:** `output/62_aggregate_hits/aggregated_hits.csv` (`compound_id, smiles`).
+
+**Outputs:** `output/63_aggregated_conformations/conformations/{compound_id}.sdf` (written atomically via a `.part` temp file + `os.replace`; resumable, skips already-present/non-empty SDFs, reports the embedding-failure count).
+
+### `64_aggregated_ligandprep.py`
+Identical wrapper pattern to script 59, applied to script 63's conformers: builds a ligand index, runs `unidocktools ligandprep` (`--batch_size 100`, `unidock_tools` conda env), then rewrites the index to only successfully-prepared compounds.
+
+**Inputs:** `output/63_aggregated_conformations/conformations/*.sdf`.
+
+**Outputs:** `output/64_aggregated_ligandprep/conformations_prepared/`, `output/64_aggregated_ligandprep/input_ligands.txt`.
+
+### `65_aggregated_docking.py`
+Docks script 64's prepared ligands as one shared set against **all 12** curated pockets from `output/selected_pockets.csv` (4 CAT + 8 NON-CAT, including the dimer pocket) — a full cross-matrix, unlike script 60's per-pocket subset docking. Each pocket is docked `N_REPLICATES = 5` times with a different seed each run (42–46) to measure Uni-Dock's own run-to-run scoring variance; replicate scores are then averaged (mean + std) per compound. Receptor `.pdbqt` files are reused from wherever they already exist (script 60's, the round-2 REAL docking's, or script 49's outputs); for the dimer pocket specifically, if no prepared receptor exists yet, the stripped structure is protonated with PDB2PQR (AMBER force field, pH 7.0, `adda4tb` conda env) before `unidocktools proteinprep`, mirroring script 49's approach. Box size (22.5 Å), search mode (`fast`) and scoring (`vina`) match the rest of the pipeline. Resumable per replicate (checks `results_{r}.csv` exists with the expected row count) and per receptor. Must run inside the `unidock_tools` conda env on a GPU machine.
+
+**Inputs:** `output/selected_pockets.csv`; `output/pocket_detection_data.csv`; `output/48_detect_pocket_multimers/pocket_detection_data.csv` (dimer centroid); `output/64_aggregated_ligandprep/conformations_prepared/`; receptor sources listed above; `output/48_detect_pocket_multimers/stripped_structures/` (dimer fallback); `output/aligned_relaxed_structures/` (monomer fallback).
+
+**Outputs:** `output/65_aggregated_docking/docking_results/{pocket_name}/results/results_{r}.csv` (per replicate) and `results.csv` (`compound, score, score_std` — mean/std across the 5 replicates; verified 2,923 rows for every one of the 12 pockets, i.e. no compound is lost through conformer generation or ligand prep), plus `docking/docking_{r}.tar.gz`, `logs/logs_{r}.tar.gz`.
+
+### `66_merge_docking_scores.py`
+Merges script 65's 12 per-pocket `results.csv` files into one wide table keyed by compound, adding both the mean docking score and a rank for each pocket. The rank background is the 99,105-compound Enamine REAL round-2 library (`output/unidock_REAL_docking_2/docking_results/`) for monomeric pockets, or script 50's multimer docking output for the dimer pocket — computed via `np.searchsorted` of each compound's score into that pocket's sorted background-score array (lower rank = better/more negative score; a compound with no score for that pocket is ranked `+inf` then masked back to `pd.NA`). Also prints (console-only, not saved) summary diagnostics: the fraction of compounds with `QED > 0.5`, the fraction with `MW` in (300, 500), and the fraction of all compound×pocket score "endpoints" clearing various score/std cutoffs.
+
+**Inputs:** `output/62_aggregate_hits/aggregated_hits.csv` (`compound_id, smiles, source, QED, MW`); `output/selected_pockets.csv`; `output/65_aggregated_docking/docking_results/{pocket}/results.csv`; `output/unidock_REAL_docking_2/docking_results/{pocket}/report.csv`; `output/50_unidock_docking_multimers/{pocket}/report.csv` (dimer background).
+
+**Outputs:** `output/66_merge_docking_scores/merged_docking_scores.csv` — `compound_id, smiles, source`, then `{pocket_name}` (mean score) and `{pocket_name}_rank` per pocket, for all 12 pockets (27 columns total, verified). An internal `assert` guards that each per-pocket merge doesn't change row count (catching duplicate `compound_id`s).
+
+## ADMET characterization, plotting & final filtering
+
+### `67_ersilia_characterization.py`
+Runs a caller-specified list of Ersilia Model Hub models (`--models`, comma-separated) over script 62's 2,923 aggregated hits, shelling out through the `ersilia` CLI per model in sequence: `catalog --local` check → `fetch` (skipped if already present) → `serve` → `run` → `close` → `delete` (always, even if the model pre-existed). Resumable at the per-model level (skips a model entirely if `{model_id}.csv` already exists). Models used so far (per the script's own usage help, not hardcoded elsewhere): `eos12x7` (Spatial Score: `sps_score`, `nsps_score`), `eos5jv3` (MycoPermeNet: `mycomembrane_permeation`), `eos2xeq` (structural alerts: `has_pains`, `has_brenk`, `is_sim_known_ab`, plus 4 antibiotic-class motif flags — nitrofuran/fluoroquinolone/carbapenem/beta-lactam), `eos42ez` (HepG2/HSkMC/IMR90 cytotoxicity), `eos3ujl`/`eos8d8a`/`eos1lb5` (three independent Mtb permeability models). Must run inside the `ersilia` conda env, on `herbert`.
+
+**Inputs:** `output/62_aggregate_hits/aggregated_hits.csv` (`smiles` column only).
+
+**Outputs:** `output/67_ersilia_characterization/smiles_input.csv` (re-saved in Ersilia's own input format) and one `{model_id}.csv` per requested model (`key, input`, plus that model's own output columns) — no merging across models happens here (scripts 68/70 do that separately).
+
+### `68_plot_results.py`
+Despite the "plot results" name, this script does three largely independent things, gated by two flags (`--only-upset` skips the first two; `--annotate` only affects the third):
+
+1. **Ersilia output distributions** — histograms for `eos12x7` (`sps_score`, `nsps_score`), `eos5jv3` (`mycomembrane_permeation`), `eos42ez` (3 cytotoxicity endpoints); a permeability comparison merging `eos3ujl`/`eos8d8a`/`eos1lb5`'s `perm_proba_lepori_mtb` column (distribution + pairwise Spearman scatterplots); console-only reports (% with `nsps_score` in [10,40], % with all 3 cytotoxicity scores < 0.3, per-flag counts for `eos2xeq`'s 7 structural-alert columns — confirming `is_sim_known_ab` is 0 for all 2,923 compounds).
+2. **Docking score boxplots** across the 12 curated pockets: Hit Locator, REAL round-1/round-2 pre-screened, "all selected" (script 65) and "top-`TOP_N=10` selected."
+3. **Protein-level UpSet plots** for score thresholds `DOCKING_SCORE_THRESHOLDS = [-12, -11, -10, -9]` and rank thresholds `RANK_THRESHOLDS = [100, 500, 1000]` (rank vs. script 66's REAL round-2 background, ~99,105 compounds) — each computed for all pockets together and separately for CAT-only/NON-CAT-only subsets (pheS+pheT merged into "pheST").
+
+**Inputs:** `output/67_ersilia_characterization/*.csv`, `output/selected_pockets.csv`, `output/65_aggregated_docking/docking_results/`, `output/66_merge_docking_scores/merged_docking_scores.csv`.
+
+**Outputs**, `output/68_plot_results/`: `eos12x7_distributions.png`, `eos5jv3_distribution.png`, `eos42ez_distributions.png`, `permeability_model_comparison.png`, `aggregated_docking_score_boxplots.png`, `upset_score_{9,10,11,12}[_CAT|_NONCAT].png`, `upset_rank_{100,500,1000}[_CAT|_NONCAT].png`.
+
+### `69_pymol_visualizations.py`
+For each of the 5 curated genes (`--genes`, default all: pheS, pheT, aspS, lysS, alaS), builds one PyMOL session merging every curated pocket's structure + pocket-centroid sphere (`POCKET_SPHERE_SCALE = 10`) into one object per pocket, plus that pocket's top-`--top-n` (default 5) best-scoring compounds from script 65's replicate-averaged `results.csv` — poses are always taken from replicate 1's `docking_1.tar.gz` specifically, since the mean score across 5 replicates doesn't correspond to any single replicate's actual geometry, and replicate 1's pose is used as a representative one. Branches per pocket on whether the pocket name contains `"_model_"`, same monomeric-vs-multimeric resolution logic as scripts 51/54. `--no-surface` swaps to cartoon for faster rendering; no `zoom` call, since a gene's own pockets come from mutually unaligned structures.
+
+**Inputs:** `output/selected_pockets.csv`, `output/65_aggregated_docking/docking_results/`, `output/aligned_relaxed_structures/`, `output/detected_pockets/`, `output/48_detect_pocket_multimers/{stripped_structures,detected_pockets}/`.
+
+**Outputs:** `output/69_pymol_visualizations/session_<uniprot_ac>_<gene>.pse`.
+
+### `70_filtering.py`
+Joins scripts 62 (physchem), 66 (docking scores/ranks) and 67 (Ersilia outputs) into one wide table over the 2,923 aggregated hits, then applies a 7-rule sequential filter, printing the running pass count/percentage after each rule:
+
+1. `QED > 0.5`
+2. `300 < MW < 500`
+3. `nsps_score` in `[10, 40]`
+4. `has_pains == 0` (`eos2xeq`)
+5. all 3 `eos42ez` cytotoxicity endpoints `< 0.3`
+6. `mycomembrane_permeation` at or below its own 80th percentile (`EOS5JV3_TOP_PCT = 0.80`, computed from this run's own data, not a fixed value)
+7. (≥2 CAT pockets with rank ≤10,000 **and** score ≤−10) **or** (≥1 NON-CAT pocket with rank ≤10,000 **and** score ≤−8) — rank against the 99,105-compound REAL round-2 background (script 66)
+
+**Inputs:** `output/62_aggregate_hits/aggregated_hits.csv`, `output/66_merge_docking_scores/merged_docking_scores.csv`, `output/67_ersilia_characterization/{eos12x7,eos5jv3,eos2xeq,eos42ez}.csv`, `output/selected_pockets.csv`.
+
+**Outputs**, `output/70_filtering/`: `merged_all_results.csv` (all 2,923 rows, the full joined table) and `filtered_hits.csv` (1,095 rows surviving all 7 rules; none flagged `is_sim_known_ab`, verified).
+
+### `70b_compound_gifs.py`
+Splits script 70's 1,095 filtered hits into `N_GROUPS = 6` sequential, roughly-equal, non-reordered chunks (`np.array_split`), then renders each chunk as an animated GIF (one molecule per frame) via the `chemgifs` CLI (`conda run -n chemgifs`, `github.com/ersilia-os/chemical-library-gifs`) — requires a not-yet-merged PR (`--style rdkit`) and a dedicated `chemgifs` conda env with an editable install of that branch.
+
+**Inputs:** `output/70_filtering/filtered_hits.csv`.
+
+**Outputs:** chunk CSVs at `processed/70b_compound_gifs/group_{i}of6.csv` (the only script in this batch writing under `processed/` rather than `output/`), and GIFs at `output/70b_compound_gifs/filtered_hits_group{i}of6.gif`, one fixed brand color per group (`GROUP_COLORS = ["purple","mint","blue","yellow","pink","orange"]`).
+
+## Boltz-2 co-folding validation
+
+### `71_boltz2_prepare_inputs.py`
+Builds the two core Boltz-2 inputs for all 12 curated pockets (11 single-chain + the `7K98_pocket_6` pheS–pheT dimer pocket). For each pocket, parses the relevant PDB with Biopython and builds a `{pdb_resnum: 1-indexed_seq_position}` map by enumerating residues in file order (needed because numbering conventions differ across structure sources — SwissModel starts at residue 2/3, AF2/AF3/Chai1 at 1, the 7K98 crystal at −1/−2), then translates each pocket's raw PDB residue numbers into 1-indexed sequence positions (Boltz-2's own pocket-constraint format). For the dimer pocket specifically, both chains (`DIMER_CHAIN_A = "A"` pheS, `DIMER_CHAIN_B = "B"` pheT) are additionally trimmed around their pocket-contact window (`DIMER_TRIM_MARGIN_A = 30`, `DIMER_TRIM_MARGIN_B = 100` residues), because the untrimmed 1,177-residue complex OOMs Boltz-2 on a 24GB GPU — these exact margins were validated empirically (`ligand_iptm=0.984`, `complex_plddt=0.954`, RMSD 2.24 Å vs. the crystal structure on 587 matched Cα atoms, nearest excluded residue 10.57 Å from the ligand).
+
+**Inputs:** `output/selected_pockets.csv`, `output/pocket_detection_data.csv`, `output/aligned_relaxed_structures/`, `output/48_detect_pocket_multimers/{stripped_structures,detected_pockets/7K98/7K98.pdb_predictions.csv}`, `output/70_filtering/filtered_hits.csv`.
+
+**Outputs:** `output/71_boltz2_prepare_inputs/pocket_sequences.csv` (12 rows — the dimer row has extra `_b`-suffixed columns for chain B, plus `chain_a_trim_start/end`, `chain_b_trim_start/end`) and `output/71_boltz2_prepare_inputs/compounds.csv` (1,095 rows: `compound_id, smiles`).
+
+### `72_boltz2_yaml_generation.py`
+For every (pocket, compound) pair — **12 pockets × 1,095 compounds = 13,140 total** — writes one Boltz-2 YAML (`version: 1`, protein sequence + ligand SMILES + a `pocket` constraint listing contact residues + an `affinity` property request). The dimer pocket gets a 2-protein-chain YAML with the ligand as chain `C` instead of `B`. Each YAML's `msa:` field is baked in as an **absolute path on nebula** (`NEBULA_REPO_ROOT = "/home/admin/mtb-targeted-protein-degradation"`) rather than relative, since Boltz-2 resolves `msa:` relative to the process's CWD, not the YAML's own location — the referenced MSA cache file doesn't exist yet at generation time, script 73 creates it later. Skips YAMLs that already exist on disk (resumable).
+
+**Inputs:** `output/71_boltz2_prepare_inputs/{pocket_sequences,compounds}.csv`.
+
+**Outputs:** `output/72_boltz2_yaml_generation/input_yamls/<pocket_name>/<compound_id>.yaml` (verified: all 12 pocket subdirectories have exactly 1,095 YAMLs each).
+
+### `73_boltz2_docking.py`
+For each target pocket (`--pockets`, default: all 12 in `pocket_sequences.csv`): (1) bootstraps that pocket's MSA if not already cached, by writing a temporary msa-less YAML and calling `boltz predict --use_msa_server` on the shortest-SMILES candidate compounds (retrying up to `MAX_BOOTSTRAP_ATTEMPTS = 3` candidates per round, across `MAX_BOOTSTRAP_ROUNDS = 8` rounds, with a `MSA_REQUEST_BACKOFF_S = 120`-second sleep before every request to respect ColabFold's rate limit); the dimer pocket bootstraps both chains from one joint 2-chain call. (2) runs `boltz predict` in directory mode over script 72's YAML directory (or, with `--max-compounds`, a symlinked subset). (3) parses each compound's `affinity_<id>.json` and `confidence_<id>_model_0.json` into one row, re-aggregating the whole run's results into a CSV after every pocket (not just at the end), so an interrupted multi-day run always has an up-to-date summary. A pocket-level failure is caught and logged, not fatal to the rest of the batch. Must run inside the `boltz` conda env on a GPU machine (`nebula`).
+
+**Inputs:** `output/72_boltz2_yaml_generation/input_yamls/`, `output/71_boltz2_prepare_inputs/{pocket_sequences,compounds}.csv`.
+
+**Outputs:** `output/73_boltz2_docking/msa_cache/<pocket>.csv` (+ `_chainB.csv` for the dimer), `output/73_boltz2_docking/{out_subdir}/<pocket>/boltz_results_<pocket>/predictions/<compound_id>/{affinity,confidence}_*.json`, and `output/73_boltz2_docking/{out_subdir}_affinity_results.csv` (`pocket_name, compound_id, affinity_pred_value, affinity_probability_binary, affinity_pred_value1/2, affinity_probability_binary1/2, confidence_score, ptm, iptm, ligand_iptm, complex_plddt`).
+
+### `74_boltz2_monitor.py`
+Read-only progress-reporting utility: prints a per-pocket table (MSA cached yes/no, `n_structures/1095`, `n_affinities/1095`, status DONE/in-progress/not-started) by inspecting files already on disk under `output/73_boltz2_docking/{out_subdir}/`. Writes nothing; meant to be re-run repeatedly during the multi-day run on `nebula`. `N_COMPOUNDS = 1095` is a magic number, not derived from `compounds.csv` — must be kept in sync manually with scripts 71/73/75 if the compound set ever changes.
+
+**Inputs:** `output/71_boltz2_prepare_inputs/pocket_sequences.csv`, `output/73_boltz2_docking/{msa_cache, <out_subdir>/<pocket>/boltz_results_<pocket>/predictions/}`.
+
+**Outputs:** none (stdout only).
+
+### `75_boltz2_collect_affinities.py`
+Reads script 73's `{out_subdir}_affinity_results.csv`, joins in `gene_name`/`site_type` (from `pocket_sequences.csv`) and `smiles` (from `compounds.csv`), sorts, and writes one long-format CSV — no aggregation across pheS/pheT into "pheST," left to downstream consumers. Sanity-checks that `selected_pockets.csv`'s pocket list matches `pocket_sequences.csv`'s, reporting (not dropping) any unmatched pockets/compounds; prints a per-pocket completion-percentage table. Per pocket with data: an `affinity_pred_value` histogram (x-axis relabeled to IC50 µM via `10**log10_value` ticks) and an `affinity_pred_value` vs. `affinity_probability_binary` scatter annotated with Pearson r / Spearman ρ, plus a summary CSV of those correlations across all pockets.
+
+**Inputs:** `output/73_boltz2_docking/{out_subdir}_affinity_results.csv`, `output/selected_pockets.csv`, `output/71_boltz2_prepare_inputs/{pocket_sequences,compounds}.csv`.
+
+**Outputs:** `output/75_boltz2_collect_affinities/affinity_results.csv` (`gene_name, site_type, pocket_name, compound_id, smiles, affinity_pred_value, affinity_probability_binary, affinity_pred_value1/2, affinity_probability_binary1/2, confidence_score, ptm, iptm, ligand_iptm, complex_plddt`), `output/75_boltz2_collect_affinities/affinity_probability_correlations.csv` (`pocket_name, gene_name, site_type, n, pearson_r, spearman_rho`), `output/75_boltz2_collect_affinities/plots/<pocket_name>.png`.
 
 ## Pending review (no README text yet)
 
-The following scripts exist on disk but haven't been individually reviewed against documentation yet: `13_prepare_PocketVec.py` (placeholder above), `47b_reference_pocket_visualization.py`, `49_unidock_proteinprep_multimers.py` through `76_boltz2_docking_supervisor.sh` (52 `CAT_promiscuous`/`CAT_selective`, 54–61 `NONCAT`/`REAL10M`/`REAL10B` selection and docking, 62–70 hit aggregation/merging/characterization/plotting/filtering, 70b compound GIFs, 71–76 Boltz-2 validation). These will get entries as we go through them one at a time.
-
-## Stale entries (pending correctness pass)
-
-The following five entries are carried over **verbatim** from the previous root README. They describe an **older numbering** of the pipeline — the scripts that exist under these numbers today are different (`49_unidock_proteinprep_multimers.py`, `50_unidock_docking_multimers.py`, `51_selected_pockets_visualization.py`, `54_NONCAT_promiscuous.py`; there is no second `48` file — script 48 is `48_detect_pocket_multimers.py`, documented above). Kept here for now rather than deleted, until each of the actual current scripts 48–76 is reviewed and given an accurate entry.
-
-### `48_docking_hits_raw.py` (as originally described — does not match the current script 48)
-Using each gene's reference pocket, quantifies raw overlap between genes' top-100 and top-1,000 docking hits (visualized as UpSet plots) and compares observed vs. expected-by-chance multi-target binder counts. Compounds hitting at least 2 targets within the top 1,000 are collected into a CSV with per-gene scores/ranks and physicochemical properties (MW, cLogP, TPSA, HBD, HBA, rotatable bonds, aromatic rings, QED, PAINS flag), benchmarked against a 25,000-compound random background. Outputs were stored in `output/48_docking_hits_raw/`.
-
-### `49_docking_hits_selective.py` (as originally described — does not match the current script 49)
-Builds on the same reference pockets to select a final set of up to **500** compounds balancing potency against selectivity, using five complementary ranking metrics (m1–m5, each contributing up to 50 compounds unless otherwise capped):
-
-* **m1** — max potency, low selectivity: top target rank, excluding compounds whose non-target 50th-percentile rank falls below 20,000.
-* **m2** — max potency, high selectivity: same as m1, but requiring a non-target 50th-percentile rank of at least 50,000.
-* **m3** — high potency, selectivity gap: ranked by the gap between the non-target 10th-percentile rank and the top target rank (target rank ≤ 20,000, non-target 50th-percentile rank ≥ 20,000).
-* **m4** — high potency, max selectivity: ranked by the non-target 1st-percentile rank (target rank ≤ 20,000).
-* **m5** — diversity rescue: compounds binding at least 2 targets well (2nd-best target rank ≤ 20,000, non-target 50th-percentile rank ≥ 50,000) and not already selected by m1–m4, deduplicated by Murcko scaffold, topping the total selection up to 500.
-
-Outputs (per-compound metric table, score/profiling plots) were stored in `output/49_docking_hits_selective/`.
-
-### `50_ersilia_eos42ez.sh` (as originally described — does not match the current script 50)
-SMILES from the (formerly-)48 and 49 scripts are merged and deduplicated, then run through the Ersilia Model Hub model `eos42ez` (HepG2, HSkMC and IMR90 cytotoxicity prediction) via the Ersilia CLI. Predictions were stored in `output/50_ersilia_eos42ez/eos42ez.csv`.
-
-### `51_filter_hits.py` (as originally described — does not match the current script 51)
-Applies a sequential filter to the combined raw and selective hit sets: QED > 0.5, then exclusion of PAINS structural alerts, then all three cytotoxicity scores < 0.3, printing the number of compounds surviving each stage. The final shortlist was stored in `output/51_filtered_hits/filtered_hits.csv`:
-
-| **Field** | **Description** |
-|-----------|------------------|
-| `key` | Compound identifier |
-| `smiles` | Compound SMILES string |
-| `cytotoxicity_hepg2` | Predicted HepG2 cytotoxicity score (Ersilia model `eos42ez`) |
-| `cytotoxicity_hskmc` | Predicted HSkMC cytotoxicity score (Ersilia model `eos42ez`) |
-| `cytotoxicity_imr90` | Predicted IMR90 cytotoxicity score (Ersilia model `eos42ez`) |
-| `QED` | Quantitative Estimate of Drug-likeness (RDKit) |
-| `is_pains` | Whether the compound matches a PAINS structural alert (RDKit) |
-
-### `54_merge_scores_select_hits.py` (as originally described — does not match the current script 54)
-Consolidated round-1 (113k, `output/unidock_REAL_docking`) and round-2 (~99k, `output/unidock_REAL_docking_2`) docking scores for the `alphafold3_P9WFU3_model_2_pocket_2` reference pocket into a single ranked table (compound_id, smiles, source, docking_score), sorted by docking score ascending (112,953 `10M` + 99,100 `10B` + 5 `Both` = 212,058 rows; compounds present in both campaigns kept their best/lowest score and were labeled `Both`). It then greedily selected the top 10,000 compounds while capping chemical redundancy: compound IDs encode synthons (building blocks) as `{m|s}_{reaction_id}____{synthon_1}____{synthon_2}[____{synthon_3}]`, and no synthon could appear in more than `MAX_SYN = 3` selected compounds (same diversity-capping idea as script 33 and notebook 43). Two columns were added: `observed_synthons` (semicolon-separated per-synthon counts across ALL previously considered rows, selected or not — a diagnostic column, not itself capped) and `select` (1/0, driven by a separate selected-only counter enforcing the MAX_SYN cap). The output was truncated to the rows actually considered (not the full 212,058) — reaching 10,000 selections took 10,080 considered rows at this cap. Output: `output/54_merge_scores_select_hits/alphafold3_P9WFU3_model_2_pocket_2_merged_docking_scores.csv`.
+The following script exists on disk but hasn't been individually reviewed against documentation yet: `76_boltz2_docking_supervisor.sh`.

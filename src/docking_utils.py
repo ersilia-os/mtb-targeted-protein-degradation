@@ -1,4 +1,4 @@
-"""Shared constants and helpers for docking hit analysis scripts (48_docking_hits_raw, 49_docking_hits_selective)."""
+"""Shared constants and helpers for docking hit analysis scripts (52_CAT_promiscuous, 53_CAT_selective, 54_NONCAT_promiscuous, 55_REAL10M_promiscuous, 56_NONCAT_top100_REAL10M, and later)."""
 import os
 import sys
 import warnings

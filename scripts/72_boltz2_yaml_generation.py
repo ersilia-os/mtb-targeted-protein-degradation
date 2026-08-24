@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generates the actual Boltz-2 YAML input files from script 71's two CSVs -- one YAML per
-(pocket, compound) pair, 12,045 total (11 pockets x 1,095 compounds).
+(pocket, compound) pair, 13,140 total (12 pockets x 1,095 compounds).
 
 Each YAML's `msa:` field is baked in as an ABSOLUTE path on nebula (NEBULA_REPO_ROOT below), not a
 relative one: Boltz-2 resolves a YAML's `msa` value via plain `Path(msa_id).exists()`, relative to
