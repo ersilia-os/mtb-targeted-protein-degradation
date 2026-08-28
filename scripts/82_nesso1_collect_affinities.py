@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 """
-Reads script 80's affinity results CSV (one row per structure_id x compound), broadcasts each
-unique structure's result back out to every selected_pockets.csv pocket_name that maps to it
-(script 78 deduplicated pockets sharing an identical structure/sequence -- e.g. lysS's CAT and
-NON-CAT pockets both sit on the same AlphaFold3 model -- since Nesso-1 has no pocket-conditioning
-to tell them apart), and writes one enriched, long-format CSV with the same
-gene_name/site_type/pocket_name/compound_id/smiles shape as Boltz-2's
-output/75_boltz2_collect_affinities/affinity_results.csv. A `shared_structure_with` column names
-any sibling pocket_name(s) that received the identical underlying Nesso-1 result, so the
-deduplication is visible in the data, never silent.
+Reads script 80's affinity results CSV (one row per gene_name x compound) and joins in smiles
+(from compounds.csv), writing one enriched, long-format CSV. Revised for the per-gene design (see
+script 78's docstring): no more pocket-level broadcast/dedup bookkeeping (explode-to-pockets,
+shared_structure_with) since there's no pocket concept left at all -- Nesso-1's results are
+already exactly at the granularity they were computed at (5 genes), nothing to fan back out to.
 
-Stays raw/lossless (one row per pocket x compound result): does not merge pheS/pheT into pheST
-and does not aggregate to a best-score-per-gene-x-site-type -- that's a downstream concern.
-Also plots, per structure with data so far, an affinity_pred_value distribution (x-axis in IC50
-uM, not raw log10) and an affinity_pred_value vs affinity_probability_binary scatter annotated
-with Pearson/Spearman correlation, as a quick model-behavior sanity check (same convention as
-script 75, one plot per structure rather than per pocket_name so lysS's two duplicate pockets
-don't produce two identical plots).
+Stays raw/lossless (one row per gene x compound result) -- does not aggregate further, that's a
+downstream concern. Also plots, per gene with data so far, an affinity_pred_value distribution
+(x-axis in IC50 uM, not raw log10) and an affinity_pred_value vs affinity_probability_binary
+scatter annotated with Pearson/Spearman correlation, as a quick model-behavior sanity check (same
+convention as Boltz-2's script 75).
 
 Usage:
     python 82_nesso1_collect_affinities.py [--out-subdir nesso_results]
@@ -35,8 +29,7 @@ from docking_utils import _safe_import_stylia  # noqa: E402
 
 DOCKING_DIR = os.path.join(ROOT, "output", "80_nesso1_docking")
 
-SELECTED_POCKETS_CSV = os.path.join(ROOT, "output", "selected_pockets.csv")
-STRUCTURE_SEQUENCES_CSV = os.path.join(ROOT, "output", "78_nesso1_prepare_inputs", "structure_sequences.csv")
+PROTEIN_SEQUENCES_CSV = os.path.join(ROOT, "output", "78_nesso1_prepare_inputs", "protein_sequences.csv")
 COMPOUNDS_CSV = os.path.join(ROOT, "output", "71_boltz2_prepare_inputs", "compounds.csv")
 
 OUTPUT_DIR = os.path.join(ROOT, "output", "82_nesso1_collect_affinities")
@@ -51,9 +44,8 @@ AFFINITY_FIELDS = ["affinity_pred_value", "affinity_pred_value1", "affinity_pred
 ENTROPY_FIELDS = ["entropy_pp", "entropy_pl", "entropy_ll",
                    "entropy_crop_pp", "entropy_crop_pl", "entropy_crop_ll"]
 RESULT_COLUMNS = (
-    ["gene_name", "site_type", "pocket_name", "structure_id", "compound_id", "smiles"]
+    ["gene_name", "uniprot_ac", "compound_id", "smiles"]
     + AFFINITY_FIELDS + ENTROPY_FIELDS
-    + ["used_trimmed_dimer_fallback", "shared_structure_with"]
 )
 
 
@@ -72,85 +64,47 @@ def local_csv_path(out_subdir):
     return path
 
 
-def explode_to_pockets(structures):
-    """One row per (pocket_name, structure_id), where structures['pocket_names'] is the
-    space-separated list of every original selected_pockets.csv pocket_name mapped to this
-    unique structure (script 78). `shared_structure_with` names the other pocket_name(s) sharing
-    that same structure, empty string if none."""
-    rows = []
-    for _, srow in structures.iterrows():
-        names = srow["pocket_names"].split()
-        for pocket_name in names:
-            siblings = [n for n in names if n != pocket_name]
-            rows.append({
-                "pocket_name": pocket_name,
-                "structure_id": srow["structure_id"],
-                "shared_structure_with": " ".join(siblings),
-            })
-    return pd.DataFrame(rows)
-
-
-def build_structure_labels(structures, selected_pockets):
-    """{structure_id: display label} for plot titles, e.g. 'lysS (CAT/NON-CAT)
-    [alphafold3_..._pocket_1, alphafold3_..._pocket_2]'."""
-    sp = selected_pockets.set_index("pocket_name")
-    labels = {}
-    for _, srow in structures.iterrows():
-        names = srow["pocket_names"].split()
-        site_types = sorted({sp.loc[n, "site_type"] for n in names if n in sp.index})
-        labels[srow["structure_id"]] = f"{srow['gene_name']} ({'/'.join(site_types)}) [{', '.join(names)}]"
-    return labels
-
-
-def merge_results(raw_df, structures, selected_pockets, compounds):
-    """Broadcasts each real result in raw_df out to every pocket_name sharing its structure_id.
-    Starts FROM raw_df (not from the full pocket list), so -- same raw/lossless convention as
-    Boltz-2's script 75 -- a pocket with zero results so far produces zero rows, not a
-    placeholder NaN row."""
-    pocket_map = explode_to_pockets(structures)
-    df = raw_df.merge(pocket_map, on="structure_id", how="left")
-    df = df.merge(selected_pockets[["pocket_name", "gene_name", "site_type"]], on="pocket_name", how="left")
+def merge_results(raw_df, proteins, compounds):
+    df = raw_df.merge(proteins[["gene_name", "uniprot_ac"]], on="gene_name", how="left")
     df = df.merge(compounds[["compound_id", "smiles"]], on="compound_id", how="left")
 
-    unmatched_pockets = sorted(df.loc[df["gene_name"].isna(), "pocket_name"].unique())
+    unmatched_genes = sorted(df.loc[df["uniprot_ac"].isna(), "gene_name"].unique())
     unmatched_compounds = sorted(df.loc[df["smiles"].isna(), "compound_id"].unique())
 
     df = (df[RESULT_COLUMNS]
-          .sort_values(["gene_name", "site_type", "pocket_name", "compound_id"])
+          .sort_values(["gene_name", "compound_id"])
           .reset_index(drop=True))
-    return df, unmatched_pockets, unmatched_compounds
+    return df, unmatched_genes, unmatched_compounds
 
 
-def report_unmatched(unmatched_pockets, unmatched_compounds):
-    """Never dropped, just flagged -- rows with no gene/site_type or smiles match are kept with
-    those fields NaN."""
-    if unmatched_pockets:
-        print(f"WARNING: {len(unmatched_pockets)} pocket_name(s) with no gene_name/site_type match: "
-              f"{unmatched_pockets}")
+def report_unmatched(unmatched_genes, unmatched_compounds):
+    """Never dropped, just flagged -- rows with no uniprot_ac or smiles match are kept with those
+    fields NaN."""
+    if unmatched_genes:
+        print(f"WARNING: {len(unmatched_genes)} gene_name(s) with no uniprot_ac match: {unmatched_genes}")
     if unmatched_compounds:
         print(f"WARNING: {len(unmatched_compounds)} compound_id(s) with no smiles match "
               f"(showing up to 5): {unmatched_compounds[:5]}")
 
 
-def report_progress(df, structures):
-    pocket_names = [n for names in structures["pocket_names"].str.split() for n in names]
-    counts = df.groupby("pocket_name").size().reindex(pocket_names, fill_value=0)
-    progress = pd.DataFrame({"pocket_name": pocket_names, "n_rows": counts.values})
+def report_progress(df, proteins):
+    counts = df.groupby("gene_name").size().reindex(proteins["gene_name"], fill_value=0)
+    progress = proteins.set_index("gene_name").assign(n_rows=counts)
     progress["affinities"] = progress["n_rows"].astype(str) + f"/{N_COMPOUNDS}"
     progress["pct"] = (100 * progress["n_rows"] / N_COMPOUNDS).round(1)
-    progress = progress.sort_values("pct")
+    progress = progress[["uniprot_ac", "n_rows", "affinities", "pct"]].sort_values("pct")
 
     with pd.option_context("display.max_rows", None, "display.width", 200):
-        print(progress.to_string(index=False))
+        print(progress.to_string())
 
     zero = progress[progress["n_rows"] == 0]
     if len(zero):
-        print(f"\nPockets with 0 results so far: {zero['pocket_name'].tolist()}")
+        print(f"\nGenes with 0 results so far: {zero.index.tolist()}")
 
-    n_pockets_with_data = int((progress["n_rows"] > 0).sum())
+    n_genes_with_data = int((progress["n_rows"] > 0).sum())
     n_unique_compounds = df["compound_id"].nunique()
     print(f"\nTotal: {len(df):,} rows, {n_unique_compounds}/{N_COMPOUNDS} unique compounds seen, "
-          f"{n_pockets_with_data}/{len(pocket_names)} pockets with any data")
+          f"{n_genes_with_data}/{len(proteins)} genes with any data")
 
 
 def _um_ticks(vmin, vmax):
@@ -162,12 +116,11 @@ def _um_ticks(vmin, vmax):
     return ticks, labels
 
 
-def plot_structure_affinities(df, structure_labels):
-    """One PNG per structure_id with data (not per pocket_name -- lysS's two duplicate pockets
-    would otherwise produce two identical plots): affinity_pred_value distribution (x-axis in
-    IC50 uM) + affinity_pred_value vs affinity_probability_binary scatter annotated with
-    Pearson/Spearman correlation. Format: slide | Style: ersilia -- change with
-    stylia.set_format() / stylia.set_style()."""
+def plot_gene_affinities(df):
+    """One PNG per gene with data: affinity_pred_value distribution (x-axis in IC50 uM) +
+    affinity_pred_value vs affinity_probability_binary scatter annotated with Pearson/Spearman
+    correlation. Format: slide | Style: ersilia -- change with stylia.set_format() /
+    stylia.set_style()."""
     stylia = _safe_import_stylia()
     stylia.set_format("slide")
     stylia.set_style("ersilia")
@@ -175,12 +128,12 @@ def plot_structure_affinities(df, structure_labels):
 
     n_written = 0
     correlations = []
-    for structure_id, group in df.groupby("structure_id"):
+    for gene_name, group in df.groupby("gene_name"):
         n_before = len(group)
         group = group.dropna(subset=["affinity_pred_value", "affinity_probability_binary"])
         n_dropped = n_before - len(group)
         if n_dropped:
-            print(f"  WARNING: {structure_id}: dropping {n_dropped} row(s) with missing affinity values from plot")
+            print(f"  WARNING: {gene_name}: dropping {n_dropped} row(s) with missing affinity values from plot")
         if group.empty:
             continue
 
@@ -192,13 +145,12 @@ def plot_structure_affinities(df, structure_labels):
         ax.set_xticks(ticks)
         ax.set_xticklabels(tick_labels)
         stylia.label(ax, xlabel="Predicted IC50", ylabel="Count",
-                     title=f"{structure_labels[structure_id]}: affinity distribution (n={len(group):,})", abc="A")
+                     title=f"{gene_name}: affinity distribution (n={len(group):,})", abc="A")
 
         r, _ = pearsonr(group["affinity_probability_binary"], group["affinity_pred_value"])
         rho, _ = spearmanr(group["affinity_probability_binary"], group["affinity_pred_value"])
         correlations.append({
-            "structure_id": structure_id,
-            "pocket_names": group["pocket_name"].drop_duplicates().tolist(),
+            "gene_name": gene_name,
             "n": len(group),
             "pearson_r": r,
             "spearman_rho": rho,
@@ -209,19 +161,19 @@ def plot_structure_affinities(df, structure_labels):
         ax.text(0.03, 0.97, f"Pearson r = {r:.2f}\nSpearman ρ = {rho:.2f}",
                 transform=ax.transAxes, ha="left", va="top")
         stylia.label(ax, xlabel="P(binder)", ylabel="affinity_pred_value (log10 IC50, uM)",
-                     title=f"{structure_labels[structure_id]}: affinity vs P(binder)", abc="B")
+                     title=f"{gene_name}: affinity vs P(binder)", abc="B")
 
-        out_path = os.path.join(PLOTS_DIR, f"{structure_id}.png")
+        out_path = os.path.join(PLOTS_DIR, f"{gene_name}.png")
         stylia.save_figure(out_path)
-        print(f"  {structure_id}: {len(group):,} points -> {out_path}")
+        print(f"  {gene_name}: {len(group):,} points -> {out_path}")
         n_written += 1
 
     print(f"\nWrote {n_written} affinity plot(s) to {PLOTS_DIR}")
 
-    corr_df = pd.DataFrame(correlations).sort_values("structure_id").reset_index(drop=True)
+    corr_df = pd.DataFrame(correlations).sort_values("gene_name").reset_index(drop=True)
     corr_path = os.path.join(OUTPUT_DIR, "affinity_probability_correlations.csv")
     corr_df.to_csv(corr_path, index=False)
-    print(f"\nSaved affinity_pred_value vs P(binder) correlations (Pearson/Spearman) per structure to {corr_path}")
+    print(f"\nSaved affinity_pred_value vs P(binder) correlations (Pearson/Spearman) per gene to {corr_path}")
     with pd.option_context("display.max_rows", None, "display.width", 200):
         print(corr_df.to_string(index=False))
 
@@ -231,27 +183,20 @@ def main():
     local_csv = local_csv_path(args.out_subdir)
 
     raw_df = pd.read_csv(local_csv)
-    structures = pd.read_csv(STRUCTURE_SEQUENCES_CSV)
+    proteins = pd.read_csv(PROTEIN_SEQUENCES_CSV)
     compounds = pd.read_csv(COMPOUNDS_CSV)
-    selected_pockets = pd.read_csv(SELECTED_POCKETS_CSV)
 
-    df, unmatched_pockets, unmatched_compounds = merge_results(raw_df, structures, selected_pockets, compounds)
-    report_unmatched(unmatched_pockets, unmatched_compounds)
+    df, unmatched_genes, unmatched_compounds = merge_results(raw_df, proteins, compounds)
+    report_unmatched(unmatched_genes, unmatched_compounds)
     print()
-    report_progress(df, structures)
+    report_progress(df, proteins)
 
     out_path = os.path.join(OUTPUT_DIR, "affinity_results.csv")
     df.to_csv(out_path, index=False)
     print(f"\nSaved {len(df):,} rows x {len(df.columns)} columns to {out_path}")
 
-    n_dedup_rows = df["shared_structure_with"].astype(bool).sum()
-    if n_dedup_rows:
-        print(f"({n_dedup_rows:,} row(s) share their underlying Nesso-1 result with a sibling "
-              f"pocket_name on the same structure -- see 'shared_structure_with'.)")
-
-    structure_labels = build_structure_labels(structures, selected_pockets)
     print()
-    plot_structure_affinities(df, structure_labels)
+    plot_gene_affinities(df)
 
 
 if __name__ == "__main__":
