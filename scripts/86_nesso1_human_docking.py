@@ -1,46 +1,27 @@
 #!/usr/bin/env python3
 ### CAUTION: THIS SCRIPT NEEDS TO BE RUN
 ### WITHIN THE adda4tb CONDA ENVIRONMENT (envs/adda4tb on the IRB SBNB-IRB cluster)
-### IN A GPU JOB (sbnb_gpu_3090 / sbnb_gpu_h200 partitions only -- see script 83)
+### IN A GPU JOB (sbnb_gpu_h200 partition only -- see script 89)
 """
-Runs Nesso-1 on script 79's YAML inputs (`nesso predict`) and aggregates the resulting
-affinity.json files into one CSV. Unlike Boltz-2's script 73, there is no MSA-bootstrap phase --
-Nesso-1 computes and caches ESM-2 embeddings internally per sequence, no external API call
-involved. Revised from an earlier per-structure/dimer design to a per-gene design (5 canonical
-protein sequences, see script 78's docstring) -- there is no more dimer complex or OOM-fallback
-logic here; the 3090 partition alone was already confirmed (empirically, on nebula's cluster
-equivalent) to comfortably handle even the largest single protein (alaS, 904 residues).
-
-Scope-limiting flags (--genes, --max-compounds, --out-subdir) let the exact same code path serve
-both a cheap single-gene/single-compound smoke test and the full production run -- run the smoke
-test first and inspect its output before ever invoking this with no flags.
-
-On the IRB cluster this runs as a SLURM array (script 83, one task per gene on sbnb_gpu_3090) --
-since array tasks run concurrently, each invocation is called with --no-aggregate (skip the
-per-gene aggregate-and-save step, which would otherwise race across parallel tasks writing the
-same CSV), and --aggregate-only is run once at the end, on the login node, after every task has
-finished.
-
-Confirmed by reading the recursionpharma/nesso source (nesso/main.py) rather than assumed:
-- `nesso predict` takes exactly one DATA path (a file or a directory, non-recursive); its own
-  filter_records() skips a compound whose predictions/<id>/affinity.json already exists unless
-  --override is passed, so no manual skip-check is needed here (unlike script 72's YAML-write
-  skip-check, which still applies at generation time) -- this is also the resumability mechanism:
-  a crashed and re-run job never recomputes an already-finished (gene, compound) pair.
-- Directory-mode output is flat: <out_dir>/predictions/<compound_id>/affinity.json, no extra
-  nesting like Boltz-2's boltz_results_<dirname>/ level.
+Runs Nesso-1 on script 85's YAML inputs (`nesso predict`) and aggregates the resulting
+affinity.json files into one CSV. Same design as the Mtb screen's script 80 -- see that script's
+docstring for the full rationale (no MSA-bootstrap phase, resumable via Nesso's own
+filter_records(), --no-aggregate/--aggregate-only split for safe concurrent SLURM array tasks).
+This is the human counter-screen's own copy so it never touches the Mtb screen's output while
+that job is running: separate output dir (output/86_nesso1_human_docking/), separate SLURM
+partition (sbnb_gpu_h200, not sbnb_gpu_3090 -- see script 89).
 
 Usage:
     # Smoke test first: one gene, one compound, isolated output (e.g. via srun).
-    envs/adda4tb/bin/python scripts/80_nesso1_docking.py --genes pheS \\
+    envs/adda4tb/bin/python scripts/86_nesso1_human_docking.py --genes WARS2 \\
         --max-compounds 1 --out-subdir smoke_test
 
-    # One SLURM array task's worth of work (called from script 83 -- no shared-CSV writes).
-    envs/adda4tb/bin/python scripts/80_nesso1_docking.py --genes <gene_name> \\
+    # One SLURM array task's worth of work (called from script 89 -- no shared-CSV writes).
+    envs/adda4tb/bin/python scripts/86_nesso1_human_docking.py --genes <gene_name> \\
         --no-aggregate --out-subdir nesso_results
 
     # After every array task has finished: aggregate everything on disk once.
-    envs/adda4tb/bin/python scripts/80_nesso1_docking.py --aggregate-only --out-subdir nesso_results
+    envs/adda4tb/bin/python scripts/86_nesso1_human_docking.py --aggregate-only --out-subdir nesso_results
 """
 import argparse
 import json
@@ -52,17 +33,15 @@ import pandas as pd
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
-# Resolved relative to the running interpreter (sys.executable), not looked up on PATH: this
-# script is always invoked as `envs/adda4tb/bin/python scripts/80_nesso1_docking.py` (SLURM
-# script 83 and the srun smoke test alike), never via `conda activate`, so a bare "nesso" would
-# not be found on PATH -- its sibling script in the same env's bin/ directory is.
+# Resolved relative to the running interpreter (sys.executable), not looked up on PATH -- see
+# script 80's identical comment for why.
 NESSO_BIN = os.path.join(os.path.dirname(sys.executable), "nesso")
 
-INPUT_YAMLS_DIR = os.path.join(ROOT, "output", "79_nesso1_yaml_generation", "input_yamls")
-PROTEIN_SEQUENCES_CSV = os.path.join(ROOT, "output", "78_nesso1_prepare_inputs", "protein_sequences.csv")
+INPUT_YAMLS_DIR = os.path.join(ROOT, "output", "85_nesso1_human_yaml_generation", "input_yamls")
+PROTEIN_SEQUENCES_CSV = os.path.join(ROOT, "output", "84_nesso1_human_prepare_inputs", "protein_sequences.csv")
 COMPOUNDS_CSV = os.path.join(ROOT, "output", "71_boltz2_prepare_inputs", "compounds.csv")
 
-OUTPUT_DIR = os.path.join(ROOT, "output", "80_nesso1_docking")
+OUTPUT_DIR = os.path.join(ROOT, "output", "86_nesso1_human_docking")
 SCOPE_DIR = os.path.join(OUTPUT_DIR, "_scope")
 os.makedirs(SCOPE_DIR, exist_ok=True)
 
@@ -79,10 +58,10 @@ def parse_args():
     parser.add_argument("--max-compounds", type=int, default=None,
                          help="Limit to the first N compounds per gene, sorted by compound_id (default: all)")
     parser.add_argument("--out-subdir", default="nesso_results",
-                         help="Output subdirectory under output/80_nesso1_docking/ (default: nesso_results)")
+                         help="Output subdirectory under output/86_nesso1_human_docking/ (default: nesso_results)")
     parser.add_argument("--no-aggregate", action="store_true",
                          help="Skip the aggregate-and-save step after each gene. Required when "
-                              "called from concurrent SLURM array tasks (script 83) -- otherwise "
+                              "called from concurrent SLURM array tasks (script 89) -- otherwise "
                               "parallel tasks race on the same results CSV.")
     parser.add_argument("--aggregate-only", action="store_true",
                          help="Skip running any predictions; just aggregate everything already on "
@@ -196,10 +175,6 @@ def main():
         if args.no_aggregate:
             continue
 
-        # Re-aggregate after every gene (not just once at the end) so a long multi-gene serial
-        # run has an up-to-date summary CSV at any point it's interrupted or checked on. Only
-        # safe for a single-process serial run -- concurrent SLURM array tasks must pass
-        # --no-aggregate and rely on a separate --aggregate-only call once everything is done.
         print("  Aggregating results so far...")
         result = aggregate_results(args.out_subdir)
         out_path = os.path.join(OUTPUT_DIR, f"{args.out_subdir}_affinity_results.csv")
