@@ -34,12 +34,14 @@ detected on separate monomeric models and need aligning onto "structure" first -
 _add_aligned_pocket_sphere()). User-confirmed dedup.
 
 Panel size comes from output/plots/figure_4/panel_layout.csv (columns: panel, x, delta_x, y,
-delta_y, padding - x/y are each panel's top-left placement, used by figure_4_merge.py to build one
-master PDF from the standalone per-panel PDFs; delta_x/delta_y (cm) are each panel's exact saved
-page size; padding (0-1, see apply_padding()) is a per-dimension linear shrink factor toward the
-panel's own center, adding deliberate blank margin around a panel's content without affecting any
-font/tick/label size), same convention as figure_3_plot.py's own per-panel-standalone-PDF setup
-(load_panel_padding/apply_padding ported near-verbatim from there).
+delta_y, padding - x/y are each panel's top-left placement, used by merge_panels() (called
+automatically at the end of main(); formerly a separate figure_4_merge.py script, now folded into
+this same file) to build one master PDF from the standalone per-panel PDFs; delta_x/delta_y (cm)
+are each panel's exact saved page size; padding (0-1, see apply_padding()) is a per-dimension
+linear shrink factor toward the panel's own center, adding deliberate blank margin around a
+panel's content without affecting any font/tick/label size), same convention as figure_3_plot.py's
+own per-panel-standalone-PDF setup (load_panel_padding/apply_padding ported near-verbatim from
+there).
 
 Panel b: 4x3 grid, one snapshot per output/selected_pockets.csv pocket (structure surface + best
 docked ligand pose, restricted to script 62's ~2,923-compound aggregated/prioritized pool -
@@ -144,6 +146,7 @@ from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from matplotlib.patches import FancyBboxPatch, Rectangle
 from pymol import cmd
+from pypdf import PdfReader, PdfWriter, Transformation
 from rdkit import Chem
 from rdkit.Chem import rdCoordGen
 from rdkit.Chem.Draw import rdMolDraw2D
@@ -407,6 +410,44 @@ def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=N
     plt.savefig(output_path, dpi=600, transparent=False)
     plt.close(fig)
     print(f"Saved Fig_4{letter}.pdf")
+
+
+CM_TO_PT = 72 / 2.54
+
+
+def merge_panels():
+    """Pastes each Fig_4{letter}.pdf onto one positioned master PDF (Fig_4_full.pdf) per
+    panel_layout.csv's x/y - pure translation (no rescaling, true vector via pypdf), since
+    each panel already saves at its exact target size. Folded in from the former
+    figure_4_merge.py (now removed) so plot + merge happen in one script, matching
+    figure_1_plot_v2.py/figure_2_plot_v2.py/figure_3_plot.py's own convention."""
+    df = pd.read_csv(panel_layout_path).set_index("panel")
+    missing = [p for p in PANEL_LETTERS if p not in df.index]
+    if missing:
+        raise ValueError(f"{panel_layout_path} is missing row(s) for panel(s): {missing}")
+
+    total_width_cm = max(df.loc[p, "x"] + df.loc[p, "delta_x"] for p in PANEL_LETTERS)
+    total_height_cm = max(df.loc[p, "y"] + df.loc[p, "delta_y"] for p in PANEL_LETTERS)
+
+    writer = PdfWriter()
+    master_page = writer.add_blank_page(width=total_width_cm * CM_TO_PT, height=total_height_cm * CM_TO_PT)
+
+    for p in PANEL_LETTERS:
+        panel_path = os.path.join(plots_dir, f"Fig_4{p}.pdf")
+        if not os.path.exists(panel_path):
+            print(f"  Skipping {p}: {panel_path} not found - Fig_4_full.pdf will be missing it.")
+            continue
+        panel_page = PdfReader(panel_path).pages[0]
+        x_top_cm, y_top_cm, delta_y_cm = df.loc[p, "x"], df.loc[p, "y"], df.loc[p, "delta_y"]
+        x_pt = x_top_cm * CM_TO_PT
+        y_bottom_pt = (total_height_cm - y_top_cm - delta_y_cm) * CM_TO_PT
+        master_page.merge_transformed_page(panel_page, Transformation().translate(tx=x_pt, ty=y_bottom_pt))
+        print(f"  Placed Fig_4{p}.pdf at x={x_top_cm}cm, y={y_top_cm}cm (top-left)")
+
+    output_path = os.path.join(plots_dir, "Fig_4_full.pdf")
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    print(f"Saved merged master figure ({total_width_cm:.2f} x {total_height_cm:.2f} cm) to {output_path}")
 
 
 def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
@@ -1918,6 +1959,8 @@ def main(rerun=False, subpanels=None):
         plot_robustness_affinity_panel("d", sizes["d"], padding=paddings["d"])
     if "e" in subpanels:
         plot_compound_cards_panel("e", sizes["e"], padding=paddings["e"])
+
+    merge_panels()
 
 
 if __name__ == "__main__":

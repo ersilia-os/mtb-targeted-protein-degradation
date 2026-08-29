@@ -349,12 +349,29 @@ def compute_docking_snapshots():
 
     banner("Finding pose-archived compound candidates (HL/REAL 10B only)")
     candidates_by_gene = best_compound_candidates(uniprot_to_gene)
+
+    # Frozen to the original 6-gene pose-archived pool (2026-08-25, user decision): gatA/glyS/
+    # trpS/tyrS picked up pose archives on 2026-08-10/08-19, after this panel was last built
+    # (2026-08-07) - excluding them here keeps this revision scoped to the requested lysS -> aspS
+    # swap only. Drop this filter in a later, separate update to fold the new genes in.
+    ORIGINAL_POSE_GENES = {"alaS", "aspS", "ileS", "lysS", "pheS", "pheT"}
+    candidates_by_gene = {g: v for g, v in candidates_by_gene.items() if g in ORIGINAL_POSE_GENES}
+
     all_candidates = [e for entries in candidates_by_gene.values() for e in entries]
     for e in sorted(all_candidates, key=lambda e: e["score"]):
         print(f"  {e['gene']:<8} {e['library']:<8} {e['pocket']:<45} {e['compound']:<15} {e['score']:.3f}")
 
     banner(f"Rendering top-{N_SNAPSHOTS} PyMOL snapshots (minimum repeated genes, best score first)")
     top = sorted(select_minimizing_repeats(candidates_by_gene, N_SNAPSHOTS), key=lambda e: e["score"])
+
+    # Manual curation override (2026-08-25, user request): drop lysS's automatic pick in favor
+    # of a second aspS pocket - select_minimizing_repeats() never reaches this aspS candidate on
+    # its own, since alaS's own second-best pocket outscores it in the round-robin.
+    top = [e for e in top if e["gene"] != "lysS"]
+    top.append(next(e for e in candidates_by_gene["aspS"]
+                     if e["pocket"] == "alphafold3_P9WFW3_model_3_pocket_2"))
+    top.sort(key=lambda e: e["score"])
+
     output_dir = os.path.join(plots_dir, "docking_snapshots")
     os.makedirs(output_dir, exist_ok=True)
     for old_file in glob.glob(os.path.join(output_dir, "*.png")):

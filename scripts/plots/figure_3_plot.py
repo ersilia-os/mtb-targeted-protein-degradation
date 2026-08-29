@@ -39,20 +39,31 @@ declutter heuristic as that notebook - since their sector is too small for real 
 overlapping its neighbors.
 
 Panel c (plot_tier_grid_placeholder, name kept despite no longer being a pure placeholder) is a
-TIER_GRID_ROW_LABELS rows (P2Rank prob., Docking HL, Docking REAL, Cross-pharm.) x 21 columns (all
-genes) grid, colored mostly from figure_3_calculations.py's figure_3_gene_summary_stats.json - see
-TIER_ROW_FIELDS for the row->field mapping. All 4 rows are continuous and graded by equal terciles
-across the 21 genes (green/amber/red for best/middle/worst third, _tercile_colors) - a data-driven
-split, no invented absolute cutoff, per request over hand-picked thresholds. Cross-pharm. is the
-odd one out: it has no field in figure_3_gene_summary_stats.json, instead reusing
-plot_circos_overlap's own node_strength metric (total pairwise multi-target-hit compound overlap
-with every other gene, at CIRCOS_CUTOFF - see _compute_cross_pharmacology_scores) so this column's
-ranking agrees with panel b's chord-diagram ordering (e.g. pheS > glyS > alaS > ...), per request.
-The earlier Exp. tractability/Novelty boolean rows were dropped per request (mostly-NaN data, see
-figure_3_calculations.py's NOVELTY_OVERRIDES/EXPERIMENTAL_TRACTABILITY_OVERRIDES). Gene rows are
-ordered by TIER_GRID_SCORE (each gene's summed +1/0/-1 across its own green/amber/red cells), best
-at top, worst at bottom -
-per request over the previous alphabetical order.
+TIER_GRID_ROW_LABELS rows (P2Rank prob., HL cat., HL non-cat., REAL cat., REAL non-cat.,
+Cross-pharm., Exp. feas.) x 21 columns (all genes) grid, colored mostly from
+figure_3_calculations.py's figure_3_gene_summary_stats.json - see TIER_ROW_FIELDS for the
+row->field mapping. The first 6 rows are continuous and graded by equal terciles across the 21
+genes (green/amber/red for best/middle/worst third, _tercile_colors) - a data-driven split, no
+invented absolute cutoff, per request over hand-picked thresholds. The 4 docking rows split each
+library's combined best-score row (an earlier version of this panel) by catalytic vs non-catalytic
+pocket (figure_3_calculations.py's load_pocket_catalytic_map, CATALYTIC_CONFIDENCE_MIN); gatA and
+pheT have zero catalytic-labeled pockets, so their 2 catalytic cells are NaN and rendered
+TIER_GRID_NA (grey) instead of being forced into a tercile. Cross-pharm. has no field of its own in
+figure_3_gene_summary_stats.json, instead reusing plot_circos_overlap's own node_strength metric
+(total pairwise multi-target-hit compound overlap with every other gene, at CIRCOS_CUTOFF - see
+_compute_cross_pharmacology_scores) so this column's ranking agrees with panel b's chord-diagram
+ordering (e.g. pheS > glyS > alaS > ...), per request. Exp. feas. is the only non-continuous
+("boolean") row: green if that gene is reported to express OK, red if reported not to, grey
+(TIER_GRID_NA) if unassessed - see figure_3_calculations.py's EXPERIMENTAL_TRACTABILITY_OVERRIDES,
+a direct literal mapping rather than a tercile split, since most genes are grey/unassessed rather
+than falling on a continuous scale. The earlier per-row "Sel./Nov./Exp." text annotations to the
+right of the grid were dropped per request; Exp. feas. is now a real column instead. Gene rows are
+ordered by each gene's summed row-ordering score across all 7 columns, best at top, worst at
+bottom - per request over the previous alphabetical order. Every column but Exp. feas. contributes
++1/0/-1 per green/amber/red cell (TIER_GRID_SCORE, 0 for TIER_GRID_NA too); Exp. feas. instead
+contributes +2/0/-3 (TIER_GRID_BOOL_SCORE) - direct experimental evidence outweighs an ordinary
+best/worst-tercile computational cell, per request; see that constant's own comment for why -3
+specifically (picked to land glyS's row between lysS and leuS, per request).
 
 Panel d (previously split across two analogous panels, d and e, merged into one per request) is
 two stacked full-width rows, one per showcase compound -
@@ -104,8 +115,12 @@ in the Catalytic band (3 pockets carry both a catalytic and a non-catalytic labe
 flagged in these. All from figure_3_calculations.py's compute_pocket_scores, sourced from
 output/77_pocket_annotation/pocket_detection_interpro_updated.csv.
 
+merge_panels() pastes every generated panel onto one positioned master PDF
+(Fig_3_full.pdf), called automatically at the end of main() - formerly a separate
+figure_3_merge.py script, now folded into this same file.
+
 Usage:
-    python figure_3_plot.py [--rerun]
+    python figure_3_plot.py [--rerun] [--subpanels a,b,c,d,e]
 """
 import argparse
 import json
@@ -131,6 +146,7 @@ from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from pycirclize import Circos
 from pymol import cmd
+from pypdf import PdfReader, PdfWriter, Transformation
 from rdkit import Chem
 from rdkit.Chem import rdCoordGen
 from rdkit.Chem.Draw import rdMolDraw2D
@@ -238,6 +254,44 @@ def save_panel(fig, letter, padding=0.0):
     plt.savefig(output_path, dpi=600, transparent=False)
     plt.close(fig)
     print(f"Saved Fig_3{letter}.pdf")
+
+
+CM_TO_PT = 72 / 2.54
+
+
+def merge_panels():
+    """Pastes each Fig_3{letter}.pdf onto one positioned master PDF (Fig_3_full.pdf) per
+    panel_layout.csv's x/y - pure translation (no rescaling, true vector via pypdf), since
+    each panel already saves at its exact target size. Folded in from the former
+    figure_3_merge.py (now removed) so plot + merge happen in one script, matching
+    figure_1_plot_v2.py/figure_2_plot_v2.py's own convention."""
+    df = pd.read_csv(panel_layout_path).set_index("panel")
+    missing = [p for p in PANEL_LETTERS if p not in df.index]
+    if missing:
+        raise ValueError(f"{panel_layout_path} is missing row(s) for panel(s): {missing}")
+
+    total_width_cm = max(df.loc[p, "x"] + df.loc[p, "delta_x"] for p in PANEL_LETTERS)
+    total_height_cm = max(df.loc[p, "y"] + df.loc[p, "delta_y"] for p in PANEL_LETTERS)
+
+    writer = PdfWriter()
+    master_page = writer.add_blank_page(width=total_width_cm * CM_TO_PT, height=total_height_cm * CM_TO_PT)
+
+    for p in PANEL_LETTERS:
+        panel_path = os.path.join(plots_dir, f"Fig_3{p}.pdf")
+        if not os.path.exists(panel_path):
+            print(f"  Skipping {p}: {panel_path} not found - Fig_3_full.pdf will be missing it.")
+            continue
+        panel_page = PdfReader(panel_path).pages[0]
+        x_top_cm, y_top_cm, delta_y_cm = df.loc[p, "x"], df.loc[p, "y"], df.loc[p, "delta_y"]
+        x_pt = x_top_cm * CM_TO_PT
+        y_bottom_pt = (total_height_cm - y_top_cm - delta_y_cm) * CM_TO_PT
+        master_page.merge_transformed_page(panel_page, Transformation().translate(tx=x_pt, ty=y_bottom_pt))
+        print(f"  Placed Fig_3{p}.pdf at x={x_top_cm}cm, y={y_top_cm}cm (top-left)")
+
+    output_path = os.path.join(plots_dir, "Fig_3_full.pdf")
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    print(f"Saved merged master figure ({total_width_cm:.2f} x {total_height_cm:.2f} cm) to {output_path}")
 
 
 # Panel f's 5 sub-columns (probability curve + 4 domain bands) are packed with a gap between them
@@ -464,6 +518,12 @@ def plot_circos_overlap(ax):
 # tick relabeling), per request.
 P2RANK_CUTOFF = 0.2
 
+# Panel e's P2Rank prob. column grades against this same P2RANK_CUTOFF (amber/red boundary) plus
+# this additional green boundary, per request - unlike every other TIER_ROW_FIELDS column, which
+# is graded by a data-driven tercile split (see that constant's comment) rather than an absolute
+# cutoff. Cite before either value appears in a manuscript legend.
+P2RANK_HIGH_CONFIDENCE_CUTOFF = 0.8
+
 
 def plot_pocket_scores_row(ax):
     """Panel c's 1st row (of 5, alongside the 4 plot_domain_strip_row bands, per request) -
@@ -579,28 +639,42 @@ def plot_domain_strip_row(ax, column, title, color_name):
     ax.yaxis.label.set_va("center")
 
 
-# Row label -> figure_3_gene_summary_stats.json field -> how to grade it. "continuous_high_better"/
-# "continuous_low_better" rows are graded by equal terciles across the 21 genes (7 green/7 amber/7
-# red, ranked by that field) - a data-driven split with no invented absolute cutoff, per request
-# (AskUserQuestion) over hand-picked thresholds. "cross_pharmacology" has no field of its own (it
-# isn't in figure_3_gene_summary_stats.json) - see _compute_cross_pharmacology_scores below.
+# Row label -> figure_3_gene_summary_stats.json field -> how to grade it. "continuous_low_better"
+# rows are graded by equal terciles across the 21 genes (7 green/7 amber/7 red, ranked by that
+# field) - a data-driven split with no invented absolute cutoff, per request (AskUserQuestion)
+# over hand-picked thresholds. "p2rank_absolute" (P2Rank prob.) is the one exception to that rule -
+# graded against fixed absolute cutoffs instead (P2RANK_HIGH_CONFIDENCE_CUTOFF/P2RANK_CUTOFF), per
+# a later explicit request overriding the tercile default for just this column. "cross_pharmacology"
+# has no field of its own (it isn't in figure_3_gene_summary_stats.json) - see
+# _compute_cross_pharmacology_scores below. The 4 docking rows split each library's combined
+# best-score row by catalytic vs non-catalytic pocket (figure_3_calculations.py's
+# load_pocket_catalytic_map) - gatA/pheT have zero catalytic pockets, so their 2 catalytic cells
+# are NaN, handled by _tercile_colors as TIER_GRID_NA rather than a tercile.
 TIER_ROW_FIELDS = [
-    ("P2Rank prob.", "max_p2rank_prob", "continuous_high_better"),
-    ("Docking HL", "best_hl_docking_score", "continuous_low_better"),
-    ("Docking REAL", "best_real10b_docking_score", "continuous_low_better"),
+    ("P2Rank prob.", "max_p2rank_prob", "p2rank_absolute"),
+    ("HL cat.", "best_hl_docking_score_catalytic", "continuous_low_better"),
+    ("HL non-cat.", "best_hl_docking_score_noncatalytic", "continuous_low_better"),
+    ("REAL cat.", "best_real10b_docking_score_catalytic", "continuous_low_better"),
+    ("REAL non-cat.", "best_real10b_docking_score_noncatalytic", "continuous_low_better"),
     ("Cross-pharm.", None, "cross_pharmacology"),
+    ("Exp. feas.", "experimental_tractability", "boolean"),
 ]
 TIER_GRID_ROW_LABELS = [label for label, _, _ in TIER_ROW_FIELDS]
 TIER_GRID_GREEN = "lime"
 TIER_GRID_AMBER = "amber"
 TIER_GRID_RED = "crimson"
+TIER_GRID_NA = "silver"  # gene has no pocket at all in this column's catalytic/non-catalytic bucket
 
 
 def _tercile_colors(values_by_gene, higher_is_better):
     """Split genes into equal thirds (7/7/7 of 21) by `values_by_gene`, best third green, middle
     third amber, worst third red - see TIER_ROW_FIELDS' comment for why terciles, not fixed
-    cutoffs."""
-    ordered_genes = sorted(values_by_gene, key=lambda g: values_by_gene[g], reverse=higher_is_better)
+    cutoffs. A gene with a NaN value (e.g. gatA/pheT have zero catalytic pockets, so their
+    catalytic docking-score fields are undefined) is excluded from the tercile split entirely and
+    colored TIER_GRID_NA instead of being force-ranked into green/amber/red."""
+    na_genes = [g for g in values_by_gene if values_by_gene[g] != values_by_gene[g]]  # NaN != NaN
+    finite = {g: v for g, v in values_by_gene.items() if g not in na_genes}
+    ordered_genes = sorted(finite, key=lambda g: finite[g], reverse=higher_is_better)
     third = len(ordered_genes) // 3
     colors = {}
     for i, gene in enumerate(ordered_genes):
@@ -610,6 +684,8 @@ def _tercile_colors(values_by_gene, higher_is_better):
             colors[gene] = TIER_GRID_AMBER
         else:
             colors[gene] = TIER_GRID_RED
+    for gene in na_genes:
+        colors[gene] = TIER_GRID_NA
     return colors
 
 
@@ -636,28 +712,40 @@ def _compute_cross_pharmacology_scores(cutoff):
 
 # Per-cell-color point value for plot_tier_grid_placeholder's row ordering (green best/+1, amber
 # neutral/0, red worst/-1) - summed across a gene's TIER_ROW_FIELDS columns to rank genes best to
-# worst top to bottom, per request over the previous alphabetical row order.
-TIER_GRID_SCORE = {TIER_GRID_GREEN: 1, TIER_GRID_AMBER: 0, TIER_GRID_RED: -1}
+# worst top to bottom, per request over the previous alphabetical row order. TIER_GRID_NA (no
+# catalytic pocket for this gene, e.g. gatA/pheT) scores 0, same neutral weight as amber, rather
+# than penalizing a gene for a column that's structurally inapplicable to it.
+TIER_GRID_SCORE = {TIER_GRID_GREEN: 1, TIER_GRID_AMBER: 0, TIER_GRID_RED: -1, TIER_GRID_NA: 0}
+
+# Exp. feasibility's own row-ordering weight, used INSTEAD of TIER_GRID_SCORE for that one column -
+# per request, a confirmed poor-expression finding (False, currently only glyS) should weigh more
+# heavily against a gene than an ordinary worst-tercile docking score (-1), and a confirmed
+# good-expression finding (True) should weigh more heavily in favor than an ordinary best-tercile
+# one (+1) - reflecting that this is direct experimental evidence, not a computational proxy like
+# the other 6 columns. NA (unassessed) still scores 0, same neutral treatment as every other column.
+# False=-3 (rather than an earlier -5) was picked, given glyS is currently the only False-flagged
+# gene, specifically so glyS's own summed score lands at 3 - tied with leuS/gltS on score alone,
+# then sorted ahead of both by its own (much higher) raw cross-pharmacology node strength, landing
+# glyS's row between lysS (4) and leuS (3) - per explicit request for that row position, not an
+# independently-derived weight. Re-check this still holds if a second gene is ever flagged False.
+TIER_GRID_BOOL_SCORE = {True: 2, False: -3}
 
 
 def plot_tier_grid_placeholder(ax):
     """21 genes (rows) x TIER_GRID_ROW_LABELS columns grid of rectangles, colored from
     figure_3_calculations.py's figure_3_gene_summary_stats.json (plus Cross-pharm., see
     _compute_cross_pharmacology_scores) - see TIER_ROW_FIELDS for the column->field mapping and
-    grading rule. Rows are ordered by each gene's summed TIER_GRID_SCORE across all columns,
-    best (greenest) at the top, worst (reddest) at the bottom - ties (there will be several, since
-    the score is a small integer) are broken by raw cross_pharm_scores node_strength (descending),
+    grading rule. Rows are ordered by each gene's summed row-ordering score across all columns
+    (TIER_GRID_SCORE per column, except Exp. feasibility which uses its own heavier
+    TIER_GRID_BOOL_SCORE weights - see that constant's comment), best (greenest) at the top,
+    worst (reddest) at the bottom - ties (there will be several, since the score is a small
+    integer) are broken by raw cross_pharm_scores node_strength (descending),
     then alphabetically as a final tiebreak, per request. Genes-as-rows (transposed from this
     panel's original genes-as-columns layout) to fit panel f's narrow/tall box after the c/f
     content switch - 21 gene rows read fine down a tall axis, whereas 21 gene columns didn't fit
-    this box's narrow width. A second per-row label column sits to the right of the grid (a twinx
-    axes, so it's a real tick label rather than plotted text) reading "Sel." for genes with at
-    least one row in output/selected_pockets.csv (its gene_name column), "Nov." for a gene whose
-    own figure_3_gene_summary_stats.json novelty field is explicitly False (currently only ileS -
-    see figure_3_calculations.py's NOVELTY_OVERRIDES), "Exp." for a gene whose experimental_
-    tractability field is explicitly False (currently only glyS - see that same script's
-    EXPERIMENTAL_TRACTABILITY_OVERRIDES; earlier labels win if a gene were ever more than one of
-    these), blank otherwise, per request. Only labeled rows get a tick mark on this side."""
+    this box's narrow width. A marker column to the right of the grid (twinx, no tick marks) flags
+    "*" for genes in output/selected_pockets.csv and "X" for a gene with an explicit novelty=False
+    (figure_3_calculations.py's NOVELTY_OVERRIDES, currently only ileS) - blank otherwise."""
     with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
         genes = sorted(json.load(f)["gene_to_color"].keys())
     with open(os.path.join(data_dir, "figure_3_gene_summary_stats.json")) as f:
@@ -667,22 +755,68 @@ def plot_tier_grid_placeholder(ax):
     nc = stylia.NamedColors()
     cross_pharm_scores = None
     col_colors = []
+    # Parallel to col_colors, but holds this column's actual row-ordering contribution per gene -
+    # equal to TIER_GRID_SCORE[color] for every column except Exp. feasibility, which uses its own
+    # TIER_GRID_BOOL_SCORE weights instead (see that constant's comment).
+    col_scores = []
     for _, field, kind in TIER_ROW_FIELDS:
-        if kind == "cross_pharmacology":
+        if kind == "p2rank_absolute":
+            # Fixed absolute cutoffs (P2RANK_HIGH_CONFIDENCE_CUTOFF/P2RANK_CUTOFF), not a tercile
+            # split - the one exception among TIER_ROW_FIELDS, per explicit request. Row-ordering
+            # score still uses the standard TIER_GRID_SCORE (+1/0/-1), same as every other
+            # tercile-graded column.
+            colors = {}
+            for gene in genes:
+                value = stats[gene][field]
+                if value > P2RANK_HIGH_CONFIDENCE_CUTOFF:
+                    colors[gene] = TIER_GRID_GREEN
+                elif value > P2RANK_CUTOFF:
+                    colors[gene] = TIER_GRID_AMBER
+                else:
+                    colors[gene] = TIER_GRID_RED
+            col_colors.append(colors)
+            col_scores.append({gene: TIER_GRID_SCORE[colors[gene]] for gene in genes})
+        elif kind == "cross_pharmacology":
             cross_pharm_scores = _compute_cross_pharmacology_scores(CIRCOS_CUTOFF)
             values_by_gene = {gene: cross_pharm_scores[gene] for gene in genes}
-            col_colors.append(_tercile_colors(values_by_gene, higher_is_better=True))
+            colors = _tercile_colors(values_by_gene, higher_is_better=True)
+            col_colors.append(colors)
+            col_scores.append({gene: TIER_GRID_SCORE[colors[gene]] for gene in genes})
+        elif kind == "boolean":
+            # True -> green ("reported to express OK"), False -> red ("reported not to"), NaN ->
+            # TIER_GRID_NA ("we don't know") - a direct 3-way mapping, not a tercile split, since
+            # this field is categorical (figure_3_calculations.py's EXPERIMENTAL_TRACTABILITY_
+            # OVERRIDES), not continuous. Row-ordering score uses TIER_GRID_BOOL_SCORE (+2/-5), NOT
+            # TIER_GRID_SCORE (+1/-1) like every other column - see that constant's comment.
+            colors = {}
+            scores = {}
+            for gene in genes:
+                value = stats[gene][field]
+                if value is True:
+                    colors[gene] = TIER_GRID_GREEN
+                    scores[gene] = TIER_GRID_BOOL_SCORE[True]
+                elif value is False:
+                    colors[gene] = TIER_GRID_RED
+                    scores[gene] = TIER_GRID_BOOL_SCORE[False]
+                else:
+                    colors[gene] = TIER_GRID_NA
+                    scores[gene] = 0
+            col_colors.append(colors)
+            col_scores.append(scores)
         else:
             values_by_gene = {gene: stats[gene][field] for gene in genes}
-            col_colors.append(_tercile_colors(values_by_gene, higher_is_better=(kind == "continuous_high_better")))
+            colors = _tercile_colors(values_by_gene, higher_is_better=(kind == "continuous_high_better"))
+            col_colors.append(colors)
+            col_scores.append({gene: TIER_GRID_SCORE[colors[gene]] for gene in genes})
 
-    # Row order: primarily each gene's summed TIER_GRID_SCORE (best/greenest first); ties broken
+    # Row order: primarily each gene's summed score across col_scores (best/greenest first, Exp.
+    # feasibility weighted per TIER_GRID_BOOL_SCORE rather than TIER_GRID_SCORE); ties broken
     # by its raw (pre-tercile) cross_pharm_scores node_strength, descending (still no invented
     # cutoff - reuses data already computed above), then alphabetically as a final tiebreak for
     # true 0-vs-0 node-strength ties (e.g. gatA/gatB, neither of which shares any multi-target hit
     # with any other gene) - reproduces both explicitly requested tie orders (pheS > glyS > lysS >
     # valS; pheT > gatA > gatB) without hardcoding either as a literal gene-name list.
-    gene_scores = {gene: sum(TIER_GRID_SCORE[colors[gene]] for colors in col_colors) for gene in genes}
+    gene_scores = {gene: sum(s[gene] for s in col_scores) for gene in genes}
     genes = sorted(genes, key=lambda g: (-gene_scores[g], -cross_pharm_scores[g], g))
 
     for col, colors in enumerate(col_colors):
@@ -705,38 +839,29 @@ def plot_tier_grid_placeholder(ax):
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    # Second per-row label column, to the right of the grid (twinx shares ax's x-axis/transform,
-    # gets its own independent y-axis - ylim copied from ax, post-invert_yaxis, so rows line up) -
-    # "Sel." for genes in output/selected_pockets.csv, "Nov." for a gene with an explicit
-    # novelty=False, "Exp." for a gene with an explicit experimental_tractability=False (currently
-    # only glyS - see figure_3_calculations.py's EXPERIMENTAL_TRACTABILITY_OVERRIDES), blank
-    # otherwise, per request. Only rows with a non-blank label get a tick mark (also per request) -
-    # toggled per-tick below since set_yticks/tick_params only offer one visibility setting for
-    # every tick at once.
-    row_labels = []
-    for gene in genes:
+    # Marker just right of the grid's last column: "*" for genes in output/selected_pockets.csv,
+    # "x" for a gene with an explicit novelty=False, nothing otherwise. Plotted directly on `ax`
+    # with ax.text() (not a twinx + tick label) so the marker's (x, y) is set in the exact same
+    # data coordinates as the row rectangles above (row + 0.5) - but va="center" centers the
+    # glyph's full em-box, not its visible ink: "*" (no descender, drawn near cap-height) sits
+    # visibly high within that box at this panel's actual size/font, while lowercase "x" (a normal
+    # x-height letter) is already correctly centered as-is with no adjustment. MARKER_Y_NUDGE's "*"
+    # value (0.347) is not a guess - measured directly on this exact figure (real figsize/dpi=600/
+    # fontsize=5) by rendering, then comparing the rendered ink-pixel row range of row 0's rectangle
+    # against the rendered ink-pixel row range of its "*", at two trial nudges, and solving the
+    # (linear, since both are pixel offsets of the same glyph) relationship for the value that
+    # brings the two centers to exactly 0px apart (confirmed by re-rendering at 0.347: 0px diff).
+    # clip_on=False since x sits just past ax's own xlim (len(TIER_GRID_ROW_LABELS)).
+    MARKER_Y_NUDGE = {"*": 0.347, "x": 0.0}
+    for row, gene in enumerate(genes):
         if gene in selected_genes:
-            row_labels.append("Sel.")
+            marker = "*"
         elif stats[gene]["novelty"] is False:
-            row_labels.append("Nov.")
-        elif stats[gene]["experimental_tractability"] is False:
-            row_labels.append("Exp.")
+            marker = "x"
         else:
-            row_labels.append("")
-
-    right_ax = ax.twinx()
-    right_ax.set_ylim(ax.get_ylim())
-    right_ax.grid(False)
-    right_ax.set_yticks([i + 0.5 for i in range(len(genes))])
-    right_ax.set_yticklabels(row_labels, fontsize=stylia.FONTSIZE_SMALL)
-    # twinx() doesn't go through stylize(ax) above, so its ticks default to matplotlib's own
-    # ytick.major.width (0.8) instead of stylia.LINEWIDTH (0.5, what ax's own left-side ticks use)
-    # - set explicitly so the two sides match.
-    right_ax.yaxis.set_tick_params(width=stylia.LINEWIDTH)
-    for tick, label in zip(right_ax.yaxis.get_major_ticks(), row_labels):
-        tick.tick2line.set_visible(bool(label))
-    for spine in right_ax.spines.values():
-        spine.set_visible(False)
+            continue
+        ax.text(len(TIER_GRID_ROW_LABELS) + 0.15, row + 0.5 + MARKER_Y_NUDGE[marker], marker,
+                ha="left", va="center", fontsize=stylia.FONTSIZE_SMALL, clip_on=False)
 
 
 # Matches scripts/47b_reference_pocket_visualization.py's COLOR_LIGAND_DOCKED / notebooks/
@@ -1259,6 +1384,8 @@ def main(rerun=False, subpanels=None):
         # changing), reintroducing the clipping; an absolute width stays correct regardless.
         fig.subplots_adjust(left=ROW_LABEL_LEFT_MARGIN_IN / sizes["c"][0], right=0.995)
         save_panel(fig, "c", paddings["c"])
+
+    merge_panels()
 
 
 if __name__ == "__main__":

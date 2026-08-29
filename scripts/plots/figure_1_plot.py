@@ -1,3 +1,27 @@
+"""
+Figure 1: protein structures (panel a) + sequence identity / structural RMSD heatmaps
+(panels b/c), from figure_1_calculations.py. Panel d is a blank placeholder (previously a
+PocketVec cosine-distance heatmap, dropped per request).
+
+Built on figure_3/figure_4's panel-per-file architecture instead of the original,
+oversized monolithic composite this script replaced: each panel is its own standalone
+figure, saved as its own PDF (Fig_1a.pdf ... Fig_1d.pdf) at an EXACT physical size read
+from output/plots/figure_1/panel_layout.csv (columns: panel, x, delta_x, y, delta_y,
+padding, in cm) - so stylia's fixed-point-size text renders at its true intended size on
+the page, instead of shrinking along with an oversized canvas once placed at final print
+width. Panel letters are baked onto each saved PDF (add_panel_label, from figure_3) and a
+Nature two-column-width guideline check (MAX_WIDTH_IN, also from figure_3) warns if any
+panel's delta_x exceeds stylia.SIZE.
+
+Merging into one positioned master PDF (Fig_1_full.pdf, via pypdf) happens in this same
+file (merge_panels(), called at the end of main()) rather than a separate script.
+
+panel_layout.csv is a first-draft starting point, meant to be tuned iteratively by
+rendering and looking, not solved analytically up front.
+
+Usage:
+    python figure_1_plot.py [--rerun] [--subpanels a,b,c,d] [--show-grids]
+"""
 import argparse
 import glob
 import os
@@ -18,9 +42,11 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import gaussian_kde
+from pypdf import PdfReader, PdfWriter, Transformation
 import pymol
 from pymol import cmd
 import stylia
+from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
 
 # Format: print | Style: article — change with stylia.set_format() / stylia.set_style()
@@ -32,14 +58,16 @@ output_dir = os.path.join(root, "..", "..", "output")
 plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_1")
 os.makedirs(plots_dir, exist_ok=True)
 
+PANEL_LETTERS = ["a", "b", "c", "d"]
+panel_layout_path = os.path.join(plots_dir, "panel_layout.csv")
+
 # ===========================================================================
-# Panel a: protein structures + VI/PDB/ChEMBL/pocket circles
+# Panel a data + helpers: protein structures + VI/PDB/ChEMBL/pocket circles
+# (ported verbatim from the original monolithic-composite version of this script)
 # ===========================================================================
 
-# Load pocket detection data
 pocket_detection_data = pd.read_csv(os.path.join(output_dir, "pocket_detection_data.csv"))
 
-# Uniprot->gene and gene->color mappings computed by figure_1_calculations.py
 with open(os.path.join(plots_dir, "color_mapping.json")) as f:
     mappings = json.load(f)
 uniprot_to_gene = mappings["uniprot_to_gene"]
@@ -58,29 +86,18 @@ def zoom_to_fixed_box(selection="structure", box_size=30.0, box_name="_zoom_box"
     cx = 0.5 * (xmin + xmax)
     cy = 0.5 * (ymin + ymax)
     cz = 0.5 * (zmin + zmax)
-
     h = box_size / 2.0
-
     cmd.delete(box_name)
-
     corners = [
-        (cx - h, cy - h, cz - h),
-        (cx - h, cy - h, cz + h),
-        (cx - h, cy + h, cz - h),
-        (cx - h, cy + h, cz + h),
-        (cx + h, cy - h, cz - h),
-        (cx + h, cy - h, cz + h),
-        (cx + h, cy + h, cz - h),
-        (cx + h, cy + h, cz + h),
+        (cx - h, cy - h, cz - h), (cx - h, cy - h, cz + h),
+        (cx - h, cy + h, cz - h), (cx - h, cy + h, cz + h),
+        (cx + h, cy - h, cz - h), (cx + h, cy - h, cz + h),
+        (cx + h, cy + h, cz - h), (cx + h, cy + h, cz + h),
     ]
-
     for i, (x, y, z) in enumerate(corners):
         cmd.pseudoatom(f"{box_name}_{i}", pos=[x, y, z])
-
     cmd.group(box_name, f"{box_name}_*")
     cmd.zoom(box_name, buffer=0.0, complete=1)
-
-    # cleanup
     cmd.delete(box_name)
     cmd.delete(f"{box_name}_*")
 
@@ -113,37 +130,14 @@ MY_VIEWS = {
 }
 
 ZOOM_DICT = {
-    "argS": 1.5,
-    "alaS": 1.4,
-    "aspS": 1.4,
-    "gatA": 1.6,
-    "gatB": 1.4,
-    "thrS": 0.85,
-    "ileS": 1.3,
-    "valS": 1.0,
-    "leuS": 1.3,
-    "gltS": 1.4,
-    "proS": 1.35,
-    "glyS": 1.7,
-    "serS": 1.5,
-    "cysS1": 1.5,
-    "metS": 1.5,
-    "lysS": 1.5,
-    "hisS": 1.6,
-    "trpS": 1.7,
-    "pheS": 1.25,
-    "pheT": 1.1,
-    "tyrS": 1.6,
+    "argS": 1.5, "alaS": 1.4, "aspS": 1.4, "gatA": 1.6, "gatB": 1.4, "thrS": 0.85,
+    "ileS": 1.3, "valS": 1.0, "leuS": 1.3, "gltS": 1.4, "proS": 1.35, "glyS": 1.7,
+    "serS": 1.5, "cysS1": 1.5, "metS": 1.5, "lysS": 1.5, "hisS": 1.6, "trpS": 1.7,
+    "pheS": 1.25, "pheT": 1.1, "tyrS": 1.6,
 }
 
 
 def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
-    # PyMOL renders onto a fixed-size white canvas, so the protein blob is
-    # usually surrounded by a lot of true whitespace beyond any hand-tuned zoom.
-    # Crop tightly to the non-white bounding box (plus a small margin) so that
-    # whitespace doesn't show up as a gap in the composite grid.
-    # mpimg.imread returns float32 in [0, 1] for PNGs (not 0-255), so the
-    # background threshold must scale with the array's own dtype/range.
     gray = img[..., :3].mean(axis=2)
     max_val = 1.0 if np.issubdtype(img.dtype, np.floating) else 255
     mask = gray < background_frac * max_val
@@ -151,7 +145,6 @@ def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
     cols = np.where(mask.any(axis=0))[0]
     if rows.size == 0 or cols.size == 0:
         return img
-
     h, w = img.shape[:2]
     y0, y1 = rows[0], rows[-1]
     x0, x1 = cols[0], cols[-1]
@@ -166,7 +159,6 @@ def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
 
 def show_zoomed_image(ax, img, zoom=1.0):
     h, w = img.shape[:2]
-
     if zoom > 1:
         crop_w = int(w / zoom)
         crop_h = int(h / zoom)
@@ -180,10 +172,6 @@ def show_zoomed_image(ax, img, zoom=1.0):
     img = autocrop_to_content(img)
 
     if zoom < 1:
-        # Mirror image of the zoom>1 crop-in above, but applied after autocrop (padding
-        # before autocrop would just get stripped straight back off): pad the
-        # already-tightly-cropped content with whitespace so its canvas grows by 1/zoom,
-        # shrinking how much of the fixed grid cell the protein itself fills.
         h2, w2 = img.shape[:2]
         pad_h = int(h2 / zoom) - h2
         pad_w = int(w2 / zoom) - w2
@@ -194,10 +182,6 @@ def show_zoomed_image(ax, img, zoom=1.0):
         img = np.pad(img, pad_widths, mode="constant", constant_values=pad_val)
 
     ax.imshow(img, interpolation="none", resample=False)
-    # adjustable="datalim" keeps the axes' own box fixed at its GridSpec-assigned
-    # rectangle and pads the data view instead — otherwise matplotlib's default
-    # ("box") shrinks/repositions the box itself for extreme-aspect images, which
-    # throws off anything anchored via ax.transAxes (e.g. the gene-name label).
     ax.set_aspect("equal", adjustable="datalim")
 
 
@@ -212,16 +196,9 @@ def render_protein_structures(proteins=PROTEINS, rerun=False):
             print(f"Reusing existing render for {gene} ({protein}): {png_path}")
             continue
 
-        # Filter pockets
         df = pocket_detection_data[pocket_detection_data['Uniprot AC'] == protein].sort_values('Pocket score', ascending=False)
-
-        # Select reference structure
         ref_st = df['File name'].tolist()[0]
 
-        # Pocket centroids to display: highest-probability pocket among this reference
-        # structure's own pockets (same coordinate frame as the loaded structure), plus
-        # the next-highest-probability pocket far enough away not to overlap it (distance
-        # > 2*POCKET_SPHERE_RADIUS + 1, i.e. the two spheres' radii plus a small buffer).
         ref_pockets = df[df['File name'] == ref_st].sort_values('Pocket probability', ascending=False)
         all_centroids = [
             np.array([float(v) for v in row['Pocket centroid coordinate (x y z)'].split()])
@@ -234,11 +211,9 @@ def render_protein_structures(proteins=PROTEINS, rerun=False):
                 top_centroids.append(centroid)
                 break
 
-        # Create pymol session
         pymol.finish_launching(['pymol', '-cq'])
         cmd.reinitialize()
 
-        # Load structure — surface only, no pockets
         cmd.load(os.path.join(output_dir, "aligned_relaxed_structures", protein, ref_st), "structure")
         cmd.set_color("structure_color", [0.90, 0.90, 0.90])
         cmd.color("structure_color", "structure")
@@ -246,9 +221,6 @@ def render_protein_structures(proteins=PROTEINS, rerun=False):
         cmd.show("surface", "structure")
         cmd.set("transparency", 0, "structure")
 
-        # Pocket centroid markers: top pocket(s), POCKET_SPHERE_RADIUS sphere each,
-        # protein's own color, almost opaque. PyMOL's sphere_transparency runs 0
-        # (opaque) -> 1 (invisible), so "almost opaque" is a LOW value here, not 0.9.
         centroid_color_rgb = mcolors.to_rgb(cmap_dict[gene])
         cmd.set_color("pocket_centroid_color", list(centroid_color_rgb))
         for i, (cx, cy, cz) in enumerate(top_centroids):
@@ -258,7 +230,6 @@ def render_protein_structures(proteins=PROTEINS, rerun=False):
             cmd.color("pocket_centroid_color", obj_name)
             cmd.set("sphere_transparency", 0.1, obj_name)
 
-        # Fancy visualization
         cmd.bg_color("white")
         cmd.set("orthoscopic", 1)
         cmd.set("depth_cue", 0)
@@ -275,8 +246,6 @@ def render_protein_structures(proteins=PROTEINS, rerun=False):
         cmd.ray(1200, 1200)
         cmd.png(png_path, dpi=600)
 
-        # After saving the PNG, add every other detected pocket for this reference
-        # structure to the session (the PNG only shows the top pocket(s) selected above).
         for i, centroid in enumerate(all_centroids):
             if any(np.array_equal(centroid, tc) for tc in top_centroids):
                 continue
@@ -294,8 +263,6 @@ N_COLS = 7
 
 
 def apply_grid_frame(ax, show_grids):
-    # --show-grids draws each subplot's actual GridSpec-assigned rectangle (spines
-    # only, no ticks/labels) so the underlying grid layout can be inspected directly.
     if show_grids:
         ax.set_axis_on()
         ax.set_xticks([])
@@ -310,57 +277,43 @@ def apply_grid_frame(ax, show_grids):
 
 def render_structure_panel(ax, protein, show_grids=False):
     apply_grid_frame(ax, show_grids)
-
     gene = uniprot_to_gene[protein]
     file = os.path.join(plots_dir, f"figure_{protein}_{gene}.png")
     if os.path.exists(file):
         img = mpimg.imread(file)
         zoom = ZOOM_DICT[gene]
         show_zoomed_image(ax, img, zoom=zoom)
-        color = cmap_dict[gene]
-        # Matches notebook 46's approach: ax.legend() with a small bbox_to_anchor,
-        # leaving more of the row's height to the structure image itself. Safe now
-        # that show_zoomed_image uses adjustable="datalim" (axes box position no
-        # longer shifts per-column based on image content).
-        legend_handles = [Line2D([0], [0], marker='o', color='w', label=gene, markerfacecolor=color, markeredgecolor='black', markeredgewidth=0.5, markersize=stylia.MARKERSIZE)]
-        ax.legend(handles=legend_handles, loc="upper center", frameon=False, bbox_to_anchor=(0.5, 0.05), fontsize=stylia.FONTSIZE, handletextpad=0.3)
-
     stylia.label(ax, xlabel="", ylabel="")
 
 
-PLACEHOLDER_CIRCLE_POSITIONS = [(0.3, 0.8), (0.7, 0.8), (0.3, 0.2), (0.7, 0.2)]  # [VI, PDBs, ChEMBL binders, distinct pockets]
+def render_gene_label_row(ax, protein, show_grids=False):
+    """Gene-name marker + text, in its own thin dedicated row - kept separate from both
+    the structure image above (whose content varies per protein, e.g. pocket spheres near
+    the bottom edge) and the VI/PDB/ChEMBL/pocket circle cluster below, so this label can
+    never collide with either regardless of per-protein structure geometry or circle size."""
+    apply_grid_frame(ax, show_grids)
+    gene = uniprot_to_gene[protein]
+    color = cmap_dict[gene]
+    handle = [Line2D([0], [0], marker='o', color='w', label=gene, markerfacecolor=color,
+                      markeredgecolor='black', markeredgewidth=0.5, markersize=stylia.MARKERSIZE)]
+    # loc="center" (not the row-boundary-straddling bbox_to_anchor trick this used before the
+    # gene label got its own dedicated row) - centers the marker+text as one unit under the
+    # structure image above, safe now that this row has nothing else in it to collide with.
+    ax.legend(handles=handle, loc="center", frameon=False, fontsize=stylia.FONTSIZE, handletextpad=0.3)
+    stylia.label(ax, xlabel="", ylabel="")
 
-# Shared size scale for every circle in the panel: rendered marker size always maps
-# linearly onto [CIRCLE_SIZE_MIN, CIRCLE_SIZE_MAX], whatever the underlying metric.
+
+PLACEHOLDER_CIRCLE_POSITIONS = [(0.15, 0.8), (0.85, 0.8), (0.15, 0.2), (0.85, 0.2)]  # [VI, PDBs, ChEMBL binders, distinct pockets]
 CIRCLE_SIZE_MIN = 1
 CIRCLE_SIZE_MAX = 300
-
-# VI: size CIRCLE_SIZE_MIN at the least vulnerable gene in the whole H37Rv proteome
-# (VI_GENOME_MAX), size CIRCLE_SIZE_MAX at the most vulnerable gene among these 21
-# tRNA synthetases (VI_TRNA_MIN, not genome-wide) — more negative VI = more vulnerable.
 VI_TRNA_MIN = min(gene_to_vi.values())
-
-# PDBs: size CIRCLE_SIZE_MIN at 0 associated experimental structures, size
-# CIRCLE_SIZE_MAX at the most PDB-covered of these 21 tRNA synthetases.
 PDB_TRNA_MAX = max(gene_to_pdb_count.values())
-
-# ChEMBL binders: size CIRCLE_SIZE_MIN at 0 confirmed binders, size CIRCLE_SIZE_MAX at
-# the most-binder-rich of the (only 3) genes with any ChEMBL target mapping at all.
 CHEMBL_BINDERS_TRNA_MAX = max(gene_to_chembl_binders.values())
-
-# Distinct pockets: size CIRCLE_SIZE_MIN at the fewest distinct pockets, size
-# CIRCLE_SIZE_MAX at the most, among these 21 tRNA synthetases.
 POCKET_COUNT_TRNA_MAX = max(gene_to_unique_pocket_count.values())
-
-# Fixed placeholder size (points^2, absolute — not scaled by s_max) for "no data" circles
-# (0 PDBs, no ChEMBL mapping): deliberately small and constant across every panel, so it
-# reads as "nothing here" rather than as a data point on the row's own size scale.
 EMPTY_CIRCLE_SIZE = 10
 
 
 def readable_text_color(hex_color):
-    # Standard YIQ perceptual luminance; below 0.5 the background reads as "dark"
-    # enough that black text loses contrast, so switch to white.
     r, g, b = mcolors.to_rgb(hex_color)
     luminance = 0.299 * r + 0.587 * g + 0.114 * b
     return "white" if luminance < 0.5 else "black"
@@ -368,19 +321,10 @@ def readable_text_color(hex_color):
 
 def render_placeholder_panel(ax, protein, show_grids=False):
     apply_grid_frame(ax, show_grids)
-
     gene = uniprot_to_gene[protein]
     color = cmap_dict[gene]
-
-    # s_max is an empirically-validated points^2 area (not derived from
-    # ax.transData): the axes box isn't finalized until stylia.save_figure()'s
-    # internal tight_layout() call, which runs after this function, so any
-    # live geometry read here (e.g. via transData) reflects stale, pre-layout
-    # axes bounds. This value matches the fixed-size circles validated earlier
-    # at this same layout to not overlap.
     s_max = stylia.MARKERSIZE_BIG * 20
 
-    # Upper-left circle: Bosch et al. 2021 Vulnerability Index (VI).
     vi_x, vi_y = PLACEHOLDER_CIRCLE_POSITIONS[0]
     vi = gene_to_vi[gene]
     vi_frac = (VI_GENOME_MAX - vi) / (VI_GENOME_MAX - VI_TRNA_MIN)
@@ -389,15 +333,10 @@ def render_placeholder_panel(ax, protein, show_grids=False):
     ax.scatter([vi_x], [vi_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
     ax.text(vi_x, vi_y, f"VI\n{vi:.1f}", ha='center', va='center', color=readable_text_color(color), fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
 
-    # Upper-right circle: number of associated experimental PDB structures. Zero PDBs
-    # gets an empty (unfilled) placeholder circle and no text label, instead of a
-    # scaled marker with a "0 PDBs" label.
     pdb_x, pdb_y = PLACEHOLDER_CIRCLE_POSITIONS[1]
     pdb_count = gene_to_pdb_count[gene]
     pdb_label = "PDB" if pdb_count == 1 else "PDBs"
     if pdb_count > 0:
-        # 1 PDB = 50% of max size, then scales linearly up to 100% at PDB_TRNA_MAX
-        # (mirrors the ChEMBL ligands / distinct pockets circles' floor-then-scale rule).
         pdb_frac = 0.5 + 0.5 * (pdb_count - 1) / (PDB_TRNA_MAX - 1)
         s = s_max * pdb_frac
         ax.scatter([pdb_x], [pdb_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
@@ -405,16 +344,11 @@ def render_placeholder_panel(ax, protein, show_grids=False):
     else:
         ax.scatter([pdb_x], [pdb_y], s=EMPTY_CIRCLE_SIZE, facecolor='none', edgecolor=color, linewidth=stylia.LINEWIDTH, zorder=1)
 
-    # Bottom-left circle: ChEMBL ligands (IC50 <= 10 uM). Genes with no ChEMBL target
-    # mapping at all get an empty (unfilled) placeholder circle and no text label,
-    # instead of "0 ligands" (a real measured zero, drawn with no circle, stays as-is).
     chembl_x, chembl_y = PLACEHOLDER_CIRCLE_POSITIONS[2]
     if gene in gene_to_chembl_binders:
         n_binders = gene_to_chembl_binders[gene]
         binder_label = "ligand" if n_binders == 1 else "ligands"
         if n_binders > 0:
-            # Any nonzero count starts at 50% of max size, then scales proportionally
-            # up to 100% at CHEMBL_BINDERS_TRNA_MAX (unlike VI/PDBs, which scale from 0).
             chembl_frac = 0.5 + 0.5 * (n_binders / CHEMBL_BINDERS_TRNA_MAX)
             s = s_max * chembl_frac
             ax.scatter([chembl_x], [chembl_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
@@ -423,35 +357,38 @@ def render_placeholder_panel(ax, protein, show_grids=False):
     else:
         ax.scatter([chembl_x], [chembl_y], s=EMPTY_CIRCLE_SIZE, facecolor='none', edgecolor=color, linewidth=stylia.LINEWIDTH, zorder=1)
 
-    # Bottom-right circle: distinct pockets per protein, deduplicated across all of its
-    # structures (see figure_1_calculations.py: greedy dedup by pocket centroid distance,
-    # threshold matching notebooks/08_coherence_detected_pockets.ipynb).
     pocket_x, pocket_y = PLACEHOLDER_CIRCLE_POSITIONS[3]
     n_pockets = gene_to_unique_pocket_count[gene]
     pocket_label = "pock."
     if n_pockets > 0:
-        # 1 pocket = 50% of max size, then scales linearly up to 100% at
-        # POCKET_COUNT_TRNA_MAX (mirrors the ChEMBL binders circle's floor-then-scale rule).
         pocket_frac = 0.5 + 0.5 * (n_pockets - 1) / (POCKET_COUNT_TRNA_MAX - 1)
         s = s_max * pocket_frac
         ax.scatter([pocket_x], [pocket_y], s=s, color=color, edgecolor='black', linewidth=0, zorder=1)
     pocket_text_color = readable_text_color(color) if n_pockets > 0 else "black"
     ax.text(pocket_x, pocket_y, f"{n_pockets}\n{pocket_label}", ha='center', va='center', color=pocket_text_color, fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
 
-    # Set (and lock) fixed data coordinates AFTER all scatter/text calls — each
-    # ax.scatter() call above triggers matplotlib's default autoscale-on-new-artist
-    # behavior, which silently overrides limits set beforehand.
+    AARS_CLASS_LABELS = {
+        "alaS": "Class II", "argS": "Class I", "aspS": "Class II", "cysS1": "Class I",
+        "gltS": "Class I", "glyS": "Class II", "hisS": "Class II", "ileS": "Class I",
+        "leuS": "Class I", "lysS": "Class II", "metS": "Class I", "pheS": "Class II",
+        "pheT": "Class II", "proS": "Class II", "serS": "Class II", "thrS": "Class II",
+        "trpS": "Class I", "tyrS": "Class I", "valS": "Class I",
+    }
+    CLASS_CIRCLE_SIZE_FRAC = 0.8
+    if gene in AARS_CLASS_LABELS:
+        ax.scatter([0.5], [0.5], s=s_max * CLASS_CIRCLE_SIZE_FRAC, color=color, edgecolor='black', linewidth=0, zorder=1)
+        ax.text(0.5, 0.5, AARS_CLASS_LABELS[gene], ha='center', va='center',
+                color=readable_text_color(color), fontsize=stylia.FONTSIZE_SMALL, zorder=2, linespacing=1.6)
+    else:
+        ax.scatter([0.5], [0.5], s=EMPTY_CIRCLE_SIZE, facecolor='none', edgecolor=color, linewidth=stylia.LINEWIDTH, zorder=1)
+
     ax.set_xlim(-0.3, 1.3)
     ax.set_ylim(-0.3, 1.3)
     ax.set_autoscale_on(False)
-
     stylia.label(ax, xlabel="", ylabel="")
 
 
 def cleanup_intermediate_files(store_pymol, remove_pngs):
-    # session_*.pse and per-protein figure_*.png are written unconditionally by
-    # render_protein_structures; drop them here if the caller asked to remove them.
-    # (figure_1.png/.pdf, the composite, isn't matched by either pattern.)
     if not store_pymol:
         for f in glob.glob(os.path.join(plots_dir, "session_*.pse")):
             os.remove(f)
@@ -461,47 +398,28 @@ def cleanup_intermediate_files(store_pymol, remove_pngs):
 
 
 # ===========================================================================
-# Panels B/C/D: SeqId, structural RMSD, and PocketVec comparison heatmaps
+# Panel b/c data + helper: SeqId / structural RMSD heatmaps
+# (ported from the original monolithic-composite version; PocketVec dropped, abc-title handling dropped
+# since panel-lettering is now centralized in save_panel/add_panel_label)
 # ===========================================================================
 
-genes_sorted = sorted(uniprot_to_gene.values())
-
-# scripts/plots/figure_1_calculations.py's output: pairwise sequence identity — upper
-# triangle = global (Needleman-Wunsch, scripts/14_calculate_SeqId.py's SeqId_matrix.tsv),
-# lower triangle = local (Smith-Waterman, that same script's LocalSeqId_matrix.tsv),
-# diagonal = self-identity (~100%, meaningfully computed by both aligners already).
 seqid_df = pd.read_csv(os.path.join(plots_dir, "sequence_identity_matrix.tsv"), sep="\t", index_col=0)
-alphabetical_order = seqid_df.index.tolist()  # already alphabetical by gene name
+alphabetical_order = seqid_df.index.tolist()
 
 matrix = seqid_df.loc[alphabetical_order, alphabetical_order].values
 gene_labels = [uniprot_to_gene[uid] for uid in alphabetical_order]
 
-# scripts/plots/figure_1_calculations.py's output: pairwise structural comparison —
-# upper triangle = mean RMSD, lower triangle = min RMSD (both pooled across all
-# structure-file combinations for that protein pair), diagonal = placeholder 0 (same-
-# protein comparison not yet computed). Same alphabetical order as the SeqId matrix
-# above, so rows/columns line up between the two panels.
 struct_df = pd.read_csv(os.path.join(plots_dir, "structural_similarity_matrix.tsv"), sep="\t", index_col=0)
 struct_matrix = struct_df.loc[alphabetical_order, alphabetical_order].values
 
-# scripts/plots/figure_1_calculations.py's output: pocket-level PocketVec comparison,
-# aggregated to protein level as min cosine distance between every deduplicated pocket
-# of protein i and protein j (symmetric; diagonal = min distance between a protein's
-# own distinct pockets). Same alphabetical order as the other panels.
-pocketvec_df = pd.read_csv(os.path.join(plots_dir, "pocketvec_similarity_matrix.tsv"), sep="\t", index_col=0)
-pocketvec_matrix = pocketvec_df.loc[alphabetical_order, alphabetical_order].values
-
 CBAR_VMIN = 20
-CBAR_VMAX = 40  # values above 40 (up to ~67% for local identity) saturate
+CBAR_VMAX = 50
 STRUCT_VMIN = 0
-STRUCT_VMAX = 20  # axis/colorbar/distribution extent
-STRUCT_GRADIENT_MAX = 8  # local RMSD's true max (7.79) - full color gradient covers all of local, flat white beyond
-POCKETVEC_VMIN = 0.12
-POCKETVEC_VMAX = 0.22  # covers all but 1.4% of pairs (true max ~0.225)
+STRUCT_VMAX = 20
+STRUCT_GRADIENT_MAX = 8
 
 
 def clipped_gradient_cmap(cmap, vmin, vmax, gradient_max, n=256):
-    """Compress cmap's full gradient into [vmin, gradient_max]; hold its end color flat for (gradient_max, vmax]."""
     frac = (gradient_max - vmin) / (vmax - vmin)
     n_gradient = max(1, int(round(n * frac)))
     colors_gradient = cmap(np.linspace(0, 1, n_gradient))
@@ -510,37 +428,29 @@ def clipped_gradient_cmap(cmap, vmin, vmax, gradient_max, n=256):
     return mcolors.ListedColormap(np.vstack([colors_gradient, colors_flat]))
 
 
-def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ticks, line_color, abc=None,
-                             dist_values=None, overlay_values=None, dist_vmax=None):
-    # Copy (not mutate) the caller's colormap - some pairs may have no reliable value
-    # (e.g. panel c's 10%-coverage-filtered global RMSD, NaN for pairs where nothing
-    # clears the cutoff) and should render as a distinct grey "no data" cell rather than
-    # being confusable with a real value at the colormap's pale end.
+def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ticks, line_color,
+                             dist_values=None, overlay_values=None, dist_vmax=None, box_vmax=None,
+                             box_ytick_exclude=()):
     cmap = cmap.copy()
     cmap.set_bad(color="#BBBBBB")
     im = ax.imshow(matrix, cmap=cmap, vmin=vmin, vmax=vmax)
 
     ax.set_xticks(range(len(labels)))
     ax.set_yticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=90, fontsize=stylia.FONTSIZE_SMALL)
-    ax.set_yticklabels(labels, fontsize=stylia.FONTSIZE_SMALL)
-    # Row labels move to the right side of the heatmap — the left side is now taken up
-    # by the distribution + colorbar panels appended below.
+    # Interleaved labels (not all 21 genes on both axes) - even index -> x only, odd index -> y
+    # only, so every gene appears exactly once across the two axes, per request.
+    x_labels = [lab if i % 2 == 0 else "" for i, lab in enumerate(labels)]
+    y_labels = [lab if i % 2 == 1 else "" for i, lab in enumerate(labels)]
+    ax.set_xticklabels(x_labels, rotation=90, fontsize=stylia.FONTSIZE_SMALL)
+    ax.set_yticklabels(y_labels, fontsize=stylia.FONTSIZE_SMALL)
     ax.yaxis.tick_right()
 
     divider = make_axes_locatable(ax)
     n = matrix.shape[0]
 
-    # Top panel: one boxplot per protein, column-aligned with the heatmap, each showing
-    # that protein's pairwise comparison values against the other proteins (self-
-    # comparison excluded). whis=(0, 100) stretches whiskers to the actual min/max (no
-    # outlier detection/fliers). No sharex here — boxplot()'s own tick-labeling clobbers
-    # a shared axis's labels, so alignment is matched explicitly via xlim instead
-    # (imshow's default extent for n categories is exactly [-0.5, n-0.5]).
-    tax = divider.append_axes("top", size="20%", pad=0.05)
-    # NaN-safe (e.g. panel c's 4 pairs with no coverage-filtered global value) - dropped
-    # rather than plotted, so the boxplot summarizes only the pairs with real data.
-    box_data = [np.delete(matrix[:, i], i) for i in range(n)]
+    tax = divider.append_axes("top", size="26%", pad=0.05)
+    global_only_matrix = np.where(np.triu(np.ones((n, n), dtype=bool)), matrix, matrix.T)
+    box_data = [np.delete(global_only_matrix[:, i], i) for i in range(n)]
     box_data = [d[~np.isnan(d)] for d in box_data]
     bp = tax.boxplot(
         box_data, positions=range(n), widths=0.6, whis=(0, 100), showfliers=False, patch_artist=True,
@@ -553,76 +463,38 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
         box.set_facecolor(cmap_dict[labels[i]])
         box.set_alpha(0.8)
     tax.set_xlim(-0.5, n - 0.5)
-    tax.set_ylim(vmin, vmax)
-    # vmin excluded here — sitting right on the axis's own bottom border, it's redundant
-    # and crowds the boxplot; the colorbar (below) still shows the full tick set.
-    tax.set_yticks([t for t in ticks if t != vmin])
+    box_ymax = box_vmax if box_vmax is not None else vmax
+    tax.set_ylim(vmin, box_ymax)
+    tax.set_yticks([t for t in range(0, int(box_ymax) + 1, 10) if t >= vmin and t not in box_ytick_exclude])
     tax.tick_params(axis="x", labelbottom=False, bottom=False)
+    tax.yaxis.tick_right()
     tax.tick_params(axis="y", labelsize=stylia.FONTSIZE_SMALL, length=2, width=stylia.LINEWIDTH)
-    for spine in ("top", "right"):
+    for spine in ("top", "left"):
         tax.spines[spine].set_visible(False)
-    # stylia.create_figure() applies this same thin/light grid to ax automatically, but
-    # axes appended manually via make_axes_locatable don't get it — set it explicitly so
-    # tax/lax match the heatmap's own grid instead of falling back to matplotlib's bolder default.
     tax.set_axisbelow(True)
     tax.grid(visible=True, linewidth=stylia.LINEWIDTH * 0.5, color="#DDDDDD", alpha=0.6)
     stylia.label(tax, xlabel="", ylabel="")
 
-    # Colorbar axis carved out of the same divider as the heatmap axis (rather than
-    # fig.colorbar's default shrink=<1 sizing), so its height matches the heatmap's
-    # height/ylim exactly instead of floating shorter in the middle of the panel.
-    # Appended first (before the distribution panel) so it's the one adjacent to the
-    # heatmap; ticks face right, into the open gap left by ax's labels moving right.
-    # pad is wide enough to fit the widest tick labels used across all three panels
-    # (PocketVec's "0.20"-style decimals), kept the same for all three for consistency.
-    cax = divider.append_axes("left", size="5%", pad=0.28)
+    cax = divider.append_axes("left", size="5%", pad=0.23)
     cbar = ax.figure.colorbar(im, cax=cax, ticklocation="right")
     cbar.set_ticks(ticks)
-    # Label lives on dax (further out) instead of here, so it reads as a single shared
-    # label for the colorbar+distribution pair rather than being squeezed next to cax.
-    # Explicit length/width — the default colorbar tick size renders disproportionately
-    # thick/blocky at 600 dpi compared to the rest of the figure's line weight.
     cbar.ax.tick_params(labelsize=stylia.FONTSIZE_SMALL, length=2, width=stylia.LINEWIDTH)
     cbar.outline.set_linewidth(stylia.LINEWIDTH)
 
-    # Distribution panel: single KDE of pairwise comparison values across all proteins
-    # (upper-triangle values, i.e. one value per protein pair — excludes the diagonal
-    # self-comparison). Appended after the colorbar, so it sits further left, outermost.
-    # sharey=cax ties its value axis directly to the colorbar's own axis — no second,
-    # redundant set of tick labels for the same quantity. Not used when dist_vmax is
-    # given (the density panel then needs its own, wider range - see below).
-    dax = divider.append_axes("left", size="20%", pad=0.03, sharey=None if dist_vmax is not None else cax)
-    # dist_values overrides the default (upper-triangle) source for the main filled
-    # curve - e.g. panel b passes the lower triangle (local identity) here instead.
+    dax = divider.append_axes("left", size="26%", pad=0.03, sharey=None if dist_vmax is not None else cax)
     pairwise_values = dist_values if dist_values is not None else matrix[np.triu_indices(n, k=1)]
-    pairwise_values = pairwise_values[~np.isnan(pairwise_values)]  # e.g. panel c's 4 no-data pairs
-    # dist_vmax lets the density panel's own y-range extend past the heatmap/colorbar's
-    # vmax - needed when the plotted quantity's full distribution doesn't fit the
-    # heatmap's (deliberately narrower, for cell contrast) color range: without this, a
-    # KDE evaluated only up to vmax would show a curve still rising at the edge rather
-    # than its true peak-and-decline shape, and would look artificially truncated.
+    pairwise_values = pairwise_values[~np.isnan(pairwise_values)]
     y_max = dist_vmax if dist_vmax is not None else vmax
     kde = gaussian_kde(pairwise_values)
     y = np.linspace(vmin, y_max, 200)
     density = kde(y)
-    # Baseline (zero density) sits against the colorbar side (dax's right edge); the
-    # curve bulges away from it, toward the outer margin (dax's left edge).
     dax.plot(-density, y, color=line_color, linewidth=stylia.LINEWIDTH)
-    # Fill under the curve with the same colormap/scale as the heatmap's colorbar
-    # instead of a flat color, so the fill's color at a given height directly mirrors
-    # what that value looks like on the heatmap/colorbar. Extent intentionally stays
-    # vmin/vmax (not y_max) even when dist_vmax is set, so the fill only covers the
-    # heatmap's own color-mapped range - the curve *line* above that (if any) is left
-    # unfilled, honestly showing it's outside what the heatmap itself can represent.
     gradient = np.linspace(vmin, vmax, 256).reshape(-1, 1)
     grad_im = dax.imshow(gradient, cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto",
                           origin="lower", extent=[-density.max(), 0, vmin, vmax])
     clip_vertices = np.column_stack([np.concatenate([-density, [0, 0]]), np.concatenate([y, [y[-1], y[0]]])])
     grad_im.set_clip_path(Polygon(clip_vertices, closed=True, transform=dax.transData))
 
-    # Optional second distribution (e.g. global identity/RMSD, overlaid on the main
-    # curve) as a thin dashed BLACK line on the same axis - no fill, just a lightweight
-    # reference for comparison against the main curve.
     max_density = density.max()
     if overlay_values is not None:
         overlay_values = overlay_values[~np.isnan(overlay_values)]
@@ -633,9 +505,6 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
     dax.set_xlim(-max_density * 1.02, 0)
     dax.set_xticks([])
     if dist_vmax is not None:
-        # dax now has its own scale, different from the heatmap/colorbar's - needs its
-        # own visible tick labels (previously relied entirely on cax's, right next to
-        # it, since both shared one scale) so the reader can see the two panels differ.
         dax.set_ylim(vmin, y_max)
         dax.tick_params(axis="y", labelleft=True, left=True, labelsize=stylia.FONTSIZE_SMALL,
                          length=2, width=stylia.LINEWIDTH)
@@ -646,146 +515,246 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
         dax.spines[spine].set_visible(False)
     dax.set_axisbelow(True)
     dax.grid(visible=True, linewidth=stylia.LINEWIDTH * 0.5, color="#DDDDDD", alpha=0.6)
-    # abc lives here (upper-left of dax, the distribution panel) rather than tax/ax.
-    # Extra pad (beyond stylia.label's default) lifts it further above dax's own top edge.
     stylia.label(dax, xlabel="", ylabel=cbar_label)
-    if abc is not None:
-        dax.set_title(abc, loc="left", fontweight="bold", fontsize=stylia.FONTSIZE_BIG, pad=22)
 
     stylia.label(ax, xlabel="", ylabel="")
-    return dax
 
 
 # ===========================================================================
-# Master composite: structures (panel a, left) + heatmaps (panels b/c/d, right)
+# Panel-saving scaffolding (ported from figure_3_plot.py / figure_4_plot.py)
 # ===========================================================================
 
-ROW_HEIGHT_SCALE = 0.9  # shrinks unused vertical margin in width-constrained structure/circle rows
-
-# Fractions of stylia.get_size(). Structures widened beyond its original standalone
-# GRID_WIDTH=1.0 — at 1.0, each of the 7 structure columns is too narrow for the VI/PDB/
-# ligand/pocket circles to sit side by side without touching (circle diameter ~0.38in
-# vs ~0.18in of horizontal clearance at width=1.0). Heatmap stack keeps its original
-# standalone proportions (width=0.5, height=1.5).
-STRUCT_WIDTH_FRAC = 1.4
-HEATMAP_WIDTH_FRAC = 0.5
-HEATMAP_HEIGHT_FRAC = 1.5
+PANEL_LABEL_MARGIN = 0.02
 
 
-def render_master_figure(proteins=PROTEINS, show_grids=False):
-    n_bands = len(proteins) // N_COLS
-    full_n_bands = len(PROTEINS) // N_COLS
-    height_ratios = [1.0, 1.0] * n_bands
-    struct_height_frac = sum(height_ratios) / (2 * full_n_bands) * ROW_HEIGHT_SCALE
+def add_panel_label(fig, letter):
+    """Bold panel letter at the top-left of the FIGURE (page), fixed regardless of
+    padding - from figure_3_plot.py."""
+    fig.text(PANEL_LABEL_MARGIN, 1 - PANEL_LABEL_MARGIN, letter, fontweight="bold",
+              fontsize=stylia.FONTSIZE_BIG, color=get_fg_color(), ha="left", va="top",
+              transform=fig.transFigure)
 
-    size = stylia.get_size()
-    master_width_frac = STRUCT_WIDTH_FRAC + HEATMAP_WIDTH_FRAC
-    master_height_frac = max(struct_height_frac, HEATMAP_HEIGHT_FRAC)
 
-    fig = plt.figure(figsize=(master_width_frac * size, master_height_frac * size))
+MAX_WIDTH_IN = stylia.SIZE  # Nature two-column guideline (~7.09in/18cm) - from figure_3_plot.py
+
+
+def load_panel_sizes(panels):
+    if not os.path.exists(panel_layout_path):
+        raise FileNotFoundError(
+            f"{panel_layout_path} not found. Expected columns: panel, x, delta_x, y, delta_y (cm), "
+            "one row per panel: " + ", ".join(PANEL_LETTERS))
+    df = pd.read_csv(panel_layout_path).set_index("panel")
+    missing = [p for p in panels if p not in df.index]
+    if missing:
+        raise ValueError(f"{panel_layout_path} is missing row(s) for panel(s): {missing}")
+    return {p: (df.loc[p, "delta_x"] / 2.54, df.loc[p, "delta_y"] / 2.54) for p in panels}
+
+
+def load_panel_padding(panels):
+    df = pd.read_csv(panel_layout_path).set_index("panel")
+    if "padding" not in df.columns:
+        return {p: 0.0 for p in panels}
+    missing = [p for p in panels if p not in df.index]
+    if missing:
+        raise ValueError(f"{panel_layout_path} is missing row(s) for panel(s): {missing}")
+    return {p: df.loc[p, "padding"] for p in panels}
+
+
+def apply_padding(fig, padding):
+    scale = 1 - padding
+    for ax in fig.axes:
+        pos = ax.get_position()
+        x0 = 0.5 + (pos.x0 - 0.5) * scale
+        x1 = 0.5 + (pos.x1 - 0.5) * scale
+        y0 = 0.5 + (pos.y0 - 0.5) * scale
+        y1 = 0.5 + (pos.y1 - 0.5) * scale
+        ax.set_position([x0, y0, x1 - x0, y1 - y0])
+
+
+def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=None,
+               subplots_adjust=None, padding=0.0):
+    """Saves at exactly panel_layout.csv's delta_x/delta_y (no bbox_inches="tight").
+    use_tight_layout=False + subplots_adjust is the escape hatch for panels where
+    tight_layout() warns/fails (e.g. panel a's packed grid) - from figure_4_plot.py.
+    fig.set_tight_layout(False) defeats stylia's own auto-relayout rcParam, which would
+    otherwise silently override this layout at savefig time."""
+    fig.set_tight_layout(False)
+    if use_tight_layout:
+        plt.tight_layout(pad=tight_pad, w_pad=tight_w_pad)
+    else:
+        fig.subplots_adjust(**(subplots_adjust or dict(left=0.01, right=0.99, top=0.99, bottom=0.01)))
+    apply_padding(fig, padding)
+    add_panel_label(fig, letter)
+    output_path = os.path.join(plots_dir, f"Fig_1{letter}.pdf")
+    plt.savefig(output_path, dpi=600, transparent=False)
+    plt.close(fig)
+    print(f"Saved Fig_1{letter}.pdf")
+
+
+CM_TO_PT = 72 / 2.54
+
+
+def merge_panels():
+    """Pastes each Fig_1{letter}.pdf onto one positioned master PDF (Fig_1_full.pdf) per
+    panel_layout.csv's x/y - pure translation (no rescaling, true vector via pypdf), since
+    each panel already saved at its exact target size. Ported from figure_4_merge.py, kept
+    in this same file per request rather than split into a separate merge script."""
+    df = pd.read_csv(panel_layout_path).set_index("panel")
+    missing = [p for p in PANEL_LETTERS if p not in df.index]
+    if missing:
+        raise ValueError(f"{panel_layout_path} is missing row(s) for panel(s): {missing}")
+
+    total_width_cm = max(df.loc[p, "x"] + df.loc[p, "delta_x"] for p in PANEL_LETTERS)
+    total_height_cm = max(df.loc[p, "y"] + df.loc[p, "delta_y"] for p in PANEL_LETTERS)
+
+    writer = PdfWriter()
+    master_page = writer.add_blank_page(width=total_width_cm * CM_TO_PT, height=total_height_cm * CM_TO_PT)
+
+    for p in PANEL_LETTERS:
+        panel_path = os.path.join(plots_dir, f"Fig_1{p}.pdf")
+        if not os.path.exists(panel_path):
+            print(f"  Skipping {p}: {panel_path} not found - Fig_1_full.pdf will be missing it.")
+            continue
+        panel_page = PdfReader(panel_path).pages[0]
+        x_top_cm, y_top_cm, delta_y_cm = df.loc[p, "x"], df.loc[p, "y"], df.loc[p, "delta_y"]
+        x_pt = x_top_cm * CM_TO_PT
+        y_bottom_pt = (total_height_cm - y_top_cm - delta_y_cm) * CM_TO_PT
+        master_page.merge_transformed_page(panel_page, Transformation().translate(tx=x_pt, ty=y_bottom_pt))
+        print(f"  Placed Fig_1{p}.pdf at x={x_top_cm}cm, y={y_top_cm}cm (top-left)")
+
+    output_path = os.path.join(plots_dir, "Fig_1_full.pdf")
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    print(f"Saved merged master figure ({total_width_cm:.2f} x {total_height_cm:.2f} cm) to {output_path}")
+
+
+# ===========================================================================
+# Panel builders
+# ===========================================================================
+
+GENE_LABEL_ROW_RATIO = 0.22  # thin dedicated row for the gene-name marker+text, own comment above render_gene_label_row
+
+
+def build_panel_a(size, padding, show_grids=False):
+    n_bands = len(PROTEINS) // N_COLS
+    height_ratios = [1.0, GENE_LABEL_ROW_RATIO, 1.0] * n_bands
+
+    fig = plt.figure(figsize=size)
     fig.patch.set_facecolor("white")
-    master_gs = fig.add_gridspec(1, 2, width_ratios=[STRUCT_WIDTH_FRAC, HEATMAP_WIDTH_FRAC], wspace=0.15)
+    gs = fig.add_gridspec(3 * n_bands, N_COLS, height_ratios=height_ratios, hspace=0.0, wspace=0.0)
+    cells = iter((row, col) for row in range(3 * n_bands) for col in range(N_COLS))
 
-    # --- Left: structures + circles grid (panel a) ---
-    left_gs = master_gs[0, 0].subgridspec(2 * n_bands, N_COLS, height_ratios=height_ratios, hspace=0.0, wspace=0.0)
-    first_structure_ax = None
-    left_cells = iter((row, col) for row in range(2 * n_bands) for col in range(N_COLS))
-
-    for band_start in range(0, len(proteins), N_COLS):
-        band = proteins[band_start:band_start + N_COLS]
-
+    for band_start in range(0, len(PROTEINS), N_COLS):
+        band = PROTEINS[band_start:band_start + N_COLS]
         for protein in band:
-            row, col = next(left_cells)
-            ax = stylize(fig.add_subplot(left_gs[row, col]))
-            if first_structure_ax is None:
-                first_structure_ax = ax
-            render_structure_panel(ax, protein, show_grids=show_grids)
-
+            row, col = next(cells)
+            render_structure_panel(stylize(fig.add_subplot(gs[row, col])), protein, show_grids=show_grids)
         for protein in band:
-            row, col = next(left_cells)
-            ax = stylize(fig.add_subplot(left_gs[row, col]))
-            render_placeholder_panel(ax, protein, show_grids=show_grids)
+            row, col = next(cells)
+            render_gene_label_row(stylize(fig.add_subplot(gs[row, col])), protein, show_grids=show_grids)
+        for protein in band:
+            row, col = next(cells)
+            render_placeholder_panel(stylize(fig.add_subplot(gs[row, col])), protein, show_grids=show_grids)
 
-    stylia.label(first_structure_ax, xlabel="", ylabel="")
+    save_panel(fig, "a", use_tight_layout=False, padding=padding)
 
-    # --- Right: SeqId / structural RMSD / PocketVec heatmaps (panels b/c/d) ---
-    right_gs = master_gs[0, 1].subgridspec(3, 1, hspace=0.0)
+
+def build_panel_b(size, padding):
     nc = stylia.NamedColors()
+    fig, ax = plt.subplots(figsize=size)
+    fig.patch.set_facecolor("white")
+    stylize(ax)
 
     seqid_cmap = stylia.FadingColormap("crimson", transformation=None).cmap
     seqid_n = matrix.shape[0]
-    # Main filled curve = local identity (lower triangle); thin dashed overlay = global
-    # identity (upper triangle), for direct comparison on the same axis. Local identity
-    # reaches up to ~67% (11% of pairs exceed CBAR_VMAX=40) - clipped so the KDE reflects
-    # an honest pile-up at the boundary rather than silently truncating; global identity
-    # already fits entirely within CBAR_VMAX, so its clip is a no-op.
     seqid_local_values = np.clip(matrix[np.tril_indices(seqid_n, k=-1)], CBAR_VMIN, CBAR_VMAX)
     seqid_global_values = np.clip(matrix[np.triu_indices(seqid_n, k=1)], CBAR_VMIN, CBAR_VMAX)
-    b_dax = plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[0, 0])), matrix, gene_labels, seqid_cmap,
-                                     CBAR_VMIN, CBAR_VMAX, "Sequence identity (%)",
-                                     ticks=np.arange(CBAR_VMIN, CBAR_VMAX + 1, 5), line_color=nc.crimson, abc="b",
-                                     dist_values=seqid_local_values, overlay_values=seqid_global_values)
+    plot_comparison_heatmap(ax, matrix, gene_labels, seqid_cmap, CBAR_VMIN, CBAR_VMAX,
+                             "Sequence identity (%)", ticks=np.arange(CBAR_VMIN, CBAR_VMAX + 1, 5),
+                             line_color=nc.crimson, dist_values=seqid_local_values,
+                             overlay_values=seqid_global_values, box_vmax=40)
+    save_panel(fig, "b", padding=padding)
 
-    # Different color family from panel b (cobalt vs crimson) so the two panels are
-    # visually distinct at a glance; still reversed so dark reads as "more similar" here
-    # too, even though for RMSD that means a LOW value. Gradient itself is compressed
-    # into [0, STRUCT_GRADIENT_MAX] and held flat (white) beyond that, out to
-    # STRUCT_VMAX - so the axis/colorbar reads to 20 while the color only distinguishes
-    # differences within the tighter, more informative 0-10 Å range.
+
+def build_panel_c(size, padding):
+    nc = stylia.NamedColors()
+    fig, ax = plt.subplots(figsize=size)
+    fig.patch.set_facecolor("white")
+    stylize(ax)
+
     struct_cmap_full = stylia.FadingColormap("cobalt", transformation=None).cmap.reversed()
     struct_cmap = clipped_gradient_cmap(struct_cmap_full, STRUCT_VMIN, STRUCT_VMAX, STRUCT_GRADIENT_MAX)
     struct_n = struct_matrix.shape[0]
-    # Distribution panel: main filled curve = local RMSD (lower triangle), single shared
-    # 0-20 scale with the heatmap/colorbar (no second axis). Only 2/206 (~1%) global
-    # values exceed 20 (max ~22), so no clipping needed for the overlay KDE either.
-    # Global RMSD (upper triangle) is overlaid as a thin dashed black line, same
-    # convention as panel b.
     struct_local_values = struct_matrix[np.tril_indices(struct_n, k=-1)]
     struct_global_values = struct_matrix[np.triu_indices(struct_n, k=1)]
-    plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[1, 0])), struct_matrix, gene_labels, struct_cmap,
-                             STRUCT_VMIN, STRUCT_VMAX, "Structural RMSD (Å)",
-                             ticks=np.arange(STRUCT_VMIN, STRUCT_VMAX + 1, 5), line_color=nc.cobalt, abc="c",
-                             dist_values=struct_local_values, overlay_values=struct_global_values)
+    plot_comparison_heatmap(ax, struct_matrix, gene_labels, struct_cmap, STRUCT_VMIN, STRUCT_VMAX,
+                             "Structural RMSD (Å)", ticks=np.arange(STRUCT_VMIN, STRUCT_VMAX + 1, 5),
+                             line_color=nc.cobalt, dist_values=struct_local_values,
+                             overlay_values=struct_global_values)
+    save_panel(fig, "c", padding=padding)
 
-    # Third distinct color family (lime). Reversed for the same reason as panel c — for
-    # cosine distance, LOW value = more similar. Same tick set drives both the boxplot and
-    # the colorbar (via the shared `ticks` param), so they can't drift out of sync.
-    pocketvec_cmap = stylia.FadingColormap("lime", transformation=None).cmap.reversed()
-    plot_comparison_heatmap(stylize(fig.add_subplot(right_gs[2, 0])), pocketvec_matrix, gene_labels, pocketvec_cmap,
-                             POCKETVEC_VMIN, POCKETVEC_VMAX, "PocketVec cosine distance",
-                             ticks=np.arange(POCKETVEC_VMIN, POCKETVEC_VMAX + 0.001, 0.02), line_color=nc.lime, abc="d")
 
-    # "a" is placed via fig.text() at panel b's own measured title height (rather than
-    # first_structure_ax.set_title(pad=...)) because panel b's "b" label sits on dax,
-    # which starts BELOW the boxplot (tax) appended above it — the structures grid has no
-    # such panel above its top row, so the two axes' own tops don't line up on their own.
-    fig.canvas.draw()
-    b_title_bbox = b_dax.title.get_window_extent()
-    title_y_fig = fig.transFigure.inverted().transform((0, b_title_bbox.y0))[1]
-    a_x_fig = first_structure_ax.get_position().x0 - 0.015
-    fig.text(a_x_fig, title_y_fig, "a", fontweight="bold", fontsize=stylia.FONTSIZE_BIG,
-             ha="left", va="bottom", transform=fig.transFigure)
+def build_panel_d(size, padding):
+    """Blank placeholder - previously a PocketVec cosine-distance heatmap, dropped per
+    request. Reserved for future content; only its "d" label (from save_panel) shows."""
+    fig, ax = plt.subplots(figsize=size)
+    fig.patch.set_facecolor("white")
+    ax = stylize(ax)
+    ax.axis("off")
+    stylia.label(ax, xlabel="", ylabel="")
+    save_panel(fig, "d", padding=padding)
 
-    # Skips stylia.save_figure()'s wrapper (its hardcoded plt.tight_layout() call doesn't
-    # handle nested GridSpecs predictably) — spacing here is fully controlled by the
-    # subgridspecs' own hspace/wspace and each heatmap's make_axes_locatable pads.
-    # pad_inches adds a small uniform margin around the tightly-cropped content (default
-    # bbox_inches="tight" crop otherwise leaves ~zero space on any side, including left).
-    for ext in ("png", "pdf"):
-        output_path = os.path.join(plots_dir, f"figure_1.{ext}")
-        plt.savefig(output_path, dpi=600, transparent=False, bbox_inches="tight", pad_inches=0.15)
-        print(f"Saved to {output_path}")
-    plt.close(fig)
+
+def main(rerun=False, subpanels=None, show_grids=False, store_pymol=False, remove_pngs=False):
+    if subpanels is None:
+        subpanels = PANEL_LETTERS
+    sizes = load_panel_sizes(subpanels)
+    paddings = load_panel_padding(subpanels)
+
+    for letter in subpanels:
+        if sizes[letter][0] > MAX_WIDTH_IN:
+            print(f"WARNING: panel '{letter}' delta_x is {sizes[letter][0] * 2.54:.2f}cm, exceeding "
+                  f"the {MAX_WIDTH_IN * 2.54:.2f}cm Nature two-column guideline by "
+                  f"{(sizes[letter][0] - MAX_WIDTH_IN) * 2.54:.2f}cm.")
+
+    if "a" in subpanels:
+        render_protein_structures(proteins=PROTEINS, rerun=rerun)
+        build_panel_a(sizes["a"], paddings["a"], show_grids=show_grids)
+        cleanup_intermediate_files(store_pymol=store_pymol, remove_pngs=remove_pngs)
+
+    if "b" in subpanels:
+        build_panel_b(sizes["b"], paddings["b"])
+
+    if "c" in subpanels:
+        build_panel_c(sizes["c"], paddings["c"])
+
+    if "d" in subpanels:
+        build_panel_d(sizes["d"], paddings["d"])
+
+    merge_panels()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rerun", action="store_true", default=False, help="Force PyMOL re-rendering for every protein, even if its figure_*.png already exists")
-    parser.add_argument("--remove", action="store_true", default=False, help="Delete the per-protein figure_*.png renders after building the composite (default: keep them)")
-    parser.add_argument("--store-pymol", action="store_true", default=False, help="Keep the per-protein PyMOL .pse sessions instead of deleting them after use")
-    parser.add_argument("--show-grids", action="store_true", default=False, help="Draw each subplot's GridSpec rectangle (red spines) to visualize the underlying grid layout")
+    parser.add_argument("--rerun", action="store_true", default=False,
+                         help="Force PyMOL re-rendering of panel a's per-protein PNGs, even if they already exist")
+    parser.add_argument("--remove", action="store_true", default=False,
+                         help="Delete panel a's per-protein figure_*.png renders after building it (default: keep them)")
+    parser.add_argument("--store-pymol", action="store_true", default=False,
+                         help="Keep panel a's per-protein PyMOL .pse sessions instead of deleting them after use")
+    parser.add_argument("--show-grids", action="store_true", default=False,
+                         help="Draw panel a's GridSpec rectangles (red spines) to visualize the underlying grid layout")
+    parser.add_argument("--subpanels", type=str, default=None,
+                         help="Comma-separated subset of panels to (re)generate (e.g. 'b,c'), from "
+                              f"{{{','.join(PANEL_LETTERS)}}}. Default: all. Fig_1_full.pdf is always "
+                              "re-merged from whatever Fig_1{letter}.pdf files currently exist on disk.")
     args = parser.parse_args()
-
-    render_protein_structures(proteins=PROTEINS, rerun=args.rerun)
-    render_master_figure(show_grids=args.show_grids)
-    cleanup_intermediate_files(store_pymol=args.store_pymol, remove_pngs=args.remove)
+    if args.subpanels is None:
+        subpanels = PANEL_LETTERS
+    else:
+        subpanels = [p.strip() for p in args.subpanels.split(",")]
+        invalid = [p for p in subpanels if p not in PANEL_LETTERS]
+        if invalid:
+            parser.error(f"Unknown panel(s) {invalid}, must be from {PANEL_LETTERS}")
+    main(rerun=args.rerun, subpanels=subpanels, show_grids=args.show_grids,
+         store_pymol=args.store_pymol, remove_pngs=args.remove)

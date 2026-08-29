@@ -10,9 +10,11 @@ scripts/39_reduce_n_hits_I.py's collapse_per_protein, generalized here from ~4 c
 21. Target identity doesn't matter for this analysis - only how many distinct genes a compound
 hits.
 
-compute_gene_min_scores(): builds the full compound x pocket score matrix (docking_utils.
-build_matrix over all 276 pockets) and reduces pockets -> genes via min-per-gene-group. Not cached
-to disk - only the final per-cutoff hit CSVs are kept.
+load_real_pocket_scores(): builds the full compound x pocket score matrix (docking_utils.build_matrix
+over all 276 pockets). compute_gene_min_scores(pocket_scores): reduces that matrix pockets -> genes
+via min-per-gene-group. Split into two functions (rather than one) so compute_gene_summary_stats can
+also reuse the raw per-pocket matrix to split HL/REAL10B docking scores by catalytic vs
+non-catalytic pocket. Not cached to disk - only the final per-cutoff hit CSVs are kept.
 
 compute_multi_target_hits(): for each cutoff in CUTOFFS, counts how many of the 21 genes each
 compound hits, filters to n_targets >= MIN_TARGETS, and saves one CSV per cutoff (compound_id,
@@ -60,9 +62,24 @@ PANEL_A_CUTOFFS = [-8, -9, -10, -11, -12]
 SELECTED_SET_CUTOFF = -11
 
 # User-confirmed per-gene overrides for compute_gene_summary_stats' otherwise-NaN novelty /
-# experimental_tractability placeholders. Genes not listed here stay NaN.
+# experimental_tractability placeholders. Genes not listed here stay NaN (no reported attempt
+# either way - "we don't know", not "it failed").
 NOVELTY_OVERRIDES = {"ileS": False}
-EXPERIMENTAL_TRACTABILITY_OVERRIDES = {"glyS": False}
+
+# True = reported to express OK in the literature review (pheS/pheT: Gade et al. 2025 Eur J Med
+# Chem, Michalska et al. 2021 NAR, Wang et al. 2021 JBC; aspS: Gurcha et al. 2014 PLoS ONE; lysS:
+# Green et al. 2022 Nat Commun, Davis et al. 2025 J Med Chem; ileS: Sassanfar et al. 1996
+# Biochemistry, functional complementation/charging assay, not purified to homogeneity but
+# reported to express; metS/leuS: Kovalenko et al. 2019 Med Chem Commun, IC50s imply active
+# enzyme; trpS: Yang et al. 2022 ACS Chem Biol; gltS/gluS: Paravisi et al. 2009 FEBS J, purified to
+# homogeneity). False = glyS, the one gene reported NOT to express solubly in E. coli (Fenwick et
+# al. 2025 PLoS One switched to M. smegmatis and still found an unstable monomer/disordered active
+# site; confirmed independently by our experimental collaborators).
+EXPERIMENTAL_TRACTABILITY_OVERRIDES = {
+    "pheS": True, "pheT": True, "aspS": True, "lysS": True, "ileS": True,
+    "metS": True, "leuS": True, "trpS": True, "gltS": True,
+    "glyS": False,
+}
 
 
 def banner(title):
@@ -77,7 +94,7 @@ def pocket_to_gene(pocket, uniprot_to_gene):
     return uniprot_to_gene.get(uniprot_ac)
 
 
-def compute_gene_min_scores():
+def load_real_pocket_scores():
     banner("Loading gene mapping from figure 1's color mapping")
     with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
         uniprot_to_gene = json.load(f)["uniprot_to_gene"]
@@ -93,6 +110,13 @@ def compute_gene_min_scores():
         pocket_map[pocket] = pocket
     pocket_scores = build_matrix(pocket_map, LIBRARIES["REAL"], label="Loading pocket scores")
     print(f"Pocket score matrix: {pocket_scores.shape[0]:,} compounds x {pocket_scores.shape[1]} pockets")
+    return pocket_scores
+
+
+def compute_gene_min_scores(pocket_scores):
+    banner("Loading gene mapping from figure 1's color mapping")
+    with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
+        uniprot_to_gene = json.load(f)["uniprot_to_gene"]
 
     banner("Reducing pockets -> genes (min score per gene, i.e. best of that gene's own pockets)")
     gene_of_pocket = {p: pocket_to_gene(p, uniprot_to_gene) for p in pocket_scores.columns}
@@ -152,14 +176,17 @@ def compute_protein_hit_counts(gene_scores):
     print(f"Saved to {out_path}")
 
 
-def compute_gene_summary_stats(gene_scores):
-    banner("Per-gene summary stats (21 proteins): max P2Rank prob + best HL Lib / REAL 10B docking scores")
+def compute_gene_summary_stats(gene_scores, pocket_scores):
+    banner("Per-gene summary stats (21 proteins): max P2Rank prob + best HL Lib / REAL 10B docking scores, "
+           "each further split by catalytic vs non-catalytic pocket")
     with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
         uniprot_to_gene = json.load(f)["uniprot_to_gene"]
 
     pockets = pd.read_csv(os.path.join(ROOT, "output", "pocket_detection_data.csv"))
     pockets["gene"] = pockets["Uniprot AC"].map(uniprot_to_gene)
     max_prob = pockets.groupby("gene")["Pocket probability"].max()
+    all_genes = list(max_prob.index)
+    catalytic_map = load_pocket_catalytic_map()
 
     # HL Lib = Enamine Hit Locator Library 100k, LIBRARIES["DL"] - see scripts/56, 61, 68,
     # figure_2_calculations.py's own "HL" naming for the same library.
@@ -168,12 +195,25 @@ def compute_gene_summary_stats(gene_scores):
     dl_scores = build_matrix(pocket_map, LIBRARIES["DL"], label="Loading HL Lib pocket scores")
     gene_of_pocket = {p: pocket_to_gene(p, uniprot_to_gene) for p in dl_scores.columns}
     best_hl_score = dl_scores.T.groupby(gene_of_pocket).min().T.min(axis=0)
+    # Catalytic/non-catalytic split reuses dl_scores (already loaded above) - just filters which
+    # columns go into the per-gene min, no second build_matrix/disk read.
+    dl_cat_pockets = [p for p in dl_scores.columns if catalytic_map.get(p, False)]
+    dl_noncat_pockets = [p for p in dl_scores.columns if not catalytic_map.get(p, False)]
+    best_hl_score_cat = _best_score_per_gene(dl_scores, dl_cat_pockets, gene_of_pocket, all_genes)
+    best_hl_score_noncat = _best_score_per_gene(dl_scores, dl_noncat_pockets, gene_of_pocket, all_genes)
 
     # REAL 10B (round-2) best score per gene, reusing the gene_scores matrix compute_gene_min_scores
     # already built (compound x gene, min-per-gene-group over that gene's own pockets) rather than
     # rebuilding the 99,105-compound x 276-pocket matrix from scratch.
     real_gene_cols = [c for c in gene_scores.columns if c != "smiles"]
     best_real_score = gene_scores[real_gene_cols].min(axis=0)
+    # Catalytic/non-catalytic split needs the raw per-pocket matrix (pocket_scores, passed in from
+    # main()) since gene_scores has already been reduced pockets -> genes and can't be re-split.
+    gene_of_pocket_real = {p: pocket_to_gene(p, uniprot_to_gene) for p in pocket_scores.columns}
+    real_cat_pockets = [p for p in pocket_scores.columns if catalytic_map.get(p, False)]
+    real_noncat_pockets = [p for p in pocket_scores.columns if not catalytic_map.get(p, False)]
+    best_real_score_cat = _best_score_per_gene(pocket_scores, real_cat_pockets, gene_of_pocket_real, all_genes)
+    best_real_score_noncat = _best_score_per_gene(pocket_scores, real_noncat_pockets, gene_of_pocket_real, all_genes)
 
     # Cross-polypharmacology score: raw pairwise hit-overlap count with every OTHER gene, at
     # SELECTED_SET_CUTOFF - i.e. figure_3_plot.py's plot_circos_overlap own node_strength (row sum
@@ -198,6 +238,12 @@ def compute_gene_summary_stats(gene_scores):
             "max_p2rank_prob": float(max_prob[gene]),
             "best_hl_docking_score": float(best_hl_score[gene]),
             "best_real10b_docking_score": float(best_real_score[gene]),
+            # NaN for gatA/pheT, which have zero catalytic-labeled pockets - not a bug, see
+            # load_pocket_catalytic_map/CATALYTIC_CONFIDENCE_MIN.
+            "best_hl_docking_score_catalytic": float(best_hl_score_cat[gene]),
+            "best_hl_docking_score_noncatalytic": float(best_hl_score_noncat[gene]),
+            "best_real10b_docking_score_catalytic": float(best_real_score_cat[gene]),
+            "best_real10b_docking_score_noncatalytic": float(best_real_score_noncat[gene]),
             "cross_polypharmacology_score": int(cross_polypharm_score[gene]),
             # Not computed yet - NaN unless overridden above.
             "novelty": NOVELTY_OVERRIDES.get(gene, float("nan")),
@@ -219,6 +265,26 @@ def compute_gene_summary_stats(gene_scores):
 # rest (weak/no evidence or no catalytic label at all, confidence 0-2) - a threshold the user
 # specified directly, not chosen here.
 CATALYTIC_CONFIDENCE_MIN = 3
+
+
+def load_pocket_catalytic_map():
+    """{pocket_dir_name: is_catalytic} for all 276 pockets, e.g. 'alphafold2_P9WFS9_model_0_pocket_1'
+    -> True/False at CATALYTIC_CONFIDENCE_MIN, for splitting compute_gene_summary_stats' docking-score
+    rows by catalytic vs non-catalytic pocket (see figure_3_plot.py's TIER_ROW_FIELDS)."""
+    interpro = pd.read_csv(os.path.join(ROOT, "output", "77_pocket_annotation", "pocket_detection_interpro_updated.csv"),
+                            keep_default_na=False)
+    label = interpro["File name"].str.replace(".pdb", "", regex=False) + "_pocket_" + interpro["Pocket number"].astype(str)
+    return dict(zip(label, interpro["catalytic_confidence"] >= CATALYTIC_CONFIDENCE_MIN))
+
+
+def _best_score_per_gene(score_matrix, pocket_cols, gene_of_pocket, all_genes):
+    """Min score per gene over just `pocket_cols` (a subset of score_matrix's columns), reindexed to
+    `all_genes` so a gene with no pockets in this subset (e.g. gatA/pheT have zero catalytic pockets)
+    gets an explicit NaN rather than being silently dropped or raising a KeyError downstream."""
+    if not pocket_cols:
+        return pd.Series(float("nan"), index=all_genes)
+    grouping = {p: gene_of_pocket[p] for p in pocket_cols}
+    return score_matrix[pocket_cols].T.groupby(grouping).min().T.min(axis=0).reindex(all_genes)
 
 
 # The other 3 domain rows (tRNA binding, Editing, Anticodon binding) have no ligand-evidence
@@ -401,10 +467,11 @@ def compute_selected_set_protein_hits():
 
 
 def main():
-    gene_scores = compute_gene_min_scores()
+    pocket_scores = load_real_pocket_scores()
+    gene_scores = compute_gene_min_scores(pocket_scores)
     compute_multi_target_hits(gene_scores)
     compute_protein_hit_counts(gene_scores)
-    compute_gene_summary_stats(gene_scores)
+    compute_gene_summary_stats(gene_scores, pocket_scores)
     compute_pocket_scores()
     compute_selected_set_protein_hits()
     compute_top_avg_score_compounds_pockets()
