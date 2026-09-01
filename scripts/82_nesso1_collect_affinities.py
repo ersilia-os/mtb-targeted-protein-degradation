@@ -4,7 +4,7 @@ Reads script 80's affinity results CSV (one row per gene_name x compound) and jo
 (from compounds.csv), writing one enriched, long-format CSV. Revised for the per-gene design (see
 script 78's docstring): no more pocket-level broadcast/dedup bookkeeping (explode-to-pockets,
 shared_structure_with) since there's no pocket concept left at all -- Nesso-1's results are
-already exactly at the granularity they were computed at (5 genes), nothing to fan back out to.
+already exactly at the granularity they were computed at (21 genes), nothing to fan back out to.
 
 Stays raw/lossless (one row per gene x compound result) -- does not aggregate further, that's a
 downstream concern. Also plots, per gene with data so far, an affinity_pred_value distribution

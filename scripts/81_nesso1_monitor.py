@@ -2,7 +2,7 @@
 """
 Prints a per-gene progress table for script 80's run: predictions done, affinity predictions
 done, out of 1,095 compounds each (revised for the per-gene design, see script 78's docstring --
-5 genes, no more per-structure/dimer columns). Read-only -- inspects output/80_nesso1_docking/ on
+21 genes, no more per-structure/dimer columns). Read-only -- inspects output/80_nesso1_docking/ on
 disk, does not touch anything. Meant to be re-run repeatedly over the course of a run (on the IRB
 cluster, where nesso_results/ actually lives, via script 83's array), not a pipeline stage.
 

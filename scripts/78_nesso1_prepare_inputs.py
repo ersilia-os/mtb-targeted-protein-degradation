@@ -10,9 +10,9 @@ byte-identical Nesso-1 predictions, because Nesso-1 only ever sees whatever sequ
 extracted from each structure file, and multiple structure-prediction methods for the same
 full-length, gap-free protein extract to the exact same sequence. Given that, pocket- or
 structure-level granularity adds nothing Nesso-1 can act on -- the right unit is the protein
-itself (user decision, 2026-08-28): exactly 5 canonical protein sequences (pheS, pheT, aspS,
-lysS, alaS), each tested against the full compound set. This also drops the 7K98 pheS+pheT dimer
-entirely -- it isn't one of the 5 named proteins, and Nesso-1 can't be pointed at its
+itself: all 21 Mtb tRNA synthetases (the project's full CRISPR-fitness-screen target set, see
+CLAUDE.md), each tested against the full compound set. This also drops the 7K98 pheS+pheT dimer
+entirely -- it isn't a named protein in its own right, and Nesso-1 can't be pointed at its
 dimerization-interface pocket any more than it could at any other pocket.
 
 Sequences come from data/mtb_trna_synthetases_bosch_2021_fig5_annotated.csv's own `sequence`
@@ -35,17 +35,12 @@ PROTEINS_CSV = os.path.join(ROOT, "data", "mtb_trna_synthetases_bosch_2021_fig5_
 OUTPUT_DIR = os.path.join(ROOT, "output", "78_nesso1_prepare_inputs")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-GENES = ["pheS", "pheT", "aspS", "lysS", "alaS"]
-
 
 def main():
     df = pd.read_csv(PROTEINS_CSV)
-    sub = df[df["gene_name_in_bosch_2021"].isin(GENES)][
-        ["gene_name_in_bosch_2021", "uniprot_ac", "sequence"]
-    ].rename(columns={"gene_name_in_bosch_2021": "gene_name"})
-
-    missing = set(GENES) - set(sub["gene_name"])
-    assert not missing, f"Gene(s) not found in {PROTEINS_CSV}: {missing}"
+    sub = df[["gene_name_in_bosch_2021", "uniprot_ac", "sequence"]].rename(
+        columns={"gene_name_in_bosch_2021": "gene_name"}
+    )
 
     sub["sequence_length"] = sub["sequence"].str.len()
     sub = sub.sort_values("gene_name").reset_index(drop=True)

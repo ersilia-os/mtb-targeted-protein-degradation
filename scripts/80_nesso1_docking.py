@@ -6,10 +6,11 @@
 Runs Nesso-1 on script 79's YAML inputs (`nesso predict`) and aggregates the resulting
 affinity.json files into one CSV. Unlike Boltz-2's script 73, there is no MSA-bootstrap phase --
 Nesso-1 computes and caches ESM-2 embeddings internally per sequence, no external API call
-involved. Revised from an earlier per-structure/dimer design to a per-gene design (5 canonical
-protein sequences, see script 78's docstring) -- there is no more dimer complex or OOM-fallback
-logic here; the 3090 partition alone was already confirmed (empirically, on nebula's cluster
-equivalent) to comfortably handle even the largest single protein (alaS, 904 residues).
+involved. Revised from an earlier per-structure/dimer design to a per-gene design (21 Mtb tRNA
+synthetases, see script 78's docstring) -- there is no more dimer complex or OOM-fallback logic
+here. The 3090 partition was only empirically confirmed up to alaS (904 residues); 3 of the 21
+genes are larger (ileS 1041, leuS 969, valS 886) -- smoke-test the new largest (ileS) before
+submitting the full array (script 83), same convention as below.
 
 Scope-limiting flags (--genes, --max-compounds, --out-subdir) let the exact same code path serve
 both a cheap single-gene/single-compound smoke test and the full production run -- run the smoke

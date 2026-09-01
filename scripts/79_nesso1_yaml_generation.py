@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generates Nesso-1 YAML input files from script 78's protein_sequences.csv and script 71's
-compounds.csv -- one YAML per (gene, compound) pair, 5 genes x 1,095 compounds = 5,475 total
+compounds.csv -- one YAML per (gene, compound) pair, 21 genes x 1,095 compounds = 22,995 total
 (revised from the earlier 11-structure design, see script 78's docstring for why).
 
 Nesso-1's YAML schema (docs/prediction.md in recursionpharma/nesso) has no `msa:` key (no MSA
