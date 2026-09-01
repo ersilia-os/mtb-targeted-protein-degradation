@@ -43,6 +43,7 @@ from matplotlib.patches import Polygon
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import gaussian_kde
 from pypdf import PdfReader, PdfWriter, Transformation
+import pymupdf
 import pymol
 from pymol import cmd
 import stylia
@@ -521,6 +522,108 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
 
 
 # ===========================================================================
+# Panel d data + helper: P2Rank probability curve + domain-annotation strips
+# (migrated from figure_3_plot.py's own panel c, along with
+# figure_1_calculations.py's compute_pocket_scores - figure 3's panel c no
+# longer needs this data, so it was moved here rather than duplicated)
+# ===========================================================================
+
+# Vertical gap between the P2Rank prob. row and the 4-domain-row block below it -
+# independent of MOSAIC's own (default) row/column gaps.
+ROW_BLOCK_HSPACE = 0.4
+
+# Vertical gap among just the 4 domain rows themselves, via their own inner subgridspec.
+DOMAIN_ROWS_HSPACE = 0.45
+
+# Row heights for the 5 stacked rows: P2Rank prob. gets 4 parts, each of the 4 domain
+# bands gets 1 part (8 parts total) - so the probability curve occupies exactly
+# 4/8 = 1/2 of the total stack height, versus an equal 1/5 split.
+ROW_BLOCK_HEIGHT_RATIOS = [4, 1, 1, 1, 1]
+
+# Fixed absolute left margin, wide enough to fit the longest row label ("Anticodon
+# binding") at its own fixed point size - an absolute width (converted to a fraction of
+# this panel's own delta_x in build_panel_d), not a fixed fraction, so it stays correct
+# regardless of how panel d's own width is later tuned in panel_layout.csv.
+ROW_LABEL_LEFT_MARGIN_IN = 0.75
+
+# Extra headroom (axes-fraction) added on top of each label's own anchor y, so the label
+# sits with real empty space above the plot box instead of flush against it.
+LABEL_GAP = 0.02
+
+# Typical P2Rank pocket-probability cutoff, per request - source/cite before this value
+# appears in a manuscript legend (e.g. the P2Rank paper or its own documentation). Only
+# used to stop the fill in plot_pocket_scores_row below the cutoff; no other visual
+# change (no reference line, no tick relabeling).
+P2RANK_CUTOFF = 0.2
+
+
+def plot_pocket_scores_row(ax):
+    """Panel d's 1st row (of 5, alongside the 4 plot_domain_strip_row bands) -
+    pocket_rank on the x-axis (not y), probability on y. Only fills above P2RANK_CUTOFF -
+    sub-cutoff pockets are left unfilled."""
+    scores = pd.read_csv(os.path.join(plots_dir, "figure_1_pocket_scores.csv"))
+    nc = stylia.NamedColors()
+    ax.plot(scores["pocket_rank"], scores["pocket_probability"], color=nc.orchid, linewidth=stylia.LINEWIDTH, zorder=2)
+    above_cutoff = scores["pocket_probability"].where(scores["pocket_probability"] >= P2RANK_CUTOFF)
+    ax.fill_between(scores["pocket_rank"], above_cutoff, color=nc.orchid, alpha=0.3, zorder=1)
+    ax.set_xlim(scores["pocket_rank"].min(), scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    # Explicit tick at 0.5 (unlabeled) in addition to the 0/1 endpoints - a visible
+    # midpoint reference without cluttering the axis with a "0.5" label.
+    ax.set_yticks([0, 0.5, 1])
+    ax.set_yticklabels(["0", "", "1"])
+    stylia.label(ax, xlabel="", ylabel="P2Rank prob.")
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    # ha alone doesn't control distance from the axis - only how the text aligns around its own
+    # anchor point, and this row's real "0"/"1" tick labels throw off matplotlib's automatic
+    # anchor placement (Axis._autolabelpos) when combined with rotation=0, pushing the anchor (and
+    # so the whole label) too far left. set_label_coords pins the anchor explicitly, close to the
+    # tick labels, and disables that automatic repositioning so it stays put on every redraw.
+    ax.yaxis.set_label_coords(-0.022, 0.5, transform=ax.transAxes)
+
+
+# The 4 domain bands: column in figure_1_pocket_scores.csv -> band title -> its own
+# "present" color, against a shared white "absent" background. Catalytic uses a
+# ligand-evidence confidence threshold (CATALYTIC_CONFIDENCE_MIN); the other 3 use plain
+# InterPro label presence, mutually exclusive with Catalytic - see
+# figure_1_calculations.py's compute_pocket_scores/CURATED_LABEL_COLUMNS.
+DOMAIN_STRIP_COLUMNS = [
+    ("is_catalytic", "Catalytic", "crimson"),
+    ("is_trna_binding", "tRNA binding", "cobalt"),
+    ("is_editing", "Editing", "amber"),
+    ("is_anticodon_binding", "Anticodon binding", "lime"),
+]
+
+# Each domain-row "present" mark's width, in pocket_rank units (1 unit = 1 pocket's own
+# rank spacing) - 2x a pocket's natural 1-unit spacing, for better legibility.
+DOMAIN_ROW_BAR_WIDTH = 2.0
+
+
+def plot_domain_strip_row(ax, column, title, color_name):
+    """One row of panel d (4 stacked rows total, 1 per DOMAIN_STRIP_COLUMNS entry) - a
+    thin colored cell per pocket (all 276, same pocket_rank x-order - sorted by P2Rank
+    probability descending, rank 1 leftmost), in this band's own color where `column` is
+    True, white otherwise - figure_1_calculations.py's compute_pocket_scores, itself from
+    output/77_pocket_annotation/pocket_detection_interpro_updated.csv."""
+    scores = pd.read_csv(os.path.join(plots_dir, "figure_1_pocket_scores.csv"))
+    nc = stylia.NamedColors()
+    present_color = getattr(nc, color_name)
+    colors = [present_color if v else nc.white for v in scores[column]]
+    ax.bar(scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(scores["pocket_rank"].min(), scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel=title)
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+
+
+# ===========================================================================
 # Panel-saving scaffolding (ported from figure_3_plot.py / figure_4_plot.py)
 # ===========================================================================
 
@@ -627,6 +730,17 @@ def merge_panels():
         writer.write(f)
     print(f"Saved merged master figure ({total_width_cm:.2f} x {total_height_cm:.2f} cm) to {output_path}")
 
+    # Flattened PNG alongside the vector PDF (user request), rendered at the same dpi=600
+    # save_panel's own PDFs already use for their embedded raster content - pymupdf renders the
+    # already-merged page directly (no external Poppler binary, unlike pdftoppm/pdf2image).
+    png_path = os.path.join(plots_dir, "Fig_1_full.png")
+    pdf_doc = pymupdf.open(output_path)
+    zoom = 600 / 72  # pymupdf's Pixmap render defaults to 72dpi
+    pix = pdf_doc[0].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+    pix.save(png_path)
+    pdf_doc.close()
+    print(f"Saved {png_path}")
+
 
 # ===========================================================================
 # Panel builders
@@ -695,14 +809,32 @@ def build_panel_c(size, padding):
 
 
 def build_panel_d(size, padding):
-    """Blank placeholder - previously a PocketVec cosine-distance heatmap, dropped per
-    request. Reserved for future content; only its "d" label (from save_panel) shows."""
-    fig, ax = plt.subplots(figsize=size)
+    """P2Rank probability curve + 4 domain bands, migrated from figure_3_plot.py's own
+    panel c (previously a blank placeholder here, before that a PocketVec cosine-distance
+    heatmap). Outer gridspec splits P2Rank prob. from the 4-domain-row block
+    (ROW_BLOCK_HSPACE gap, ROW_BLOCK_HEIGHT_RATIOS split); an inner subgridspec then packs
+    the 4 domain rows with their own tighter DOMAIN_ROWS_HSPACE gap."""
+    fig = plt.figure(figsize=size)
     fig.patch.set_facecolor("white")
-    ax = stylize(ax)
-    ax.axis("off")
-    stylia.label(ax, xlabel="", ylabel="")
-    save_panel(fig, "d", padding=padding)
+    outer_gs = fig.add_gridspec(2, 1, height_ratios=[ROW_BLOCK_HEIGHT_RATIOS[0], sum(ROW_BLOCK_HEIGHT_RATIOS[1:])],
+                                 hspace=ROW_BLOCK_HSPACE)
+    plot_pocket_scores_row(stylize(fig.add_subplot(outer_gs[0, 0])))
+    domain_gs = outer_gs[1, 0].subgridspec(len(DOMAIN_STRIP_COLUMNS), 1, hspace=DOMAIN_ROWS_HSPACE)
+    for i, (column, title, color_name) in enumerate(DOMAIN_STRIP_COLUMNS):
+        ax = stylize(fig.add_subplot(domain_gs[i, 0]))
+        plot_domain_strip_row(ax, column=column, title=title, color_name=color_name)
+    # tight_layout() isn't compatible with this nested subgridspec (falls back to
+    # matplotlib's stock default margins, clipping the longest row labels on the left) -
+    # figure_1_plot.py's own save_panel() exposes an explicit escape hatch for exactly
+    # this, so the margin is set directly here rather than via a manual post-hoc
+    # fig.subplots_adjust() call after save_panel() runs (figure_3_plot.py's own
+    # workaround, needed there only because its simpler save_panel() lacks this
+    # parameter). Left margin is a FIXED ABSOLUTE width (ROW_LABEL_LEFT_MARGIN_IN),
+    # converted to a fraction of this panel's own delta_x - stays correct regardless of
+    # how panel d's own width is tuned in panel_layout.csv.
+    save_panel(fig, "d", use_tight_layout=False,
+               subplots_adjust=dict(left=ROW_LABEL_LEFT_MARGIN_IN / size[0], right=0.995),
+               padding=padding)
 
 
 def main(rerun=False, subpanels=None, show_grids=False, store_pymol=False, remove_pngs=False):

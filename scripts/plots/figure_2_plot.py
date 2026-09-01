@@ -15,7 +15,9 @@ own "a" label is baked on separately (_render_panel_a_label(), a small transpare
 overlay PDF merged on top of it) since scheme.pdf itself carries no label. Merging into
 one positioned master PDF (Fig_2_full.pdf) happens in this same file (merge_panels(),
 called at the end of main()), matching figure_1_plot.py's choice to fold plot+merge into
-one script.
+one script. merge_panels() also exports a flattened Fig_2_full.png of that same merged
+page (user request) via pymupdf - a real Python dependency, but not Poppler, so this
+doesn't reintroduce the dependency panel a's own vector merge above deliberately avoids.
 
 panel_layout.csv is a first-draft starting point (a's box matches scheme.pdf's own
 measured size; b/c/d are rough guesses), to be tuned iteratively by rendering and
@@ -40,6 +42,7 @@ from matplotlib.lines import Line2D
 from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 from PIL import Image
 from pypdf import PdfReader, PdfWriter, Transformation
+import pymupdf
 from scipy.stats import gaussian_kde
 import stylia
 from stylia.config import get_fg_color
@@ -186,13 +189,17 @@ def load_docking_snapshot_index():
     return pd.read_csv(index_path).sort_values("rank")
 
 
-def plot_gene_panel(ax, gene, color, docking_df=None, show_yaxis=True, snapshot_rows=None):
+def plot_gene_panel(ax, gene, color, docking_df=None, show_ylabel=False, show_yticks=False,
+                     snapshot_rows=None):
     """One cell of panel c's 3x7 gene grid, titled with a colored circle + gene name.
     Plots each library's per-pocket median and p1 docking score (x = pocket identity,
     unlabeled - only their relative order matters here) when docking_df is given;
     otherwise a dummy single-dot scatter placeholder (for a gene with no docking data at
-    all) in the gene's own color. show_yaxis=False drops the "Docking score" ylabel and y
-    tick numbers - the 3x7 grid only needs them on each row's first column."""
+    all) in the gene's own color. show_ylabel (row's first column) draws the "Docking
+    score" text with no tick marks/numbers; show_yticks (row's LAST column) draws the
+    tick marks/numbers on that column's right edge with no label text - splitting the two
+    across opposite ends of the row (rather than stacking both on the first column) is
+    what lets the row's own left margin shrink to just the label's width, per request."""
     ax.patch.set_visible(False)
     if docking_df is not None and not docking_df.empty:
         nc = stylia.NamedColors()
@@ -245,9 +252,15 @@ def plot_gene_panel(ax, gene, color, docking_df=None, show_yaxis=True, snapshot_
                     zorder=6)
 
         ax.set_xticks([])
-        if not show_yaxis:
-            ax.tick_params(axis="y", left=False, labelleft=False)
-        stylia.label(ax, xlabel="", ylabel="Docking score" if show_yaxis else "")
+        ax.tick_params(axis="y", left=False, labelleft=False, right=False, labelright=False)
+        if show_yticks:
+            # Numbers on the RIGHT edge of the row's last column, not attached to the labeled
+            # first column - lets the first column's own left margin shrink to just the
+            # "Docking score" text's width instead of text+numbers stacked together (same idea as
+            # figure_1's boxplot tick_right(), which keeps a label on its own separate side).
+            ax.yaxis.tick_right()
+            ax.tick_params(axis="y", right=True, labelright=True)
+        stylia.label(ax, xlabel="", ylabel="Docking score" if show_ylabel else "")
         ax.grid(True, axis="y")
     else:
         ax.scatter([0.5], [0.5], color=color, edgecolor="black", linewidth=0.5,
@@ -441,10 +454,37 @@ def merge_panels():
         writer.write(f)
     print(f"Saved merged master figure ({total_width_cm:.2f} x {total_height_cm:.2f} cm) to {output_path}")
 
+    # Flattened PNG alongside the vector PDF (user request), rendered at the same dpi=600
+    # save_panel's own PDFs already use for their embedded raster content - pymupdf renders the
+    # already-merged page directly (no external Poppler binary, unlike pdftoppm/pdf2image, so
+    # this doesn't reintroduce the Poppler dependency panel a's own merge deliberately avoids -
+    # see module docstring).
+    png_path = os.path.join(plots_dir, "Fig_2_full.png")
+    pdf_doc = pymupdf.open(output_path)
+    zoom = 600 / 72  # pymupdf's Pixmap render defaults to 72dpi
+    pix = pdf_doc[0].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+    pix.save(png_path)
+    pdf_doc.close()
+    print(f"Saved {png_path}")
+
 
 # ===========================================================================
 # Panel builders
 # ===========================================================================
+
+# Panels c and d are both 7-column grids at the same panel_layout.csv delta_x, and are meant to
+# read as one continuous set of columns (panel d's numbered snapshots cross-reference panel c's
+# per-gene plots via the same rank stars) - so their 7 columns must land at IDENTICAL x-positions/
+# widths. left/right/wspace here are explicit and shared between both build_panel_c/build_panel_d
+# (each with save_panel(..., use_tight_layout=False, ...)) instead of each panel's own independent
+# plt.tight_layout() call, which would otherwise size each panel's left margin to just its own
+# content (panel c's leftmost "Docking score" y-axis label needs real room; panel d's cells have no
+# axis decoration at all) and misalign the two grids. left is set wide enough for panel c's y-axis
+# label + tick numbers; panel d just carries that same margin as blank space on its own left edge.
+POCKET_ROW_LEFT = 0.035
+POCKET_ROW_RIGHT = 0.95
+POCKET_ROW_WSPACE = 0.08
+
 
 def build_panel_b(size, padding):
     libraries = load_libraries()
@@ -453,7 +493,10 @@ def build_panel_b(size, padding):
     for ax, prop in zip(axs, PROPERTIES):
         stylize(ax)
         plot_property(ax, prop, libraries)
-    save_panel(fig, "b", padding=padding)
+    save_panel(fig, "b", use_tight_layout=False,
+               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.62, bottom=0.32,
+                                     wspace=POCKET_ROW_WSPACE),
+               padding=padding)
 
 
 def build_panel_c(size, padding):
@@ -477,8 +520,12 @@ def build_panel_c(size, padding):
         ax = stylize(axs[row, col])
         docking_df = gene_docking_stats(docking_percentiles, gene)
         plot_gene_panel(ax, gene, gene_colors[gene], docking_df=docking_df,
-                         show_yaxis=(col == 0), snapshot_rows=snapshot_rows_by_gene.get(gene))
-    save_panel(fig, "c", padding=padding)
+                         show_ylabel=(col == 0), show_yticks=(col == len(PROPERTIES) - 1),
+                         snapshot_rows=snapshot_rows_by_gene.get(gene))
+    save_panel(fig, "c", use_tight_layout=False,
+               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.88, bottom=0.02,
+                                     wspace=POCKET_ROW_WSPACE, hspace=0.35),
+               padding=padding)
 
 
 def build_panel_d(size, padding):
@@ -494,7 +541,10 @@ def build_panel_d(size, padding):
             row = snapshot_index.iloc[i]
             image_path = os.path.join(plots_dir, "docking_snapshots", row["filename"])
             plot_docking_snapshot(ax, i + 1, image_path, row["library"], row["score"])
-    save_panel(fig, "d", padding=padding)
+    save_panel(fig, "d", use_tight_layout=False,
+               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.93, bottom=0.05,
+                                     wspace=POCKET_ROW_WSPACE),
+               padding=padding)
 
 
 def main(subpanels=None):

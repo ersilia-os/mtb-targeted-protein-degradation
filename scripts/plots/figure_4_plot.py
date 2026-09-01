@@ -67,18 +67,20 @@ Figure, not a matplotlib SubFigure), then plot_upset_panel() reads back both fig
 max across the two, and forces both to that shared scale before rasterizing - only then are they
 composited side by side the same render-to-PNG-then-imshow way as panel a/b.
 
-Panel d (interchanged with panel c - user request, same content/code, only the letter/position
-changed - see main()): two structure-choice robustness checks on the docking scores, both
-boxplots binned by docking score, whiskers at p1/p99 (whis=(1, 99), not matplotlib's default
-1.5-IQR rule - user request; min/max (whis=(0, 100)) was tried too and reverted - p1/p99
-preferred despite some very small bins (e.g. n=4) collapsing their whiskers to zero length when
-the true min/max falls outside the 1st/99th percentile threshold) with fliers/caps hidden
-(showfliers=False/showcaps=False - user request) since they'd otherwise mark everything outside
-p1/p99 as an "outlier" dot, per-bin n printed to console each run.
+Panels d and e (interchanged with the old panel c - user request, same content/code, only the
+letter/position changed - see main(); later split from one combined panel into two standalone
+ones, also per request - plot_sibling_robustness_panel/plot_affinity_panel): two structure-choice
+robustness checks on the docking scores, both boxplots binned by docking score, whiskers at
+p1/p99 (whis=(1, 99), not matplotlib's default 1.5-IQR rule - user request; min/max
+(whis=(0, 100)) was tried too and reverted - p1/p99 preferred despite some very small bins (e.g.
+n=4) collapsing their whiskers to zero length when the true min/max falls outside the 1st/99th
+percentile threshold) with fliers/caps hidden (showfliers=False/showcaps=False - user request)
+since they'd otherwise mark everything outside p1/p99 as an "outlier" dot, per-bin n printed to
+console each run.
 
-Left: does a compound's docking score in one structure of a pocket predict its score in that same
-pocket's SIBLING structure(s) - independently-detected structures P2Rank found to occupy the same
-physical site (output/77_pocket_annotation/pocket_clusters.csv's 6.14 A centroid dedup, see
+Panel d: does a compound's docking score in one structure of a pocket predict its score in that
+same pocket's SIBLING structure(s) - independently-detected structures P2Rank found to occupy the
+same physical site (output/77_pocket_annotation/pocket_clusters.csv's 6.14 A centroid dedup, see
 scripts/77_pocket_annotation/09_cluster_pockets.py)? load_sibling_avg_scores(): for the 10 curated
 pockets with at least one sibling (7K98's dimer pocket and pheT's own singleton-cluster pocket are
 excluded - nothing to compare them against), single-run score (report_old.csv, pre-replicate),
@@ -92,30 +94,36 @@ confirmed via direct S3 size-check that local data isn't just unsynced, and trac
 sourced from scripts 56/61's NON-CAT top100 selections, which only ever docked their picks against
 the curated pocket, never broadly) - a real compound-library coverage gap, not a bug.
 
-Right: Boltz-2-predicted IC50 (output/75_boltz2_collect_affinities, converted from its
-log10(IC50 uM) affinity_pred_value) next to a second method's IC50 - "Nesso", currently a
-placeholder that reuses the exact same Boltz-2 values verbatim until real Nesso predictions exist
-(user-confirmed stand-in, not a real second data source yet) - both binned by docking score
-(output/70_filtering's FILTERED_HITS_CSV), over the ~1,095 FILTERED hits x 12 pockets
-(load_docking_vs_affinity(), 13,140 pairs). A direct scatter of docking score vs. IC50 was tried
-first and rejected (too noisy to read at this population size); a boxplot PAIR per
-BOXPLOT_BIN_EDGES 1-unit docking-score bin instead (Boltz-2 spans [x-BOX_PAIR_WIDTH, x], Nesso
-spans [x, x+BOX_PAIR_WIDTH] - see that constant's own comment for why the two never collide with
-a neighboring bin's own pair), plus an open-ended -inf floor prepended at plot time (user request:
-the leftmost "-13" bin catches everything more negative than -13, including the single pair below
--14, not just a fixed window - same bin structure as the left subplot's own SIBLING_AVG_BIN_EDGES)
-up to [-9,-8) (stopping at the loosest bin the trend still rises through, since predicted IC50
-flattens/reverses past it) shows the same trend - does a stronger docking score correspond to a
-better (lower) orthogonal-method-predicted IC50?
+Panel e: Boltz-2-predicted IC50 (output/75_boltz2_collect_affinities, converted from its
+log10(IC50 uM) affinity_pred_value), binned by docking score (output/70_filtering's
+FILTERED_HITS_CSV), over the ~1,095 FILTERED hits x 12 pockets (load_docking_vs_affinity(),
+13,140 pairs). A direct scatter of docking score vs. IC50 was tried first and rejected (too noisy
+to read at this population size); a boxplot per BOXPLOT_BIN_EDGES 1-unit docking-score bin
+instead, plus an open-ended -inf floor prepended at plot time (user request: the leftmost "-13"
+bin catches everything more negative than -13, including the single pair below -14, not just a
+fixed window - same bin structure as panel d's own SIBLING_AVG_BIN_EDGES) up to [-9,-8)
+(stopping at the loosest bin the trend still rises through, since predicted IC50 flattens/reverses
+past it) shows the same trend - does a stronger docking score correspond to a better (lower)
+predicted IC50?
 
-Panel e: a PANEL_E_N_ROWS x PANEL_E_N_COLS (2x3, 6 total) grid of compound-structure slots, for a user-curated shortlist
+(An earlier version of this panel paired each bin's Boltz-2 box against a "Nesso" placeholder box
+that just duplicated the Boltz-2 values verbatim, pending real Nesso-1 predictions. Real Nesso-1
+results now exist, but were found to sit on a systematically different absolute IC50 scale from
+Boltz-2's - not validated as cross-model comparable - so Nesso-1 was dropped from this panel
+rather than plotted on the same absolute nM axis.)
+
+Panel f: a PANEL_F_N_ROWS x PANEL_F_N_COLS (2x3, 6 total) grid of compound-structure slots, for a user-curated shortlist
 (output/plots/figure_4/compounds/ids.csv, column cpd_id holding selection_table.csv source_key
-values - not cpd_id values, despite the column's name - row order = slot order). Each slot is
-just the compound's 2D structure (RDKit, rdCoordGen layout, from
+values - not cpd_id values, despite the column's name - row order = slot order). Each slot is the
+compound's 2D structure (RDKit, rdCoordGen layout, from
 output/70_filtering/filtered_hits_explorer/selection_table.csv - the molecule-auditing skill's
-own curated table) via OffsetImage/AnnotationBbox at a uniform zoom - no border, no color strip,
-no other decoration (user-confirmed: molecules only). Any slot beyond ids.csv's own row count is
-left empty.
+own curated table) via OffsetImage/AnnotationBbox at a uniform zoom, inside a square (not
+rounded) border, plus a small bordered 4-square grid of real per-protein data (pheST, aspS,
+lysS, alaS) in each of the 4 corners (see CORNER_GRID_SPECS): top corners are catalytic/
+non-catalytic docking score, bottom corners are catalytic/non-catalytic predicted affinity
+(nM) - color intensity encodes strength (white = weak, saturated = strong), same gradient
+convention as output/70_filtering/filtered_hits_explorer/viz_meta.json's own explorer. Any
+slot beyond ids.csv's own row count is left empty, border still drawn.
 
 Usage:
     python figure_4_plot.py [--rerun] [--subpanels a,b,c,d,e]
@@ -147,11 +155,13 @@ from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from matplotlib.patches import FancyBboxPatch, Rectangle
 from pymol import cmd
 from pypdf import PdfReader, PdfWriter, Transformation
+import pymupdf
 from rdkit import Chem
 from rdkit.Chem import rdCoordGen
 from rdkit.Chem.Draw import rdMolDraw2D
 from scipy.ndimage import gaussian_filter
 from scipy.stats import pearsonr, rankdata, spearmanr
+from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
 
 from docking_utils import LIBRARIES, load_scores
@@ -166,10 +176,10 @@ renders_dir = os.path.join(plots_dir, "renders")
 os.makedirs(plots_dir, exist_ok=True)
 os.makedirs(renders_dir, exist_ok=True)
 
-PANEL_LETTERS = ["a", "b", "c", "d", "e"]
+PANEL_LETTERS = ["a", "b", "c", "d", "e", "f"]
 panel_layout_path = os.path.join(plots_dir, "panel_layout.csv")
 
-# Panel d (DOCKING_RESULTS_DIR_65 is also reused by panel c's _load_agg_scores)
+# Panels d/e (DOCKING_RESULTS_DIR_65 is also reused by panel c's _load_agg_scores)
 DOCKING_RESULTS_DIR_65 = os.path.join(ROOT, "output", "65_aggregated_docking", "docking_results")
 FILTERED_HITS_CSV = os.path.join(ROOT, "output", "70_filtering", "filtered_hits.csv")
 AFFINITY_RESULTS_CSV = os.path.join(ROOT, "output", "75_boltz2_collect_affinities", "affinity_results.csv")
@@ -178,11 +188,6 @@ AFFINITY_RESULTS_CSV = os.path.join(ROOT, "output", "75_boltz2_collect_affinitie
 # flattens/reverses past this point, per the percentile tables checked by hand before building
 # this panel), pd.cut(..., right=False).
 BOXPLOT_BIN_EDGES = list(range(-13, -7))
-# Right subplot shows Boltz-2 IC50 next to a second method's IC50 ("Nesso" - placeholder for now,
-# reuses the exact same Boltz-2 values until real Nesso predictions are wired in) side by side per
-# bin: the Boltz-2 box spans [x-BOX_PAIR_WIDTH, x], Nesso spans [x, x+BOX_PAIR_WIDTH]. Must be
-# <=0.5 so neighboring bins' box-pairs never touch (bins are 1 apart) - 0.4 leaves a visible gap.
-BOX_PAIR_WIDTH = 0.4
 
 # Left subplot - sibling-structure comparison (see load_sibling_avg_scores). Pockets with no
 # monomer-cluster siblings to compare against: 7K98 (dimer, own coordinate frame, never entered
@@ -218,22 +223,22 @@ UPSET_ELEMENT_SIZE = 12
 # added on top of it, so the pair still fits within panel_layout.csv's own "d" row width exactly.
 UPSET_GAP_IN = 0.06
 
-# Panel e - user-curated compound-structure row (see module docstring). ids.csv doesn't ship
+# Panel f - user-curated compound-structure row (see module docstring). ids.csv doesn't ship
 # with the repo (it's a hand-picked shortlist, dropped in by the user); selection_table.csv is
 # the molecule-auditing skill's own output, reused as-is (not regenerated here) purely for its
 # cpd_id/source_key/smiles columns.
-PANEL_E_CPD_IDS_CSV = os.path.join(plots_dir, "compounds", "ids.csv")
+PANEL_F_CPD_IDS_CSV = os.path.join(plots_dir, "compounds", "ids.csv")
 SELECTION_TABLE_CSV = os.path.join(ROOT, "output", "70_filtering", "filtered_hits_explorer",
                                     "selection_table.csv")
-# Fixed slot count (user-confirmed) - independent of how many rows PANEL_E_CPD_IDS_CSV
+# Fixed slot count (user-confirmed) - independent of how many rows PANEL_F_CPD_IDS_CSV
 # currently has; slots beyond the file's own row count are left empty rather than shrinking
 # the grid, so the panel's layout doesn't reflow every time a compound is added.
-PANEL_E_N = 6
+PANEL_F_N = 6
 # 2x3 grid (user-confirmed, cut down from 3x3/9 - fewer, larger compound cards) - 3 columns
 # because panel_layout.csv's own "e" row is narrow (aligned under columns c/d), too narrow for
-# PANEL_E_N slots side by side in a single row without overlapping.
-PANEL_E_N_ROWS = 2
-PANEL_E_N_COLS = 3
+# PANEL_F_N slots side by side in a single row without overlapping.
+PANEL_F_N_ROWS = 2
+PANEL_F_N_COLS = 3
 # Same wspace/hspace passed to add_gridspec() in plot_compound_cards_panel, and the same margins
 # save_panel's own default subplots_adjust applies - factored out here because _mol_image_zoom()
 # needs them to compute each slot's actual physical size analytically (see that function).
@@ -265,7 +270,7 @@ CARD_BORDER_LINEWIDTH = 0.3
 CORNER_GRID_N = 4
 # One cell's edge length, as a fraction of the slot's own WIDTH - a plain x-fraction and
 # y-fraction of the same value are only equal physical distances when the slot itself is square
-# (true back when PANEL_E_N_ROWS == PANEL_E_N_COLS at 3x3; no longer true at 2x3, where slots are
+# (true back when PANEL_F_N_ROWS == PANEL_F_N_COLS at 3x3; no longer true at 2x3, where slots are
 # wider than tall). plot_compound_cards_panel converts this into a separate y-fraction, scaled by
 # the slot's own width/height ratio (via _slot_size_in), so each corner cell renders as a true
 # square regardless of the slot's aspect ratio. Shrunk twice on user request ("slightly
@@ -290,16 +295,29 @@ SOURCE_CIF = os.path.join(ROOT, "data", "structures", "pdbe_database", "P9WFU3",
 # color name or a raw hand-picked RGB), so this render's palette stays tied to the same source
 # as every stylia-driven plot in the project.
 ac = stylia.ArticleColors()
-COLOR_PHES = ac.cobalt      # alpha subunit, chains A/D
-COLOR_PHET = ac.amber       # beta subunit, chains B/E
+# Same neutral structure-surface color as panel b's own COLOR_STRUCTURE_NEUTRAL below (moved up
+# here so panel a can use it too) - project convention for de-emphasized structural context,
+# reserving saturated color for whatever a panel actually wants to draw the eye to.
+COLOR_STRUCTURE_NEUTRAL = [0.7804, 0.8275, 0.8667]
+COLOR_PHES = ac.cobalt              # alpha subunit (chain A/D) - the catalytic chain this panel
+                                     # is actually about, so it keeps a real color; pheT recedes
+                                     # into COLOR_STRUCTURE_NEUTRAL below (user-confirmed: the
+                                     # previous amber cartoon+surface combo "does not look good
+                                     # enough to be published").
+COLOR_PHET = COLOR_STRUCTURE_NEUTRAL  # beta subunit (chain B/E), cartoon AND surface both -
+                                       # was ac.amber (yellow), replaced for a cleaner, more
+                                       # muted look consistent with panel b's own neutral surfaces.
 COLOR_TRNA = ac.turquoise   # replaces the native PyMOL "palecyan" used elsewhere in the project
                              # (scripts/77_pocket_annotation/11_build_pymol_sessions.py's
                              # COLOR_EXPERIMENTAL_TRNA) with the closest article-palette color.
-# Closest article-palette match to the project's usual "native/experimental ligand" magenta
-# (scripts/47b_reference_pocket_visualization.py's COLOR_LIGAND_PDB), still visually distinct
-# from the orange COLOR_LIGAND_DOCKED reserved project-wide for docked poses (W5Y is not a
-# docked pose).
-COLOR_LIGAND = ac.fuchsia
+# Was ac.fuchsia (closest article-palette match to the project's usual "native/experimental
+# ligand" magenta, scripts/47b_reference_pocket_visualization.py's COLOR_LIGAND_PDB) - changed to
+# periwinkle (user-confirmed) because this ligand (W5Y) sits directly inside the crimson CAT-
+# pocket sphere (POCKET_COLORS), and fuchsia/crimson are both red-family hues that visually
+# blended under the sphere's transparency, making the ligand's own sticks hard to distinguish
+# from the sphere. Breaks the cross-project magenta-for-native-ligand convention for this one
+# panel specifically, in exchange for actually being visible here.
+COLOR_LIGAND = ac.periwinkle
 COLOR_MG = "green"
 # One distinct article-palette color per pocket (none reused from COLOR_PHES/PHET/TRNA/LIGAND
 # above), keyed by pocket_name.
@@ -384,12 +402,27 @@ def apply_padding(fig, padding):
         ax.set_position([x0, y0, x1 - x0, y1 - y0])
 
 
+PANEL_LABEL_MARGIN = 0.02  # figure-fraction inset from the page corner - ported from figure_3_plot.py
+
+
+def add_panel_label(fig, letter, x_margin=PANEL_LABEL_MARGIN):
+    """Bold panel letter at the top-left of the FIGURE (page) itself, not the axes - stays at a
+    fixed page corner regardless of panel_layout.csv's padding. Ported near-verbatim from
+    figure_3_plot.py's own add_panel_label (already reused as-is by figure_1_plot.py/
+    figure_2_plot.py; figure_4 was the only one of the four missing it). x_margin overrides the
+    default inset - panels c/d/e use a smaller one (user request: "a bit to the left"), a/b keep
+    the default."""
+    fig.text(x_margin, 1 - PANEL_LABEL_MARGIN, letter, fontweight="bold",
+             fontsize=stylia.FONTSIZE_BIG, color=get_fg_color(), ha="left", va="top",
+             transform=fig.transFigure)
+
+
 def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=None,
-               subplots_adjust=None, padding=0.0):
+               subplots_adjust=None, padding=0.0, letter_margin=PANEL_LABEL_MARGIN):
     # No bbox_inches="tight" - saves at exactly panel_layout.csv's delta_x/delta_y, same
     # convention as figure_3_plot.py's save_panel. use_tight_layout=False (panel b's grid, and
-    # panel d below) skips plt.tight_layout() - it silently fails ("Axes not compatible with
-    # tight_layout" warning; confirmed on panel d's shared-y/log-scale axes too, not just panel
+    # panels d/e below) skips plt.tight_layout() - it silently fails ("Axes not compatible with
+    # tight_layout" warning; confirmed on panel e's log-scale axis too, not just panel
     # b's bbox_to_anchor corner badges) and produces IDENTICAL output regardless of tight_pad,
     # clipping axis-label text at the saved edge since nothing here uses bbox_inches="tight" to
     # grow the canvas to fit. subplots_adjust (dict of left/right/top/bottom/wspace fractions)
@@ -406,6 +439,7 @@ def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=N
     else:
         fig.subplots_adjust(**(subplots_adjust or dict(left=0.01, right=0.99, top=0.99, bottom=0.01)))
     apply_padding(fig, padding)  # after tight_layout/subplots_adjust, so it isn't undone by them
+    add_panel_label(fig, letter, x_margin=letter_margin)
     output_path = os.path.join(plots_dir, f"Fig_4{letter}.pdf")
     plt.savefig(output_path, dpi=600, transparent=False)
     plt.close(fig)
@@ -448,6 +482,17 @@ def merge_panels():
     with open(output_path, "wb") as f:
         writer.write(f)
     print(f"Saved merged master figure ({total_width_cm:.2f} x {total_height_cm:.2f} cm) to {output_path}")
+
+    # Flattened PNG alongside the vector PDF (user request), rendered at the same dpi=600
+    # save_panel's own PDFs already use for their embedded raster content - pymupdf renders the
+    # already-merged page directly (no external Poppler binary, unlike pdftoppm/pdf2image).
+    png_path = os.path.join(plots_dir, "Fig_4_full.png")
+    pdf_doc = pymupdf.open(output_path)
+    zoom = 600 / 72  # pymupdf's Pixmap render defaults to 72dpi
+    pix = pdf_doc[0].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+    pix.save(png_path)
+    pdf_doc.close()
+    print(f"Saved {png_path}")
 
 
 def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
@@ -493,7 +538,7 @@ def crop_to_aspect(img, target_aspect):
 
 def _gradient_hex_rgb(v, white_at, red_at, hex_color):
     """Same white(low)->color(high) linear gradient as output/70_filtering/filtered_hits_explorer/
-    make_visualizer.py's own gradientHex() JS function, ported to Python so panel e's corner grids
+    make_visualizer.py's own gradientHex() JS function, ported to Python so panel f's corner grids
     (plot_compound_cards_panel) use the identical color convention as that explorer for the same
     columns. Returns an (r, g, b) tuple in [0, 1], usable directly as a matplotlib facecolor."""
     t = (v - white_at) / (red_at - white_at)
@@ -749,10 +794,9 @@ def _site_type_label(ax, site_type):
 POCKET_GRID_N_ROWS = 4
 POCKET_GRID_N_COLS = 3
 
-# Same neutral structure-surface color used throughout the project's pocket-visualization
-# renders (scripts 47b/51, notebooks 46) - unlike panel a, this panel's surfaces aren't
-# gene-colored, since here color is reserved for the target-group badge.
-COLOR_STRUCTURE_NEUTRAL = [0.7804, 0.8275, 0.8667]
+# COLOR_STRUCTURE_NEUTRAL is defined above, alongside panel a's own colors (now shared by both -
+# unlike panel a, this panel's surfaces aren't gene-colored, since here color is reserved for the
+# target-group badge).
 # Orange - the project's standard docked-pose color, verbatim from scripts/47b/51/figure_3_plot.py.
 COLOR_LIGAND_DOCKED = [0xF5 / 255, 0xA6 / 255, 0x3A / 255]
 
@@ -1028,6 +1072,18 @@ def plot_structure_panel(letter, size, rerun=False, padding=0.0):
     ax.axis("off")
     stylia.label(ax, xlabel="", ylabel="")
 
+    # Legend text for this panel's 3 pocket spheres, one label per POCKET_COLORS entry (lime,
+    # crimson, orchid, in that left-to-right order per user request) - same box style as panel
+    # b's own _site_type_label, but each box's own facecolor now matches its pocket sphere's
+    # color (user request), instead of the plain white every other caption box in this figure
+    # uses - so text stays legible, edgecolor/text stay black throughout.
+    for x, label, color in zip((1 / 6, 0.5, 5 / 6),
+                                ["Non catalytic (int.)", "Catalytic (pheS)", "Non catalytic (pheT)"],
+                                (ac.lime, ac.crimson, ac.orchid)):
+        ax.text(x, 0.05, label, transform=ax.transAxes,
+                ha="center", va="bottom", fontsize=stylia.FONTSIZE, color="black",
+                bbox=dict(facecolor=color, edgecolor="black", alpha=0.6, boxstyle="square,pad=0.3"))
+
     # use_tight_layout=False (same near-zero-margin path as panel b) so the render fills the
     # whole panel box instead of tight_layout's conservative padding around a blank/off axis.
     save_panel(fig, letter, use_tight_layout=False, padding=padding)
@@ -1091,7 +1147,7 @@ def load_sibling_avg_scores():
     sibling structures to compare against) x its ~2,923 aggregated hits, single-run score
     (report_old.csv, pre-replicate - "forget the replica" per this session), restricted only to
     score < SIBLING_AVG_BIN_EDGES[-1] (no lower floor - the leftmost bin at plot time is
-    open-ended below, see plot_robustness_affinity_panel): the SAME compound's average docking
+    open-ended below, see plot_sibling_robustness_panel): the SAME compound's average docking
     score across that
     pocket's sibling structure(s) (_sibling_pockets - same physical site, different structural
     model). Sibling scores come from report_old.csv when the sibling is itself one of the 12
@@ -1151,7 +1207,7 @@ def load_sibling_avg_scores():
                           sibling_avg=np.mean(vals)))
 
     result = pd.DataFrame(rows)
-    print(f"Panel d (left): {len(all_df)} pairs (10 pockets), {len(in_range)} in (-inf,{hi}), "
+    print(f"Panel d: {len(all_df)} pairs (10 pockets), {len(in_range)} in (-inf,{hi}), "
           f"excluded {n_no_compound_data} (compound never docked against any sibling) + "
           f"{n_only_invalid_pose} (every sibling score was invalid-pose) -> {len(result)} analyzable")
     return result
@@ -1205,32 +1261,22 @@ def _density_scatter(ax, x, y, low_cutoff=0.35, log_x=False, log_y=False, zorder
     ax.scatter(x, y, s=sizes, color=cm.cmap(frac), linewidth=0, zorder=zorder)
 
 
-def plot_robustness_affinity_panel(letter, size, padding=0.0):
-    """Left: sibling-structure comparison - one boxplot per SIBLING_AVG_BIN_EDGES 1-unit
+def plot_sibling_robustness_panel(letter, size, padding=0.0):
+    """Sibling-structure comparison - one boxplot per SIBLING_AVG_BIN_EDGES 1-unit
     docking-score bin, over load_sibling_avg_scores()'s ~10,006 analyzable pairs (10 curated
     pockets, single-run) - does a good score in one structure of a pocket predict a good score in
-    that same pocket's sibling structure(s)? Right: Boltz-2-predicted IC50 (nM, log scale) binned
-    by docking score - one boxplot per BOXPLOT_BIN_EDGES 1-unit bin, over
-    load_docking_vs_affinity()'s 13,140 pairs - a direct scatter was tried first and rejected as
-    too noisy to read at this population size (see module docstring)."""
-    # wspace set here, not via save_panel's later subplots_adjust - a GridSpec constructed with
-    # its own explicit wspace (as here) keeps that value even after a subsequent
-    # fig.subplots_adjust(wspace=...) call, which only fills in defaults for GridSpecs that
-    # don't already have one (confirmed: an earlier attempt to widen this gap via
-    # subplots_adjust's own wspace silently had no effect at all). 0.4 leaves real clearance for
-    # ax_right's rotated ylabel + log-scale tick labels, which sat inside ax_left's box at 0.1
-    # (user-flagged).
-    fig, axs = plt.subplots(1, 2, figsize=size, gridspec_kw={"wspace": 0.4})
-
-    ax_left = axs[0]
-    stylize(ax_left)
+    that same pocket's sibling structure(s)? Standalone panel, split off from the former
+    combined "robustness/affinity" panel (was its left subplot) per request - see
+    plot_affinity_panel for the other half."""
+    fig, ax = plt.subplots(figsize=size)
+    stylize(ax)
 
     left_df = load_sibling_avg_scores()
     # Leftmost bin open-ended below (user request) - -inf prepended to SIBLING_AVG_BIN_EDGES so
     # the "-13" bin catches everything more negative than -13, not just a fixed window; every
     # other bin (and the upper/loose cutoff at the last edge) is unchanged. Tick labels are each
-    # bin's own upper edge - same convention as the right subplot below (e.g. the [-9,-8) bin
-    # reads as "-8", not "-9,-8").
+    # bin's own upper edge - same convention as plot_affinity_panel (e.g. the [-9,-8) bin reads
+    # as "-8", not "-9,-8").
     left_cut_edges = [-np.inf] + SIBLING_AVG_BIN_EDGES
     left_bin_keys = [f"{lo},{hi}" for lo, hi in zip(left_cut_edges[:-1], left_cut_edges[1:])]
     left_tick_labels = [str(hi) for hi in left_cut_edges[1:]]
@@ -1239,36 +1285,48 @@ def plot_robustness_affinity_panel(letter, size, padding=0.0):
     left_groups = [left_df.loc[left_df["_bin"] == b, "sibling_avg"].to_numpy() for b in left_bin_keys]
 
     nc = stylia.NamedColors()
-    # Same boxplot styling as the right subplot below (translucent turquoise fill, opaque thin
-    # edges/whiskers/caps/median, no fliers) - kept visually consistent within one panel. No
-    # set_yscale("log") here (unlike the right subplot) - these are docking-score kcal/mol values
-    # (roughly -12 to -6), not IC50, so a linear axis is the right one.
+    # Same boxplot styling as plot_affinity_panel (translucent turquoise fill, opaque thin
+    # edges/whiskers/caps/median, no fliers) - kept visually consistent across the two former
+    # halves. No set_yscale("log") here (unlike plot_affinity_panel) - these are docking-score
+    # kcal/mol values (roughly -12 to -6), not IC50, so a linear axis is the right one.
     line_kwargs = dict(linewidth=stylia.LINEWIDTH)
     left_positions = list(range(len(left_bin_keys)))
-    ax_left.boxplot(left_groups, positions=left_positions, showfliers=False, showcaps=False,
-                     whis=(1, 99), patch_artist=True,
-                     boxprops=dict(facecolor=(*nc.turquoise, 0.7), edgecolor="black", **line_kwargs),
-                     whiskerprops=dict(color="black", **line_kwargs),
-                     medianprops=dict(color="black", **line_kwargs))
-    ax_left.set_xticks(left_positions)
-    ax_left.set_xticklabels(left_tick_labels)  # single upper-edge number, horizontal - matches
-    # the right subplot's convention, short enough not to need rotation.
-    stylia.label(ax_left, xlabel="Docking score", ylabel="Avg. sibling score")
-    # Same tighter y-tick padding as ax_right - ax_left's ylabel was rendering entirely off the
-    # left edge of the page at the default pad (unlike ax_right's, which sits in the wspace gap
-    # and had more room to begin with).
-    ax_left.tick_params(axis="y", pad=1.5)
+    ax.boxplot(left_groups, positions=left_positions, showfliers=False, showcaps=False,
+               whis=(1, 99), patch_artist=True,
+               boxprops=dict(facecolor=(*nc.turquoise, 0.7), edgecolor="black", **line_kwargs),
+               whiskerprops=dict(color="black", **line_kwargs),
+               medianprops=dict(color="black", **line_kwargs))
+    ax.set_xticks(left_positions)
+    ax.set_xticklabels(left_tick_labels)  # single upper-edge number, horizontal - matches
+    # plot_affinity_panel's own convention, short enough not to need rotation.
+    stylia.label(ax, xlabel="Docking score", ylabel="Avg. sibling score")
+    ax.tick_params(axis="y", pad=1.5)
     # Integer-only y-ticks (user request) - the default locator picked half-integer steps
     # (-7.5, -10.0), which read oddly next to this axis's whole-kcal/mol values.
-    ax_left.yaxis.set_major_locator(MultipleLocator(2))
-    ax_left.yaxis.set_major_formatter(FormatStrFormatter("%d"))
+    ax.yaxis.set_major_locator(MultipleLocator(2))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%d"))
     # Extend (never shrink) the top of the view so -6 is always in range and gets its own tick
     # (user request) - the data itself doesn't reach that high, so autoscale alone stopped short.
-    ymin, ymax = ax_left.get_ylim()
-    ax_left.set_ylim(ymin, max(ymax, -6))
+    ymin, ymax = ax.get_ylim()
+    ax.set_ylim(ymin, max(ymax, -6))
 
-    ax_right = axs[1]
-    stylize(ax_right)
+    # Own left margin now that this axis no longer shares the former combined figure's wspace
+    # gap with plot_affinity_panel - needs real room for the "Avg. sibling score" ylabel at this
+    # panel's own narrower (half of the old combined) width.
+    save_panel(fig, letter, use_tight_layout=False, padding=padding,
+               subplots_adjust=dict(left=0.28, right=0.95, top=0.84, bottom=0.3),
+               letter_margin=0.01)
+
+
+def plot_affinity_panel(letter, size, padding=0.0):
+    """Boltz-2-predicted IC50 (nM, log scale) binned by docking score - one boxplot per
+    BOXPLOT_BIN_EDGES 1-unit bin, over load_docking_vs_affinity()'s 13,140 pairs - a direct
+    scatter was tried first and rejected as too noisy to read at this population size (see
+    module docstring). Standalone panel, split off from the former combined
+    "robustness/affinity" panel (was its right subplot) per request - see
+    plot_sibling_robustness_panel for the other half."""
+    fig, ax = plt.subplots(figsize=size)
+    stylize(ax)
 
     df = load_docking_vs_affinity()
     # Leftmost bin open-ended below (user request) - -inf prepended to BOXPLOT_BIN_EDGES so the
@@ -1284,53 +1342,46 @@ def plot_robustness_affinity_panel(letter, size, padding=0.0):
         vals = df.loc[df["_bin"] == bin_key, "ic50_nM"].to_numpy()
         groups.append(vals)
         counts.append(len(vals))
-    print("Panel d (right) bin counts:", dict(zip(bin_keys, counts)))
+    print("Panel e bin counts:", dict(zip(bin_keys, counts)))
 
     nc = stylia.NamedColors()
     positions = list(range(len(bin_keys)))
-    # Boltz-2 box spans [x-BOX_PAIR_WIDTH, x] (center = x - BOX_PAIR_WIDTH/2), "Nesso" spans
-    # [x, x+BOX_PAIR_WIDTH] (center = x + BOX_PAIR_WIDTH/2) - see BOX_PAIR_WIDTH's own comment.
-    # Nesso is a placeholder (same `groups` data as Boltz-2) until real Nesso IC50s exist.
-    boltz_positions = [x - BOX_PAIR_WIDTH / 2 for x in positions]
-    nesso_positions = [x + BOX_PAIR_WIDTH / 2 for x in positions]
     # facecolor carries its own alpha (0.7, translucent fill); boxprops has no top-level "alpha"
     # key so it doesn't also apply to edgecolor (a Patch's own alpha, when set, overrides the
     # alpha channel of both face and edge uniformly) - edgecolor/whisker/cap/median lines stay
     # fully opaque. linewidth reduced to stylia.LINEWIDTH (matplotlib's boxplot rcParams default
-    # is 1.0, thicker than this project's standard line weight).
+    # is 1.0, thicker than this project's standard line weight). No explicit widths= override -
+    # same default box width as plot_sibling_robustness_panel's own boxplot.
     line_kwargs = dict(linewidth=stylia.LINEWIDTH)
     box_kwargs = dict(showfliers=False, showcaps=False, whis=(1, 99), patch_artist=True,
-                       widths=BOX_PAIR_WIDTH, whiskerprops=dict(color="black", **line_kwargs),
+                       whiskerprops=dict(color="black", **line_kwargs),
                        medianprops=dict(color="black", **line_kwargs))
-    ax_right.boxplot(groups, positions=boltz_positions,
-                      boxprops=dict(facecolor=(*nc.turquoise, 0.7), edgecolor="black", **line_kwargs),
-                      **box_kwargs)
-    ax_right.boxplot(groups, positions=nesso_positions,
-                      boxprops=dict(facecolor=(*nc.tangerine, 0.7), edgecolor="black", **line_kwargs),
-                      **box_kwargs)
-    handles = [
-        Line2D([0], [0], marker="s", color="w", markerfacecolor=nc.turquoise, markeredgecolor="none", label="Boltz-2"),
-        Line2D([0], [0], marker="s", color="w", markerfacecolor=nc.tangerine, markeredgecolor="none", label="Nesso (placeholder)"),
-    ]
-    ax_right.legend(handles=handles, loc="upper left", fontsize=stylia.FONTSIZE_SMALL, handletextpad=0.3)
-    ax_right.set_yscale("log")
-    ax_right.set_xticks(positions)
-    ax_right.set_xticklabels(tick_labels)  # single upper-edge number, horizontal (user request,
+    ax.boxplot(groups, positions=positions,
+               boxprops=dict(facecolor=(*nc.turquoise, 0.7), edgecolor="black", **line_kwargs),
+               **box_kwargs)
+    ax.set_yscale("log")
+    ax.set_xticks(positions)
+    ax.set_xticklabels(tick_labels)  # single upper-edge number, horizontal (user request,
     # no ranges) - short enough not to need the earlier range-string's 45-degree rotation.
 
-    stylia.label(ax_right, xlabel="Docking score", ylabel="IC50 (nM)")
-    # Tighter tick-label padding (default ~3.5pt) pulls the "10^n" tick labels closer to their
-    # own axis, so the rotated ylabel (positioned relative to the tick labels, not the axis
-    # itself) doesn't have to sit as far left - reduces how much of wspace's gap it eats into.
-    ax_right.tick_params(axis="y", pad=1.5)
+    stylia.label(ax, xlabel="Docking score", ylabel="IC50 (nM)")
+    ax.tick_params(axis="y", pad=1.5)
 
-    # left widened from 0.08 (ax_left's own ylabel, now real text instead of the old dummy
-    # placeholder, was clipped off the page entirely at 0.08). bottom widened from 0.3 (ax_left's
-    # 12 rotated tick labels are longer - "-14.0" etc - than ax_right's 7 short ones - "-14" etc -
-    # and were clipping "Docking score" off the bottom at the old value). No wspace key here - it
-    # belongs on the plt.subplots() call above, not here (see that comment).
+    # Own left margin now that this axis no longer shares the former combined figure's wspace
+    # gap with plot_sibling_robustness_panel - needs real room for the "IC50 (nM)" ylabel +
+    # log-scale tick labels at this panel's own narrower (half of the old combined) width.
+    # top=0.84 - gives this panel the same ~0.48cm absolute top inset that panel b currently has
+    # at its own padding=0.12 (0.12 * b's 7cm height / 2), so this panel's content lines up with
+    # panel b's despite the very different panel heights (3cm vs 7cm) - a uniform `padding`
+    # fraction alone can't do this since apply_padding scales toward each panel's own center
+    # using ITS OWN height. Set directly here (not via panel_layout.csv's padding column, which
+    # stays 0 for this panel) so it doesn't also inflate the already-tuned left/bottom margins
+    # above. right=0.95 adds a small right-hand margin (user request, carried over from the
+    # former combined panel). letter_margin=0.01 (half PANEL_LABEL_MARGIN's default 0.02) nudges
+    # the bold "e" a bit left, same as c/d/f (user request) - a/b keep the default.
     save_panel(fig, letter, use_tight_layout=False, padding=padding,
-               subplots_adjust=dict(left=0.13, right=0.99, top=0.97, bottom=0.3))
+               subplots_adjust=dict(left=0.32, right=0.95, top=0.84, bottom=0.3),
+               letter_margin=0.01)
 
 
 def _load_protein_pockets(site_type):
@@ -1491,6 +1542,13 @@ def _render_upset_figure(hit_sets, element_size, title, show_legend=True, legend
     axes["intersections"].set_axisbelow(True)
     axes["intersections"].grid(visible=True, axis="y", linewidth=stylia.LINEWIDTH * 0.5,
                                 color="#DDDDDD", alpha=0.6)
+    # upsetplot draws its own tick/category text at matplotlib's default size, not one of
+    # stylia's tiers - visibly larger than the ylabel/title text just below and above, which ARE
+    # explicitly set to stylia sizes. FONTSIZE_SMALL ("tick labels, annotations" per stylia's own
+    # tier convention) matches how every other tick label in this project's figures is sized.
+    axes["intersections"].tick_params(axis="y", labelsize=stylia.FONTSIZE_SMALL)
+    axes["totals"].tick_params(axis="x", labelsize=stylia.FONTSIZE_SMALL)
+    axes["matrix"].tick_params(axis="y", labelsize=stylia.FONTSIZE_SMALL)
     # ylabel shown on both figures (per user request); tick numbers gated by show_yaxis, which
     # plot_upset_panel now passes as True for both CAT and NON-CAT (user-confirmed). y=0.6 (up
     # from the default centered 0.5 - user request) is passed straight to the label Text's own
@@ -1588,8 +1646,9 @@ def plot_upset_panel(letter, size, padding=0.0):
 
     # Same margins previously passed to save_panel's subplots_adjust for this panel - baked in
     # here directly since the axes below are placed via add_axes (figure-fraction rects), which
-    # fig.subplots_adjust() has no effect on.
-    margin_left, margin_right, margin_top, margin_bottom = 0.005, 0.995, 0.99, 0.005
+    # fig.subplots_adjust() has no effect on. margin_right lowered from 0.995 to add a small
+    # right-hand margin (user request), same as panels d/e.
+    margin_left, margin_right, margin_top, margin_bottom = 0.005, 0.95, 0.99, 0.005
     fig_w_in, fig_h_in = size
     avail_w_in = fig_w_in * (margin_right - margin_left)
     avail_h_in = fig_h_in * (margin_top - margin_bottom)
@@ -1620,7 +1679,8 @@ def plot_upset_panel(letter, size, padding=0.0):
         x_in += w_in + UPSET_GAP_IN  # UPSET_GAP_IN blank strip before the next image
     stylia.label(axs[0], xlabel="", ylabel="")
 
-    save_panel(fig, letter, use_tight_layout=False, padding=padding)
+    # letter_margin=0.01 nudges the bold "c" a bit left, along with d/e (user request).
+    save_panel(fig, letter, use_tight_layout=False, padding=padding, letter_margin=0.01)
 
 
 # Same 250x180 canvas proportions as the molecule-auditing skill's own svg_for(), scaled up 4x
@@ -1701,8 +1761,11 @@ def _mol_image_zoom(slot_w_in, slot_h_in, raster_w, raster_h):
 
 # Compound-number label style (user request: "bold Arial") - Arial is actually installed on this
 # machine (~/.fonts/Arial.ttf, confirmed in matplotlib's own font manager), not silently
-# substituted with a metric-compatible stand-in.
-LABEL_FONT = {"family": "Arial", "fontweight": "bold", "fontsize": 7}
+# substituted with a metric-compatible stand-in. fontsize moved from a hand-picked 7 to stylia's
+# own BIG tier (8) for full stylia-tier consistency (user-confirmed) - _text_half_size_in below
+# measures the real rendered glyph at whatever size this holds, so _label_xy_for_mol's
+# anti-overlap search still works correctly at the new size with no other change needed.
+LABEL_FONT = {"family": "Arial", "fontweight": "bold", "fontsize": stylia.FONTSIZE_BIG}
 # _label_xy_for_mol searches outward from the molecule's own center, along its emptiest
 # quadrant's own diagonal, for the CLOSEST point (smallest reach) whose own footprint is
 # verified clear of both the structure's ink and the 4 corner grids - reach is a fraction of
@@ -1815,41 +1878,41 @@ def _label_xy_for_mol(img, mol_zoom, slot_w_in, slot_h_in, corner_xy, corner_w, 
 
 
 def plot_compound_cards_panel(letter, size, padding=0.0):
-    """Panel e: a PANEL_E_N_ROWS x PANEL_E_N_COLS grid of PANEL_E_N compound-structure slots, each
+    """Panel f: a PANEL_F_N_ROWS x PANEL_F_N_COLS grid of PANEL_F_N compound-structure slots, each
     the 2D structure inside a square (not rounded) border, plus a small bordered 4-square grid of
     real per-protein data in each of the 4 corners (see CORNER_GRID_SPECS, user-confirmed). Slots
-    are filled in order from PANEL_E_CPD_IDS_CSV (see module docstring); any slot beyond that
+    are filled in order from PANEL_F_CPD_IDS_CSV (see module docstring); any slot beyond that
     file's own row count is left empty, border still drawn.
 
-    PANEL_E_CPD_IDS_CSV's column is named "cpd_id" but, as supplied, actually holds
+    PANEL_F_CPD_IDS_CSV's column is named "cpd_id" but, as supplied, actually holds
     selection_table.csv's own source_key values (e.g. "s_22____28884674____59849" for CPD-897) -
     looked up against that table's source_key column rather than its cpd_id column
     (user-confirmed: keep the file's existing column/values, match on source_key)."""
-    if not os.path.exists(PANEL_E_CPD_IDS_CSV):
+    if not os.path.exists(PANEL_F_CPD_IDS_CSV):
         raise FileNotFoundError(
-            f"{PANEL_E_CPD_IDS_CSV} not found. Expected a CSV with a single column 'cpd_id' "
+            f"{PANEL_F_CPD_IDS_CSV} not found. Expected a CSV with a single column 'cpd_id' "
             f"holding selection_table.csv source_key values, one row per compound, in the "
             "order the structures should be drawn.")
-    source_keys = pd.read_csv(PANEL_E_CPD_IDS_CSV)["cpd_id"].tolist()
-    if len(source_keys) > PANEL_E_N:
-        raise ValueError(f"{PANEL_E_CPD_IDS_CSV} lists {len(source_keys)} compound(s), more than "
-                          f"PANEL_E_N ({PANEL_E_N}) slots.")
-    # Pad up to PANEL_E_N with None - those slots are left empty below.
-    source_keys += [None] * (PANEL_E_N - len(source_keys))
+    source_keys = pd.read_csv(PANEL_F_CPD_IDS_CSV)["cpd_id"].tolist()
+    if len(source_keys) > PANEL_F_N:
+        raise ValueError(f"{PANEL_F_CPD_IDS_CSV} lists {len(source_keys)} compound(s), more than "
+                          f"PANEL_F_N ({PANEL_F_N}) slots.")
+    # Pad up to PANEL_F_N with None - those slots are left empty below.
+    source_keys += [None] * (PANEL_F_N - len(source_keys))
 
     table = pd.read_csv(SELECTION_TABLE_CSV).set_index("source_key")
     missing = [k for k in source_keys if k is not None and k not in table.index]
     if missing:
-        raise ValueError(f"{PANEL_E_CPD_IDS_CSV} lists source_key(s) not found in "
+        raise ValueError(f"{PANEL_F_CPD_IDS_CSV} lists source_key(s) not found in "
                           f"{SELECTION_TABLE_CSV}'s source_key column: {missing}")
 
     filled = [k for k in source_keys if k is not None]
-    print(f"Panel e - {len(filled)}/{PANEL_E_N} slot(s) filled: "
+    print(f"Panel f - {len(filled)}/{PANEL_F_N} slot(s) filled: "
           + ", ".join(table.loc[filled, "cpd_id"]))
 
-    # Slot's own physical aspect (see CORNER_CELL_FRAC) - only 1.0 when PANEL_E_N_ROWS ==
-    # PANEL_E_N_COLS; corner_h_frac below corrects for the general (non-square-slot) case.
-    slot_w_in, slot_h_in = _slot_size_in(size, PANEL_E_N_ROWS, PANEL_E_N_COLS)
+    # Slot's own physical aspect (see CORNER_CELL_FRAC) - only 1.0 when PANEL_F_N_ROWS ==
+    # PANEL_F_N_COLS; corner_h_frac below corrects for the general (non-square-slot) case.
+    slot_w_in, slot_h_in = _slot_size_in(size, PANEL_F_N_ROWS, PANEL_F_N_COLS)
     corner_h_frac = CORNER_CELL_FRAC * slot_w_in / slot_h_in
 
     # Each raster is autocropped to its own content bounding box inside _mol_image (see that
@@ -1862,15 +1925,15 @@ def plot_compound_cards_panel(letter, size, padding=0.0):
 
     fig = plt.figure(figsize=size)
     fig.patch.set_facecolor("white")
-    outer = fig.add_gridspec(PANEL_E_N_ROWS, PANEL_E_N_COLS, wspace=GRIDSPEC_SPACE, hspace=GRIDSPEC_SPACE)
+    outer = fig.add_gridspec(PANEL_F_N_ROWS, PANEL_F_N_COLS, wspace=GRIDSPEC_SPACE, hspace=GRIDSPEC_SPACE)
 
     for i, source_key in enumerate(source_keys):
-        ax = stylize(fig.add_subplot(outer[i // PANEL_E_N_COLS, i % PANEL_E_N_COLS]))
+        ax = stylize(fig.add_subplot(outer[i // PANEL_F_N_COLS, i % PANEL_F_N_COLS]))
         ax.axis("off")
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
 
-        # Square (not rounded) border - drawn for every one of the PANEL_E_N slots, filled or not
+        # Square (not rounded) border - drawn for every one of the PANEL_F_N slots, filled or not
         # (same always-show-all-outlines convention as this panel's earlier card version).
         ax.add_patch(FancyBboxPatch(
             (0, 0), 1, 1, transform=ax.transAxes, clip_on=False,
@@ -1929,7 +1992,7 @@ def plot_compound_cards_panel(letter, size, padding=0.0):
                 (x0, y0), corner_w, corner_h, transform=ax.transData, clip_on=False,
                 facecolor="none", edgecolor="black", linewidth=CARD_BORDER_LINEWIDTH, zorder=2))
 
-        # Compound number (1-6, in PANEL_E_CPD_IDS_CSV's own row order - user request), placed
+        # Compound number (1-6, in PANEL_F_CPD_IDS_CSV's own row order - user request), placed
         # by _label_xy_for_mol in whichever part of THIS molecule's own structure has the most
         # free space, clear of the 4 corner grids. zorder=3 (above both the molecule's zorder=1
         # and the corner grids' zorder=2) as a legibility backstop, though the placement itself
@@ -1940,7 +2003,18 @@ def plot_compound_cards_panel(letter, size, padding=0.0):
         ax.text(label_x, label_y, label_text, transform=ax.transAxes,
                 ha="center", va="center", zorder=3, **LABEL_FONT)
 
-    save_panel(fig, letter, use_tight_layout=False, padding=padding)
+    # top=0.88/bottom=0.12 (was the 0.99/0.01 default) - gives this panel the same ~0.48cm
+    # absolute top/bottom inset that panel b currently has at its own padding=0.12 (see panel e's
+    # own save_panel call for the full rationale), so its top row clears the bold panel-letter
+    # (which collided with the top-left compound card's own corner badges at the old near-zero
+    # top margin) and both its top and bottom edges line up with panel b's, which spans the same
+    # page height as panel c + the d/e row + this panel combined. left stays at the original
+    # near-zero default; right=0.95 (was 0.99) adds a small right-hand margin, same as panels d/e
+    # (user request). letter_margin as in panels c/d/e (user request: "c,d,e labels... a bit to
+    # the left").
+    save_panel(fig, letter, use_tight_layout=False, padding=padding,
+               subplots_adjust=dict(left=0.01, right=0.95, top=0.88, bottom=0.12),
+               letter_margin=0.01)
 
 
 def main(rerun=False, subpanels=None):
@@ -1956,9 +2030,11 @@ def main(rerun=False, subpanels=None):
     if "c" in subpanels:
         plot_upset_panel("c", sizes["c"], padding=paddings["c"])
     if "d" in subpanels:
-        plot_robustness_affinity_panel("d", sizes["d"], padding=paddings["d"])
+        plot_sibling_robustness_panel("d", sizes["d"], padding=paddings["d"])
     if "e" in subpanels:
-        plot_compound_cards_panel("e", sizes["e"], padding=paddings["e"])
+        plot_affinity_panel("e", sizes["e"], padding=paddings["e"])
+    if "f" in subpanels:
+        plot_compound_cards_panel("f", sizes["f"], padding=paddings["f"])
 
     merge_panels()
 

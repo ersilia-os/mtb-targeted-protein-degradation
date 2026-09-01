@@ -64,7 +64,7 @@ SELECTED_SET_CUTOFF = -11
 # User-confirmed per-gene overrides for compute_gene_summary_stats' otherwise-NaN novelty /
 # experimental_tractability placeholders. Genes not listed here stay NaN (no reported attempt
 # either way - "we don't know", not "it failed").
-NOVELTY_OVERRIDES = {"ileS": False}
+NOVELTY_OVERRIDES = {"ileS": False, "glyS": False}
 
 # True = reported to express OK in the literature review (pheS/pheT: Gade et al. 2025 Eur J Med
 # Chem, Michalska et al. 2021 NAR, Wang et al. 2021 JBC; aspS: Gurcha et al. 2014 PLoS ONE; lysS:
@@ -287,48 +287,6 @@ def _best_score_per_gene(score_matrix, pocket_cols, gene_of_pocket, all_genes):
     return score_matrix[pocket_cols].T.groupby(grouping).min().T.min(axis=0).reindex(all_genes)
 
 
-# The other 3 domain rows (tRNA binding, Editing, Anticodon binding) have no ligand-evidence
-# confidence score like catalytic_confidence - only a binary "this InterPro domain label is present
-# for this pocket" (curated_labels). Red there means label present AND catalytic_confidence <
-# CATALYTIC_CONFIDENCE_MIN - mutually exclusive with the Catalytic row, since a pocket can carry
-# both a catalytic and a non-catalytic label at once (e.g. "Catalytic Domain (ATP/ligase)|Editing
-# Domain") and 3 pockets do exactly that with catalytic_confidence >= 3, per the user's explicit
-# request not to double-count a pocket already flagged red in the Catalytic row.
-CURATED_LABEL_COLUMNS = {
-    "is_trna_binding": "tRNA Binding Domain",
-    "is_editing": "Editing Domain",
-    "is_anticodon_binding": "Anticodon Binding Domain",
-}
-
-
-def compute_pocket_scores():
-    banner("Loading P2Rank pocket probabilities (276 pockets)")
-    pockets = pd.read_csv(os.path.join(ROOT, "output", "pocket_detection_data.csv"))
-    pockets = pockets.sort_values("Pocket probability", ascending=False).reset_index(drop=True)
-
-    interpro = pd.read_csv(os.path.join(ROOT, "output", "77_pocket_annotation", "pocket_detection_interpro_updated.csv"),
-                            keep_default_na=False)
-    pockets = pockets.merge(
-        interpro[["Uniprot AC", "File name", "Pocket number", "catalytic_confidence", "curated_labels"]],
-        on=["Uniprot AC", "File name", "Pocket number"], how="left",
-    )
-
-    out = pockets[["Uniprot AC", "File name", "Pocket number", "Pocket probability", "catalytic_confidence"]].copy()
-    out.insert(0, "pocket_rank", range(1, len(out) + 1))
-    out = out.rename(columns={"Pocket probability": "pocket_probability"})
-    out["is_catalytic"] = out["catalytic_confidence"] >= CATALYTIC_CONFIDENCE_MIN
-    has_label = {
-        col: pockets["curated_labels"].apply(lambda labels, label=label: label in labels.split("|"))
-        for col, label in CURATED_LABEL_COLUMNS.items()
-    }
-    for col, mask in has_label.items():
-        out[col] = mask & ~out["is_catalytic"]
-
-    out_path = os.path.join(data_dir, "figure_3_pocket_scores.csv")
-    out.to_csv(out_path, index=False)
-    print(f"Saved {len(out):,} row(s) to {out_path}")
-
-
 def _compute_pockets_for_compound(compound_id, genes, gene_to_uniprot, pockets_by_gene, interpro):
     """Per-gene best-VERIFIED-retained-pose pocket walk, used by
     compute_top_avg_score_compounds_pockets. For each gene: rank that gene's own pockets by
@@ -410,16 +368,21 @@ def _load_pockets_by_gene(uniprot_to_gene):
 
 
 # Best-average-docking-score pair from the cutoff-12 multi-target hit tier (each hits exactly 4
-# genes there) - user-confirmed via AskUserQuestion, for figure_3_plot.py's panels c/d (one row per
-# compound: 2D structure + 4 docking-pose renders).
+# genes there) - user-confirmed via AskUserQuestion, for figure_3_plot.py's panel d (one row per
+# compound: 2D structure + one docking-pose render per gene in SHOWCASE_GENES).
 TOP_AVG_SCORE_COMPOUND_IDS = ["s_271570____28264988____28567424", "s_51____13974142____77337"]
+
+# Fixed Tier-1 gene set/order shown for BOTH compounds above (per request) - independent of
+# each compound's own cutoff-12 hit set (pheS, not pheT, since figure_3 keeps them as separate
+# genes rather than figure_4's own merged "pheST" label). _compute_pockets_for_compound looks up
+# each gene's best-scoring pocket for the compound directly from its docking report, regardless
+# of hit/non-hit status, so this works even for a gene the compound didn't "hit" at the
+# multi-target cutoff.
+SHOWCASE_GENES = ["pheS", "aspS", "lysS", "alaS"]
 
 
 def compute_top_avg_score_compounds_pockets():
-    banner("Locating TOP_AVG_SCORE_COMPOUND_IDS's actual best-scoring pocket per hit gene")
-
-    hits_path = os.path.join(data_dir, "figure_3_multi_target_hits_cutoff12.csv")
-    hits = pd.read_csv(hits_path)
+    banner("Locating TOP_AVG_SCORE_COMPOUND_IDS's actual best-scoring pocket per SHOWCASE_GENES gene")
 
     uniprot_to_gene, gene_to_uniprot = _load_gene_uniprot_maps()
     pockets_by_gene = _load_pockets_by_gene(uniprot_to_gene)
@@ -427,13 +390,8 @@ def compute_top_avg_score_compounds_pockets():
 
     all_rows = []
     for compound_rank, compound_id in enumerate(TOP_AVG_SCORE_COMPOUND_IDS, start=1):
-        match = hits[hits["compound_id"] == compound_id]
-        if match.empty:
-            print(f"  Error: {compound_id} not found in {hits_path}.")
-            continue
-        genes = match.iloc[0]["targets_hit"].split(",")
-        print(f"  Compound {compound_rank} ({compound_id}): {len(genes)} hit gene(s) - {genes}")
-        rows = _compute_pockets_for_compound(compound_id, genes, gene_to_uniprot, pockets_by_gene, interpro)
+        print(f"  Compound {compound_rank} ({compound_id}): showing {SHOWCASE_GENES}")
+        rows = _compute_pockets_for_compound(compound_id, SHOWCASE_GENES, gene_to_uniprot, pockets_by_gene, interpro)
         for r in rows:
             r["compound_rank"] = compound_rank
         all_rows.extend(rows)
@@ -472,7 +430,6 @@ def main():
     compute_multi_target_hits(gene_scores)
     compute_protein_hit_counts(gene_scores)
     compute_gene_summary_stats(gene_scores, pocket_scores)
-    compute_pocket_scores()
     compute_selected_set_protein_hits()
     compute_top_avg_score_compounds_pockets()
 
