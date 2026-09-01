@@ -552,6 +552,63 @@ Reads script 73's `{out_subdir}_affinity_results.csv`, joins in `gene_name`/`sit
 
 **Outputs:** `output/75_boltz2_collect_affinities/affinity_results.csv` (`gene_name, site_type, pocket_name, compound_id, smiles, affinity_pred_value, affinity_probability_binary, affinity_pred_value1/2, affinity_probability_binary1/2, confidence_score, ptm, iptm, ligand_iptm, complex_plddt`), `output/75_boltz2_collect_affinities/affinity_probability_correlations.csv` (`pocket_name, gene_name, site_type, n, pearson_r, spearman_rho`), `output/75_boltz2_collect_affinities/plots/<pocket_name>.png`.
 
+## Human counter-screen: structure preparation & pocket detection
+
+Structure-based counter-screen of the 1,095 filtered hits (script 70) against the 38 human
+aminoacyl-tRNA synthetases (`data/human_trna_synthetases_uniprot.csv`, same gene set as the
+Nesso-1 human counter-screen, scripts 84–89) — checking whether hits also occupy the conserved
+catalytic pocket in the human orthologs, as an off-target selectivity liability check. Deliberately
+scoped down from the full Mtb structure-prep pipeline (scripts 00–08): AlphaFold DB monomer models
+only (no PDB/multi-source pipeline), no alignment, no relaxation. Ligand preparation and docking
+against these pockets are separate, later scripts.
+
+### `90_human_download_alphafold.py`
+Downloads structures per human gene from two sources. (1) One AlphaFold DB predicted structure,
+resolved via the AFDB prediction API per UniProt AC (not a hardcoded model version). (2) One
+AlphaFill entry (`.cif` + `.json`) per gene — same source/mechanism as script 01's Mtb pull, kept
+as a raw download only for now (no PDB conversion, no ligand stripping, no report) — potential raw
+material for a later ligand-evidence-based catalytic-pocket annotation step, mirroring script 77.
+Only the AlphaFold DB structures feed into script 91's pocket detection at this stage. Resumable
+(skips a download if its target file already exists).
+
+**Inputs:** `data/human_trna_synthetases_uniprot.csv`.
+
+**Outputs:** `data/structures/human_alphafold2_database/<uniprot_ac>/AF-<uniprot_ac>-F1-model_<version>.pdb`; `data/structures/human_alphafill_database/<uniprot_ac>/<uniprot_ac>.{cif,json}`; `output/90_human_download_alphafold/structures_data.csv` (`gene_name, uniprot_ac, file_path, n_residues_uniprot, n_residues_pdb, coverage_pct, mean_plddt, min_plddt, status` — AlphaFold DB only, AlphaFill downloads aren't tracked in this report).
+
+### `91_human_detect_pockets.py`
+Runs P2Rank on script 90's 38 structures and extracts pocket data — a direct port of script 08's
+logic, simplified for a single AlphaFold2-type structure source per protein. Keeps every pocket
+P2Rank reports (no top-K/probability/pLDDT filtering, for the time being — catalytic-pocket
+selection is a later step). Confidence is reported as the minimum (and mean) pLDDT among residues
+whose Cα falls within `RADIUS_A = 8` Å of that pocket's own centroid — a simple geometric
+neighborhood, independent of P2Rank's own SAS-point-based `residue_ids` list (also kept, for
+reference).
+
+**Inputs:** `output/90_human_download_alphafold/structures_data.csv`.
+
+**Outputs:** `output/91_human_detect_pockets/detected_pockets/<uniprot_ac>/<structure>/` (raw P2Rank output + `pockets/pocket_<n>.pdb` centroid markers, one per detected pocket); `output/91_human_detect_pockets/pocket_detection_data.csv` (`Gene name, Uniprot AC, File name, Prediction type, Full path, Pocket number, Pocket score, Pocket probability, Pocket centroid coordinate (x y z), N residues within 8A, Min pLDDT within 8A, Mean pLDDT within 8A, P2Rank residues (chain_resn)`).
+
+### `92_human_pocket_annotation.py`
+Annotates the 389 human pockets, mimicking script 77's Mtb approach (InterPro domain
+categorization + AlphaFill ligand evidence) condensed into one script, scoped to exactly three
+steps: (1) download InterPro data per gene, skipping genes already cached; (2) map pockets to
+InterPro domain categories, reusing script 77's GO-term map/name-fallback patterns as-is but
+**not** its Mtb-specific `CURATED_OVERRIDES`/`STRONG_NAME_OVERRIDE_PATTERNS` (don't apply to human
+domain architecture — as a result this run's "Catalytic Domain" label rate is broad, 388/389
+pockets, the same whole-chain-identity-tag issue script 77's own README documents for Mtb before
+its curated fixes); (3) map AlphaFill-transplanted ligands onto pockets via a per-pocket local
+PyMOL alignment (`cmd.align`, `cycles=0`, same mechanism as script 77's
+`08_extract_alphafill_evidence.py`) — required because a whole-chain fit between the AlphaFold DB
+structure (pocket detection) and AlphaFill's structure (built on an older AFDB version) disagrees
+by ~34-46 Å for a real human aaRS, while a pocket-local region agrees to <0.3 Å (confirmed
+empirically before writing this script). No catalytic_confidence scoring, no strong/weak ligand
+classification (script 77's `ligand_classification.py` is curated per-Mtb-protein) — raw evidence
+only. Must run in the `adda4tb` conda env (PyMOL).
+
+**Inputs:** `data/human_trna_synthetases_uniprot.csv`; `output/91_human_detect_pockets/pocket_detection_data.csv`; `data/structures/human_alphafill_database/<ac>/<ac>.{cif,json}`; `data/structures/human_alphafold2_database/<ac>/...pdb`.
+
+**Outputs**, `output/92_human_pocket_annotation/`: `<uniprot_ac>_annotation_table.csv` / `_annotation_table_categorized.csv` / `_residue_support.csv` (per-gene InterPro tables, same shape as script 77's); `pocket_domain_labels.csv` (`Uniprot AC, Gene name, File name, Pocket number, curated_labels, aars_class`, plus one support-count column per category); `alphafill_ligand_evidence.csv` (`uniprot_ac, ligand_analogue_id, ligand_chain, ligand_resi, pocket_file_name, pocket_number, distance, fit_rmsd, fit_n_atoms, source_pdb, local_rmsd, homolog_identity`).
+
 ## Pending review (no README text yet)
 
 The following script exists on disk but hasn't been individually reviewed against documentation yet: `76_boltz2_docking_supervisor.sh`.
