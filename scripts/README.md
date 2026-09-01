@@ -609,6 +609,80 @@ only. Must run in the `adda4tb` conda env (PyMOL).
 
 **Outputs**, `output/92_human_pocket_annotation/`: `<uniprot_ac>_annotation_table.csv` / `_annotation_table_categorized.csv` / `_residue_support.csv` (per-gene InterPro tables, same shape as script 77's); `pocket_domain_labels.csv` (`Uniprot AC, Gene name, File name, Pocket number, curated_labels, aars_class`, plus one support-count column per category); `alphafill_ligand_evidence.csv` (`uniprot_ac, ligand_analogue_id, ligand_chain, ligand_resi, pocket_file_name, pocket_number, distance, fit_rmsd, fit_n_atoms, source_pdb, local_rmsd, homolog_identity`).
 
+### `93_human_merge_pocket_annotations.py`
+Merges script 91's pocket-detection table with script 92's InterPro domain labels and AlphaFill
+ligand evidence into one wide table, one row per pocket — still with **no derived "is catalytic"
+verdict column** from the InterPro label alone (broad, 388/389 pockets, so collapsing it into a
+single flag would be an unreviewed threshold decision). What this script *does* add: a strong/weak
+classification per AlphaFill ligand, a human equivalent of script 77's `ligand_classification.py`
+(which only covers the 18 Mtb proteins), since not every ligand within the 10Å cutoff is equally
+meaningful — e.g. for AARS1 (human AlaRS), `ATP` and `A5A` (its own alanyl-adenylate reaction-
+intermediate mimic) are strong evidence, but `G5A`/`SSA` (glycyl-/seryl-adenylate mimics,
+homology-transplanted from *different* aaRS's own structures) are not, despite being the same
+compound class. Classification tiers (each verified against RCSB's Chemical Component Dictionary
+or a literature search, not guessed — see the script's own docstring for the checks): (1) **strong,
+self-structure** — the ligand's `source_pdb` is one of this exact gene's own experimental PDB
+entries (fetched live from UniProt, cached, same mechanism as script 77's `04_query_pdb_xrefs.py`);
+(2) **strong, universal cofactor/byproduct** — ATP/ADP/AMP/APC plus the reaction's actual
+pyrophosphate byproduct (POP/PPV/2PN); (3) **strong, matching reaction-intermediate mimic** — an
+aminoacyl-adenylate-class compound whose amino acid matches this gene's own substrate; (4)
+**strong, literature-documented near-cognate/editing substrate** — e.g. `VRT` (norvaline-adenosine)
+for VARS1/VARS2, `GGB` (L-canavanine) for RARS1/RARS2. Everything else defaults to weak. Note: the
+self-structure tier doesn't separately vet ligand identity — a generic ion (e.g. `MG`) found in a
+protein's own crystal structure is still classified strong, since "was actually observed in this
+protein's own solved structure" is treated as sufficient by construction.
+
+**Inputs:** `data/human_trna_synthetases_uniprot.csv`; `output/91_human_detect_pockets/pocket_detection_data.csv`; `output/92_human_pocket_annotation/pocket_domain_labels.csv`; `output/92_human_pocket_annotation/alphafill_ligand_evidence.csv`.
+
+**Outputs:** `processed/human_pocket_annotation/pdb_xrefs/<uniprot_ac>.json` (cached PDB cross-reference lists); `output/93_human_merge_pocket_annotations/alphafill_ligand_evidence_classified.csv` (script 92's evidence table plus `gene_name, strength, strength_basis`); `output/93_human_merge_pocket_annotations/merged_pocket_data.csv` — all of script 91's pocket columns plus `curated_labels, aars_class`, one support-count column per domain category, `n_alphafill_ligands, n_strong_ligands, n_weak_ligands`, and pipe-joined per-ligand detail columns (`alphafill_ligand_ids, _distances, _fit_rmsd, _sources, _local_rmsd, _homolog_identity, _strengths, _strength_basis`).
+
+## Human counter-screen: Uni-Dock on the IRB cluster
+
+Structure-based docking of the 1,095 filtered Mtb hits (script 70) against all 389 human pockets
+(script 91), run on the IRB cluster (`spot_gpu` partition, `--nodelist=irbgcn07,irbgcn10` — the
+lab's own two GPU nodes reached via that partition, user-authorized; see script
+`96_human_run_array.sh`'s own header for the full reasoning) rather than nebula, where every prior
+Uni-Dock run in this repo (scripts 22/36/46/60/65) has run. Single run per (pocket, compound) pair
+— no replicates like script 65's 5x Mtb cross-matrix run, confirmed with the user given the scale
+(389 × 1,095 ≈ 425,955 endpoints already). There is no separate ligand-prep script (would have
+been `95`): confirmed directly that all 1,095 filtered hits already have a prepared SDF under
+`output/64_aggregated_ligandprep/conformations_prepared/` (script 66 had already verified 0
+losses for the full 2,923-compound aggregated set), so script 96 reads from there directly.
+
+### `94_human_receptor_prep.py`
+Prepares Uni-Dock receptors (`.pdbqt`) for the 38 human AF2 monomers — raw, unprotonated AlphaFold
+DB downloads (no relaxation was done for this sub-pipeline), so PDB2PQR protonation (pH 7.0, AMBER,
+`adda4tb` env) runs first, then `unidocktools proteinprep` (`unidock_tools` env), mirroring script
+49's approach for the unrelaxed Mtb multimer structures. Adds one step script 49 didn't need: 4 of
+the 38 (the largest proteins — EPRS1, IARS1, LARS1, VARS1) hit a rare PDB2PQR edge case where a
+single hydrogen is placed anomalously close to the wrong heavy atom (confirmed via RDKit's
+`DetectChemistryProblems` — heavy-atom geometry and pLDDT at the affected residue are both normal,
+and PDB2PQR's own log flags the exact residue as "Unable to debump"), which breaks RDKit's valence
+sanitization inside `proteinprep`. Fixed generally (not hardcoded per-protein) via
+`src/utils/fix_pdb_valence.py`, run as an always-on step between protonation and `proteinprep` (a
+safe no-op when a structure has no valence problems — confirmed on the 34 unaffected genes).
+Resumable per gene.
+
+**Inputs:** `output/90_human_download_alphafold/structures_data.csv`.
+
+**Outputs:** `output/94_human_receptor_prep/<uniprot_ac>/<uniprot_ac>.pdbqt` (38/38, verified).
+
+### `96_human_docking.py` + `96_human_run_array.sh`
+Docks all 1,095 compounds against each of the 389 pockets. Reuses `run_unidock`/
+`extract_score_from_sdf`/`generate_report` verbatim from scripts 46/60/65 (box 22.5 Å, seed 42,
+`search_mode="fast"`, `scoring="vina"`, `cpu=32`). Ligand index is built directly from script 64's
+prepared SDFs, filtered to `filtered_hits.csv`'s 1,095 compound IDs. Resumable per pocket
+(`report.csv` exists with the expected row count → skip). Runs as a SLURM array on the IRB cluster,
+one task per gene (38, not 389 — mirrors scripts 83/89's own per-gene array convention); unlike
+83/89 there's no `--no-aggregate`/`--aggregate-only` split, since each pocket already writes its
+own independent `report.csv` — nothing for concurrent array tasks to race on. Must run inside the
+`unidock_tools` conda env (needs the actual Uni-Dock GPU binary, not just `unidocktools`) on a GPU
+node.
+
+**Inputs:** `output/94_human_receptor_prep/`, `output/64_aggregated_ligandprep/conformations_prepared/`, `output/70_filtering/filtered_hits.csv`, `output/91_human_detect_pockets/pocket_detection_data.csv`.
+
+**Outputs:** `output/96_human_docking/docking_results/<uniprot_ac>/<pocket_number>/report.csv` (+ `docking.tar.gz`, `logs.tar.gz`).
+
 ## Pending review (no README text yet)
 
 The following script exists on disk but hasn't been individually reviewed against documentation yet: `76_boltz2_docking_supervisor.sh`.
