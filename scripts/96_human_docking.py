@@ -21,6 +21,13 @@ writes its own independent report.csv (no shared file for concurrent SLURM array
 on), so plain per-pocket resumability is enough. Script 97 does the cross-pocket merge separately,
 once, after the array finishes.
 
+The `unidock` binary is resolved relative to the running interpreter (sys.executable), not looked
+up on PATH -- same convention as script 80's NESSO_BIN, for the same reason: this script is always
+invoked as `envs/unidock_tools/bin/python scripts/96_human_docking.py` (the SLURM array and the
+smoke test alike), never via `conda activate`, so a bare "unidock" is not found on PATH -- its
+sibling binary in the same env's bin/ directory is (confirmed the hard way: the first smoke test
+run hit FileNotFoundError: 'unidock' before this fix).
+
 Usage:
     # Smoke test: one gene, few compounds, isolated output.
     python 96_human_docking.py --genes AARS1 --max-compounds 5 --out-subdir smoke_test
@@ -41,6 +48,9 @@ sys.path.append(os.path.join(ROOT, "src"))
 from default import RANDOM_SEED  # noqa: E402
 
 import subprocess  # noqa: E402
+
+# Resolved relative to sys.executable, not looked up on PATH -- see module docstring for why.
+UNIDOCK_BIN = os.path.join(os.path.dirname(sys.executable), "unidock")
 
 POCKET_DETECTION_DATA_CSV = os.path.join(ROOT, "output", "91_human_detect_pockets", "pocket_detection_data.csv")
 FILTERED_HITS_CSV = os.path.join(ROOT, "output", "70_filtering", "filtered_hits.csv")
@@ -113,9 +123,11 @@ def run_unidock(
     batch: int = 500,
     log_file: str = "log.txt",
 ):
-    """Runs the Uni-Dock docking command. Verbatim from scripts 46/60/65."""
+    """Runs the Uni-Dock docking command. Adapted from scripts 46/60/65 (those assumed "unidock"
+    was already on PATH via `conda activate`; here it's resolved relative to sys.executable, see
+    module docstring)."""
     cmd = [
-        "unidock",
+        UNIDOCK_BIN,
         "--receptor", receptor,
         "--ligand_index", ligand_index,
         "--center_x", str(center_x),

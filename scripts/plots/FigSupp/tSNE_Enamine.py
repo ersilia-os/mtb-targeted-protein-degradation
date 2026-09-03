@@ -1,10 +1,10 @@
 """
 Supplementary figure: the 2 Enamine-library-docking t-SNE embeddings (HLL docking, REAL
-10B docking) split out of figure_1_5_plot.py's panel a, which now shows only the PocketVec
-embedding. Same 3 reference canonical pockets (gltS_cluster1, tyrS_cluster1, ileS_cluster1)
-highlighted by their gene's canonical color, with bold-lettered callout badges pinned to
-fixed corners of the HLL panel only (as before - both panels show the same 3 pockets, so a
-2nd legend on REAL 10B would be redundant).
+9.92B docking) split out of figure_1_5_plot.py's panel a, which now shows only the
+PocketVec embedding. Same 3 reference canonical pockets (gltS_cluster1, tyrS_cluster1,
+ileS_cluster1) highlighted by their gene's canonical color, with bold-lettered callout
+badges pinned to fixed corners of the HLL panel only (as before - both panels show the
+same 3 pockets, so a 2nd legend on REAL 9.92B would be redundant).
 
 Usage:
     python tSNE_Enamine.py
@@ -63,7 +63,7 @@ LABEL_CORNERS = {
 EMBEDDINGS = [
     ("HLL docking", lambda: compute_docking_tsne_embedding(
         os.path.join(output_dir, "unidock_docking", "docking_results"), RANDOM_SEED)),
-    ("REAL 10B docking", lambda: compute_docking_tsne_embedding(
+    ("REAL 9.92B docking", lambda: compute_docking_tsne_embedding(
         os.path.join(output_dir, "unidock_REAL_docking_2", "docking_results"), RANDOM_SEED)),
 ]
 
@@ -124,7 +124,7 @@ def plot_tsne_panel(ax, coords, canonical, title, annotate):
 
 
 def main():
-    fig, axs = stylia.create_figure(1, 2)
+    fig, axs = stylia.create_figure(1, 2, width=0.6, height=0.3)
     for title, embed_fn in EMBEDDINGS:
         keys, coords = embed_fn()
         canonical = load_canonical_pocket_labels(output_dir, keys)

@@ -1,8 +1,8 @@
 """
 Figure 2: compound-property distributions (panel b), per-gene docking-percentile grid
-(panel c), and top docking-pose snapshots (panel d), from figure_2_calculations.py. Panel
-a is a hand-authored Inkscape schematic (scheme.svg, exported to scheme.pdf) - not built
-by this script at all, just pasted in.
+one column per canonical (deduplicated) pocket (panel c), and top docking-pose snapshots
+(panel d), from figure_2_calculations.py. Panel a is a hand-authored Inkscape schematic
+(scheme.svg, exported to scheme.pdf) - not built by this script at all, just pasted in.
 
 Built on figure_1_plot.py's panel-per-file architecture instead of the original, single
 shared b+c+d matplotlib block PIL-composited onto a rasterized scheme.pdf: b/c/d each
@@ -165,15 +165,34 @@ def load_docking_percentiles():
     return pd.read_csv(os.path.join(plots_dir, "figure_2c_docking_percentiles.csv"))
 
 
-def gene_docking_stats(docking_percentiles, gene):
-    """Per-pocket median and p1 docking score for one gene - columns are a (stat, library)
-    MultiIndex, pockets sorted by REAL 10B's p1 ascending (most negative/best first) so both
-    stats share one x-axis order across all three libraries instead of each sorting
-    independently. Empty DataFrame if the gene has no docking data - plot_gene_panel()
-    falls back to its dummy-dot placeholder in that case."""
-    gene_df = docking_percentiles[docking_percentiles["gene"] == gene]
+def load_pocket_clusters():
+    """structure-level pocket id -> spatial_cluster_id, from the same 6.14 A greedy
+    centroid dedup figure_1_calculations.py uses for gene_to_unique_pocket_count
+    (scripts/77_pocket_annotation/09_cluster_pockets.py's persisted assignments) -
+    collapses panel c's per-structure pockets down to one column per canonical site."""
+    path = os.path.join(root, "..", "..", "output", "77_pocket_annotation", "pocket_clusters.csv")
+    df = pd.read_csv(path)
+    df["pocket_id"] = df["File name"].str.replace(".pdb", "", regex=False) + "_pocket_" + df["Pocket number"].astype(str)
+    return df.set_index("pocket_id")["spatial_cluster_id"].to_dict()
+
+
+def gene_docking_stats(docking_percentiles, gene, pocket_to_cluster):
+    """Per-canonical-pocket median and p1 docking score for one gene - columns are a
+    (stat, library) MultiIndex, canonical pockets sorted by REAL 10B's p1 ascending (most
+    negative/best first) so both stats share one x-axis order across all three libraries
+    instead of each sorting independently. A canonical pocket can have several
+    structure-level candidates (same physical site detected on different structures) -
+    only the one with the best (most negative) REAL 10B p1 represents it here, so each
+    cluster contributes exactly one column instead of one per redundant detection. Empty
+    DataFrame if the gene has no docking data - plot_gene_panel() falls back to its
+    dummy-dot placeholder in that case."""
+    gene_df = docking_percentiles[docking_percentiles["gene"] == gene].copy()
     if gene_df.empty:
         return gene_df
+    gene_df["spatial_cluster_id"] = gene_df["pocket"].map(pocket_to_cluster)
+    real10b = gene_df[gene_df["library"] == "REAL 10B"]
+    winners = real10b.sort_values("p1").drop_duplicates("spatial_cluster_id")["pocket"]
+    gene_df = gene_df[gene_df["pocket"].isin(winners)]
     pivoted = gene_df.pivot(index="pocket", columns="library", values=["median", "p1"])
     return pivoted.sort_values(("p1", "REAL 10B"))
 
@@ -199,36 +218,25 @@ def plot_gene_panel(ax, gene, color, docking_df=None, show_ylabel=False, show_yt
     score" text with no tick marks/numbers; show_yticks (row's LAST column) draws the
     tick marks/numbers on that column's right edge with no label text - splitting the two
     across opposite ends of the row (rather than stacking both on the first column) is
-    what lets the row's own left margin shrink to just the label's width, per request."""
+    what lets the row's own left margin shrink to just the label's width, per request.
+    Every column is one canonical pocket (gene_docking_stats() already dedups to that),
+    so all points render at the same size."""
     ax.patch.set_visible(False)
     if docking_df is not None and not docking_df.empty:
         nc = stylia.NamedColors()
         n = len(docking_df)
         x = list(range(n))
-        uniprot_ac = docking_df.index[0].split("_model_")[0].split("_")[-1]
-        best_structure = f"alphafold2_{uniprot_ac}_model_0"
-        highlight = [i for i, pocket in enumerate(docking_df.index)
-                     if pocket.rsplit("_pocket_", 1)[0] == best_structure]
-        non_highlight = [i for i in range(n) if i not in highlight]
-        highlight_x = [x[i] for i in highlight]
-        non_highlight_x = [x[i] for i in non_highlight]
         for label, _, color_name in LIBRARIES:
             lib_color = nc.get(color_name)
-            p1_size = stylia.MARKERSIZE * 0.25
-            p1_size_highlight = stylia.MARKERSIZE * 1.6
-            outline_lw = 0.4
-            ax.scatter(highlight_x, docking_df[("median", label)].iloc[highlight], marker="_",
-                       s=p1_size, linewidths=stylia.LINEWIDTH * 1.5 + outline_lw * 2, color="black",
-                       zorder=2)
-            ax.scatter(highlight_x, docking_df[("p1", label)].iloc[highlight],
-                       s=p1_size_highlight * 1.3, color="black", linewidth=0, zorder=2)
-            ax.scatter(x, docking_df[("median", label)], marker="_", s=p1_size,
+            marker_size = stylia.MARKERSIZE * 1.6
+            ax.scatter(x, docking_df[("median", label)], marker="_", s=marker_size,
                        linewidths=stylia.LINEWIDTH * 1.5, color=lib_color, zorder=3)
-            ax.scatter(non_highlight_x, docking_df[("p1", label)].iloc[non_highlight], s=p1_size,
-                       color=lib_color, linewidth=0, zorder=3)
-            ax.scatter(highlight_x, docking_df[("p1", label)].iloc[highlight],
-                       s=p1_size_highlight, color=lib_color, linewidth=0, zorder=3)
-        margin = 0.08 * max(n - 1, 1)
+            ax.scatter(x, docking_df[("p1", label)], s=marker_size, color=lib_color, linewidth=0, zorder=3)
+        # A margin that's a pure multiple of (n - 1) shrinks to near-zero for genes with only
+        # 2-3 canonical pockets, so the outermost big points sit right on the frame - the
+        # 0.35 floor keeps a readable gap regardless of n, only kicking in below ~n=5 (0.08 *
+        # (n-1) already exceeds it from n=6 up, so larger grids are unaffected).
+        margin = max(0.08 * (n - 1), 0.35)
         ax.set_xlim(-margin, (n - 1) + margin)
         ax.set_ylim(-15, -6)
 
@@ -508,6 +516,7 @@ def build_panel_c(size, padding):
         f"grid, got {len(genes)}.")
 
     docking_percentiles = load_docking_percentiles()
+    pocket_to_cluster = load_pocket_clusters()
     snapshot_index = load_docking_snapshot_index()
     snapshot_rows_by_gene = defaultdict(list)
     for _, row in snapshot_index.iterrows():
@@ -518,7 +527,7 @@ def build_panel_c(size, padding):
     for i, gene in enumerate(genes):
         row, col = divmod(i, len(PROPERTIES))
         ax = stylize(axs[row, col])
-        docking_df = gene_docking_stats(docking_percentiles, gene)
+        docking_df = gene_docking_stats(docking_percentiles, gene, pocket_to_cluster)
         plot_gene_panel(ax, gene, gene_colors[gene], docking_df=docking_df,
                          show_ylabel=(col == 0), show_yticks=(col == len(PROPERTIES) - 1),
                          snapshot_rows=snapshot_rows_by_gene.get(gene))
@@ -541,8 +550,14 @@ def build_panel_d(size, padding):
             row = snapshot_index.iloc[i]
             image_path = os.path.join(plots_dir, "docking_snapshots", row["filename"])
             plot_docking_snapshot(ax, i + 1, image_path, row["library"], row["score"])
+    # top=0.76 (not 0.93 like panels b/c) - imshow's default equal-aspect shrinks each square
+    # snapshot to the column WIDTH (fixed, shared with panel c), so a nominal box much taller
+    # than it is wide (as panel_layout.csv's old delta_y=4 gave at top=0.93) just pads blank
+    # space above+below the visible image instead of enlarging it. top=0.76 with delta_y=3.1
+    # (panel_layout.csv) sizes the nominal box to match the column width, while still leaving
+    # enough absolute top margin for the "d" label plus each cell's rank-number legend.
     save_panel(fig, "d", use_tight_layout=False,
-               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.93, bottom=0.05,
+               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.76, bottom=0.05,
                                      wspace=POCKET_ROW_WSPACE),
                padding=padding)
 

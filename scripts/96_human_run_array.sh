@@ -20,6 +20,11 @@
 # --time is a rough estimate (no prior Uni-Dock run on this cluster to calibrate against) -- adjust
 # after the smoke test / first array pass shows real per-pocket timing.
 #
+# --mem=128G (raised from an initial 32G after the first full-array run): the same 5 largest
+# proteins that needed the valence fix in script 94 (EPRS1, IARS1, LARS1, VARS1, plus VARS2) hit
+# SLURM's OOM killer within their first pocket's docking call at 32G. Both irbgcn07 (515GB total)
+# and irbgcn10 (2TB total) have ample headroom for this even running 2 tasks/node concurrently.
+#
 # Usage (on irb, from the repo root):
 #   mkdir -p output/96_human_docking/logs
 #   sbatch --chdir=$(pwd) scripts/96_human_run_array.sh
@@ -29,7 +34,7 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=32
-#SBATCH --mem=32G
+#SBATCH --mem=128G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=spot_gpu
 #SBATCH --nodelist=irbgcn07,irbgcn10

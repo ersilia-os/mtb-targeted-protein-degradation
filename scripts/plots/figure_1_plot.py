@@ -1,7 +1,9 @@
 """
 Figure 1: protein structures (panel a) + sequence identity / structural RMSD heatmaps
-(panels b/c), from figure_1_calculations.py. Panel d is a blank placeholder (previously a
-PocketVec cosine-distance heatmap, dropped per request).
+(panels b/c), from figure_1_calculations.py, + lysS's 5 pipeline structures superposed as a
+cartoon-only PyMOL ensemble render (panel d, render_lysS_ensemble). Panel d's earlier content
+(P2Rank pocket-probability curve + domain-annotation strips) has been split out into its own
+standalone supplementary figure, scripts/plots/figure_supp_pocket.py.
 
 Built on figure_3/figure_4's panel-per-file architecture instead of the original,
 oversized monolithic composite this script replaced: each panel is its own standalone
@@ -46,6 +48,7 @@ from pypdf import PdfReader, PdfWriter, Transformation
 import pymupdf
 import pymol
 from pymol import cmd
+from PIL import Image
 import stylia
 from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
@@ -138,14 +141,18 @@ ZOOM_DICT = {
 }
 
 
-def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
+def autocrop_to_content_with_offset(img, padding_frac=0.05, background_frac=0.98):
+    """autocrop_to_content, but also returns the (x_offset, y_offset) of the returned crop's
+    top-left corner within `img`'s original pixel grid - needed to translate a pixel location
+    computed against the original, uncropped render (e.g. a projected point) into the cropped
+    image's own pixel coordinates."""
     gray = img[..., :3].mean(axis=2)
     max_val = 1.0 if np.issubdtype(img.dtype, np.floating) else 255
     mask = gray < background_frac * max_val
     rows = np.where(mask.any(axis=1))[0]
     cols = np.where(mask.any(axis=0))[0]
     if rows.size == 0 or cols.size == 0:
-        return img
+        return img, 0, 0
     h, w = img.shape[:2]
     y0, y1 = rows[0], rows[-1]
     x0, x1 = cols[0], cols[-1]
@@ -155,11 +162,23 @@ def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
     y1 = min(y1 + pad_y, h - 1)
     x0 = max(x0 - pad_x, 0)
     x1 = min(x1 + pad_x, w - 1)
-    return img[y0:y1 + 1, x0:x1 + 1]
+    return img[y0:y1 + 1, x0:x1 + 1], x0, y0
 
 
-def show_zoomed_image(ax, img, zoom=1.0):
+def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
+    cropped, _, _ = autocrop_to_content_with_offset(img, padding_frac, background_frac)
+    return cropped
+
+
+def crop_for_display(img, zoom=1.0):
+    """Same crop pipeline as show_zoomed_image (center-crop for zoom>1, then autocrop, then
+    pad for zoom<1), but also returns the (x_offset, y_offset) of the returned crop's top-left
+    corner within `img`'s original pixel grid. A pixel location computed against the original,
+    uncropped image (e.g. a pocket centroid's projected screen position) converts into this
+    crop's own data coordinates via (orig_x - x_offset, orig_y - y_offset) - valid because
+    ax.imshow's default data coordinates are just the displayed array's own row/col indices."""
     h, w = img.shape[:2]
+    x_off, y_off = 0, 0
     if zoom > 1:
         crop_w = int(w / zoom)
         crop_h = int(h / zoom)
@@ -169,20 +188,32 @@ def show_zoomed_image(ax, img, zoom=1.0):
         y0 = max(cy - crop_h // 2, 0)
         y1 = min(cy + crop_h // 2, h)
         img = img[y0:y1, x0:x1]
+        x_off += x0
+        y_off += y0
 
-    img = autocrop_to_content(img)
+    img, cx0, cy0 = autocrop_to_content_with_offset(img)
+    x_off += cx0
+    y_off += cy0
 
     if zoom < 1:
         h2, w2 = img.shape[:2]
         pad_h = int(h2 / zoom) - h2
         pad_w = int(w2 / zoom) - w2
         pad_val = 1.0 if np.issubdtype(img.dtype, np.floating) else 255
-        pad_widths = [(pad_h // 2, pad_h - pad_h // 2), (pad_w // 2, pad_w - pad_w // 2)]
+        top, left = pad_h // 2, pad_w // 2
+        pad_widths = [(top, pad_h - top), (left, pad_w - left)]
         if img.ndim == 3:
             pad_widths.append((0, 0))
         img = np.pad(img, pad_widths, mode="constant", constant_values=pad_val)
+        x_off -= left
+        y_off -= top
 
-    ax.imshow(img, interpolation="none", resample=False)
+    return img, x_off, y_off
+
+
+def show_zoomed_image(ax, img, zoom=1.0):
+    cropped, _, _ = crop_for_display(img, zoom)
+    ax.imshow(cropped, interpolation="none", resample=False)
     ax.set_aspect("equal", adjustable="datalim")
 
 
@@ -258,6 +289,219 @@ def render_protein_structures(proteins=PROTEINS, rerun=False):
             cmd.set("sphere_transparency", 0.1, obj_name)
 
         cmd.save(os.path.join(plots_dir, f"session_{protein}_{gene}.pse"))
+
+
+# lysS's 5 pipeline structures (matches the "# structures" count in pocket_detection_data.csv
+# for P9WFU9, not the full output/aligned_relaxed_structures/P9WFU9/ directory - that directory
+# also holds alphafold3 models 2-4 and chai1 models 0/2-4, which were never carried into the
+# pocket-detection pipeline). Already aligned to a shared coordinate frame (see
+# figure_1_calculations.py's structural-RMSD section), so loading them as separate PyMOL objects
+# in the same session superposes them with no extra cmd.align/super step needed.
+LYSS_UNIPROT = "P9WFU9"
+LYSS_STRUCTURES = [
+    "alphafold2_P9WFU9_model_0.pdb",
+    "alphafold3_P9WFU9_model_0.pdb",
+    "alphafold3_P9WFU9_model_1.pdb",
+    "chai1_P9WFU9_model_1.pdb",
+    "swissmodel_P9WFU9_model_0.pdb",
+]
+
+# Fixed camera view for the lysS ensemble render, in the same cmd.get_view()-tuple format as
+# panel a's MY_VIEWS - picked interactively by the user from the saved .pse session.
+LYSS_VIEW = (
+    0.219232261, -0.238682613, 0.946026027,
+    0.975314498, 0.079742722, -0.205896914,
+    -0.026288977, 0.967810452, 0.250276804,
+    0.000000000, 0.000000000, -419.003662109,
+    1.055000305, -3.290000916, 6.551498413,
+    392.760864258, 445.246520996, 20.000000000,
+)
+
+# Opaque cartoon (0, not the transparency briefly tried before) - PyMOL's ray_trace_mode=1
+# black silhouette/contour outlines are only drawn on fully opaque geometry, not transparent
+# cartoon, and those outlines were requested (kept) over the transparency, per explicit choice.
+CARTOON_TRANSPARENCY = 0.0
+
+# Same same-pocket centroid-distance cutoff as figure_1_calculations.py's dedup pass (that
+# script's own POCKET_DEDUP_DISTANCE_THRESHOLD) - duplicated here as a literal rather than
+# imported, since figure_1_calculations.py is a top-level script, not an importable module.
+POCKET_DEDUP_DISTANCE_THRESHOLD = 6.14
+
+NB_SPHERES_SIZE = 4.0
+
+# PyMOL's ray_trace_mode black outline is ~1-2 raw pixels wide regardless of ray_trace_gain
+# (verified empirically - gain from 0.001 to 0.3 made no visible difference); the only lever
+# that actually thins it is supersampling: ray-trace at RAY_SUPERSAMPLE x the final pixel
+# size, then downsample with antialiasing (PIL LANCZOS) - the outline's fixed pixel width
+# shrinks relative to the whole image once blended into surrounding white during that
+# downsample, making it read as a thinner line.
+RAY_RESOLUTION = 1200
+RAY_SUPERSAMPLE = 2
+
+# Grayscale RGB triples for the canonical pocket spheres, in order (per request: white, dark
+# gray, black) - each still gets a black ray_trace_mode outline, so even the white/black
+# spheres read as distinct shaded rings against the white page background.
+POCKET_COLORS = [
+    (1.00, 1.00, 1.00),  # white
+    (0.35, 0.35, 0.35),  # dark gray
+    (0.00, 0.00, 0.00),  # black
+]
+
+# Saturated, mutually-exclusive marker colors used ONLY for the label-position detection pass
+# (never seen in the actual figure) - one per canonical pocket group, in POCKET_COLORS order.
+POCKET_DETECT_COLORS = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)]
+
+
+def _lysS_canonical_pocket_groups():
+    """Every pocket centroid detected for lysS across its 5 pipeline structures, each assigned
+    to a canonical (deduplicated) pocket group. Canonical centroids come from the same greedy
+    accept-if-farther-than-6.14A pass as figure_1_calculations.py's dedup (sorted by Pocket
+    score descending); every other (rejected) centroid is then assigned to its NEAREST
+    canonical centroid - valid because a rejected centroid is, by construction of that greedy
+    pass, always within the threshold of at least one canonical centroid already accepted
+    before it. Returns (centroids, group_indices, n_canonical)."""
+    lys_pockets = pocket_detection_data[pocket_detection_data['Uniprot AC'] == LYSS_UNIPROT] \
+        .sort_values('Pocket score', ascending=False)
+    all_centroids = [
+        np.array([float(v) for v in row['Pocket centroid coordinate (x y z)'].split()])
+        for _, row in lys_pockets.iterrows()
+    ]
+    accepted_centroids = []
+    for centroid in all_centroids:
+        if all(np.linalg.norm(centroid - c) > POCKET_DEDUP_DISTANCE_THRESHOLD for c in accepted_centroids):
+            accepted_centroids.append(centroid)
+    group_indices = [
+        int(np.argmin([np.linalg.norm(centroid - c) for c in accepted_centroids]))
+        for centroid in all_centroids
+    ]
+    return all_centroids, group_indices, len(accepted_centroids)
+
+
+def _flatten_to_opaque_white(png_path, target_resolution):
+    """Composites a ray-traced PyMOL PNG (RGBA, background left transparent by cmd.ray/cmd.png
+    regardless of cmd.bg_color - confirmed empirically) onto an OPAQUE white canvas, then
+    downsamples to target_resolution x target_resolution with antialiasing (PIL LANCZOS - see
+    RAY_SUPERSAMPLE's own comment for why), overwriting png_path. Compositing to opaque RGB
+    BEFORE resizing is required, not optional: resizing the raw RGBA directly (tried first) left
+    transparent regions with corrupted (0,0,0,0) - i.e. BLACK, not the intended white - pixels
+    afterward (a Pillow resize-of-unpremultiplied-alpha artifact), which silently broke
+    autocrop_to_content's brightness-based content detection downstream (it ignores alpha and
+    only looks at RGB, so it saw near-black "content" almost everywhere, and effectively
+    stopped cropping the large blank margin around the actual structure)."""
+    with Image.open(png_path) as im:
+        im = im.convert("RGBA")
+        opaque_white = Image.new("RGBA", im.size, (255, 255, 255, 255))
+        flattened = Image.alpha_composite(opaque_white, im).convert("RGB")
+        flattened.resize((target_resolution, target_resolution), Image.LANCZOS).save(png_path)
+
+
+def render_lysS_ensemble(rerun=False):
+    """All 5 of lysS's pipeline structures superposed in one cartoon-only render (no surface),
+    every structure colored in lysS's own color from color_mapping.json - shows their
+    conformational spread now that they share one coordinate frame. All detected pocket
+    centroids across those 5 structures are also shown as nb_spheres, colored by canonical
+    (deduplicated) pocket group - see _lysS_canonical_pocket_groups. Also saves a .pse session
+    (plots_dir/session_{LYSS_UNIPROT}_lysS_ensemble.pse) so the camera angle can be picked
+    interactively in PyMOL, then hardcoded into LYSS_VIEW above via cmd.get_view().
+
+    Returns (png_path, centroid_px): centroid_px maps each canonical pocket group index (int,
+    same indexing as POCKET_COLORS) to that pocket's (x, y) pixel location in png_path's own
+    RAW, uncropped pixel grid - found via a second, quick detection-only ray pass where the
+    cartoon is hidden and each pocket group is temporarily recolored to a unique saturated
+    marker (POCKET_DETECT_COLORS), never seen in the actual figure, then locating each marker
+    color's pixel centroid. Needed so build_panel_c can draw a leader line from a "Pocket A/B/C"
+    label to the right sphere, since PyMOL doesn't otherwise expose a screen-space projection
+    API - crop_for_display's returned offsets convert this raw-grid location into whatever
+    cropped/zoomed data-coordinate system that panel actually displays."""
+    gene = "lysS"
+    png_path = os.path.join(plots_dir, f"figure_{LYSS_UNIPROT}_{gene}_ensemble.png")
+    centroid_px_path = os.path.join(plots_dir, f"figure_{LYSS_UNIPROT}_{gene}_ensemble_centroid_px.json")
+    if os.path.exists(png_path) and os.path.exists(centroid_px_path) and not rerun:
+        print(f"Reusing existing ensemble render for {gene} ({LYSS_UNIPROT}): {png_path}")
+        with open(centroid_px_path) as f:
+            centroid_px = {int(k): tuple(v) for k, v in json.load(f).items()}
+        return png_path, centroid_px
+
+    pymol.finish_launching(['pymol', '-cq'])
+    cmd.reinitialize()
+
+    color_rgb = mcolors.to_rgb(cmap_dict[gene])
+    cmd.set_color("lysS_color", list(color_rgb))
+
+    for i, fname in enumerate(LYSS_STRUCTURES):
+        obj_name = f"structure_{i}"
+        cmd.load(os.path.join(output_dir, "aligned_relaxed_structures", LYSS_UNIPROT, fname), obj_name)
+        cmd.hide("everything", obj_name)
+        cmd.show("cartoon", obj_name)
+        cmd.color("lysS_color", obj_name)
+        cmd.set("cartoon_transparency", CARTOON_TRANSPARENCY, obj_name)
+
+    centroids, group_indices, n_canonical = _lysS_canonical_pocket_groups()
+    if n_canonical > len(POCKET_COLORS):
+        raise ValueError(f"lysS has {n_canonical} canonical pockets, more than the "
+                          f"{len(POCKET_COLORS)} curated POCKET_COLORS - add more colors.")
+    for i in range(n_canonical):
+        cmd.set_color(f"lysS_pocket_{i}", list(POCKET_COLORS[i]))
+    cmd.set("nb_spheres_size", NB_SPHERES_SIZE)
+    for j, (centroid, group) in enumerate(zip(centroids, group_indices)):
+        obj_name = f"pocket_centroid_{j}"
+        cmd.pseudoatom(obj_name, pos=[float(v) for v in centroid])
+        cmd.show("nb_spheres", obj_name)
+        cmd.color(f"lysS_pocket_{group}", obj_name)
+    print(f"  lysS: {len(centroids)} pocket centroids -> {n_canonical} canonical groups: {group_indices}")
+
+    cmd.bg_color("white")
+    cmd.set("orthoscopic", 1)
+    cmd.set("depth_cue", 0)
+    cmd.set("ray_trace_fog", 0)
+    cmd.set("ray_shadows", 0)
+    cmd.set("ray_trace_mode", 1)
+    cmd.set("ray_trace_gain", 0.02)
+    cmd.set("spec_reflect", 0)
+    cmd.set("specular", 0)
+    cmd.set("antialias", 2)
+    if LYSS_VIEW:
+        cmd.set_view(LYSS_VIEW)
+    zoom_to_fixed_box("all", box_size=95)
+    session_path = os.path.join(plots_dir, f"session_{LYSS_UNIPROT}_{gene}_ensemble.pse")
+    cmd.save(session_path)
+    hires = RAY_RESOLUTION * RAY_SUPERSAMPLE
+
+    cmd.ray(hires, hires)
+    cmd.png(png_path, dpi=600)
+    _flatten_to_opaque_white(png_path, RAY_RESOLUTION)
+
+    # Detection-only pass (never saved as a visible figure asset): hide the cartoons and
+    # recolor each pocket group to a unique saturated marker, so its pixel centroid can be
+    # found unambiguously in the rendered raster - reuses the exact same camera/zoom already
+    # locked in above, so positions line up with the real production render pixel-for-pixel.
+    for i in range(len(LYSS_STRUCTURES)):
+        cmd.hide("everything", f"structure_{i}")
+    for i in range(n_canonical):
+        cmd.set_color(f"lysS_pocket_detect_{i}", list(POCKET_DETECT_COLORS[i]))
+    for j, group in enumerate(group_indices):
+        cmd.color(f"lysS_pocket_detect_{group}", f"pocket_centroid_{j}")
+    cmd.set("ray_trace_mode", 0)
+    detect_path = os.path.join(plots_dir, f"_tmp_{LYSS_UNIPROT}_{gene}_detect.png")
+    cmd.ray(hires, hires)
+    cmd.png(detect_path, dpi=600)
+    _flatten_to_opaque_white(detect_path, RAY_RESOLUTION)
+    with Image.open(detect_path) as im:
+        detect_arr = np.array(im.convert("RGB")).astype(float) / 255.0
+    os.remove(detect_path)
+
+    centroid_px = {}
+    for i in range(n_canonical):
+        dist = np.linalg.norm(detect_arr - np.array(POCKET_DETECT_COLORS[i]), axis=-1)
+        ys, xs = np.where(dist < 0.3)
+        if len(xs):
+            centroid_px[i] = (float(xs.mean()), float(ys.mean()))
+    with open(centroid_px_path, "w") as f:
+        json.dump(centroid_px, f)
+
+    cmd.delete("all")
+    print(f"Saved PyMOL session: {session_path}")
+    return png_path, centroid_px
 
 
 N_COLS = 7
@@ -522,108 +766,6 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
 
 
 # ===========================================================================
-# Panel d data + helper: P2Rank probability curve + domain-annotation strips
-# (migrated from figure_3_plot.py's own panel c, along with
-# figure_1_calculations.py's compute_pocket_scores - figure 3's panel c no
-# longer needs this data, so it was moved here rather than duplicated)
-# ===========================================================================
-
-# Vertical gap between the P2Rank prob. row and the 4-domain-row block below it -
-# independent of MOSAIC's own (default) row/column gaps.
-ROW_BLOCK_HSPACE = 0.4
-
-# Vertical gap among just the 4 domain rows themselves, via their own inner subgridspec.
-DOMAIN_ROWS_HSPACE = 0.45
-
-# Row heights for the 5 stacked rows: P2Rank prob. gets 4 parts, each of the 4 domain
-# bands gets 1 part (8 parts total) - so the probability curve occupies exactly
-# 4/8 = 1/2 of the total stack height, versus an equal 1/5 split.
-ROW_BLOCK_HEIGHT_RATIOS = [4, 1, 1, 1, 1]
-
-# Fixed absolute left margin, wide enough to fit the longest row label ("Anticodon
-# binding") at its own fixed point size - an absolute width (converted to a fraction of
-# this panel's own delta_x in build_panel_d), not a fixed fraction, so it stays correct
-# regardless of how panel d's own width is later tuned in panel_layout.csv.
-ROW_LABEL_LEFT_MARGIN_IN = 0.75
-
-# Extra headroom (axes-fraction) added on top of each label's own anchor y, so the label
-# sits with real empty space above the plot box instead of flush against it.
-LABEL_GAP = 0.02
-
-# Typical P2Rank pocket-probability cutoff, per request - source/cite before this value
-# appears in a manuscript legend (e.g. the P2Rank paper or its own documentation). Only
-# used to stop the fill in plot_pocket_scores_row below the cutoff; no other visual
-# change (no reference line, no tick relabeling).
-P2RANK_CUTOFF = 0.2
-
-
-def plot_pocket_scores_row(ax):
-    """Panel d's 1st row (of 5, alongside the 4 plot_domain_strip_row bands) -
-    pocket_rank on the x-axis (not y), probability on y. Only fills above P2RANK_CUTOFF -
-    sub-cutoff pockets are left unfilled."""
-    scores = pd.read_csv(os.path.join(plots_dir, "figure_1_pocket_scores.csv"))
-    nc = stylia.NamedColors()
-    ax.plot(scores["pocket_rank"], scores["pocket_probability"], color=nc.orchid, linewidth=stylia.LINEWIDTH, zorder=2)
-    above_cutoff = scores["pocket_probability"].where(scores["pocket_probability"] >= P2RANK_CUTOFF)
-    ax.fill_between(scores["pocket_rank"], above_cutoff, color=nc.orchid, alpha=0.3, zorder=1)
-    ax.set_xlim(scores["pocket_rank"].min(), scores["pocket_rank"].max())
-    ax.set_ylim(0, 1)
-    ax.set_xticks([])
-    # Explicit tick at 0.5 (unlabeled) in addition to the 0/1 endpoints - a visible
-    # midpoint reference without cluttering the axis with a "0.5" label.
-    ax.set_yticks([0, 0.5, 1])
-    ax.set_yticklabels(["0", "", "1"])
-    stylia.label(ax, xlabel="", ylabel="P2Rank prob.")
-    ax.yaxis.label.set_rotation(0)
-    ax.yaxis.label.set_ha("right")
-    ax.yaxis.label.set_va("center")
-    # ha alone doesn't control distance from the axis - only how the text aligns around its own
-    # anchor point, and this row's real "0"/"1" tick labels throw off matplotlib's automatic
-    # anchor placement (Axis._autolabelpos) when combined with rotation=0, pushing the anchor (and
-    # so the whole label) too far left. set_label_coords pins the anchor explicitly, close to the
-    # tick labels, and disables that automatic repositioning so it stays put on every redraw.
-    ax.yaxis.set_label_coords(-0.022, 0.5, transform=ax.transAxes)
-
-
-# The 4 domain bands: column in figure_1_pocket_scores.csv -> band title -> its own
-# "present" color, against a shared white "absent" background. Catalytic uses a
-# ligand-evidence confidence threshold (CATALYTIC_CONFIDENCE_MIN); the other 3 use plain
-# InterPro label presence, mutually exclusive with Catalytic - see
-# figure_1_calculations.py's compute_pocket_scores/CURATED_LABEL_COLUMNS.
-DOMAIN_STRIP_COLUMNS = [
-    ("is_catalytic", "Catalytic", "crimson"),
-    ("is_trna_binding", "tRNA binding", "cobalt"),
-    ("is_editing", "Editing", "amber"),
-    ("is_anticodon_binding", "Anticodon binding", "lime"),
-]
-
-# Each domain-row "present" mark's width, in pocket_rank units (1 unit = 1 pocket's own
-# rank spacing) - 2x a pocket's natural 1-unit spacing, for better legibility.
-DOMAIN_ROW_BAR_WIDTH = 2.0
-
-
-def plot_domain_strip_row(ax, column, title, color_name):
-    """One row of panel d (4 stacked rows total, 1 per DOMAIN_STRIP_COLUMNS entry) - a
-    thin colored cell per pocket (all 276, same pocket_rank x-order - sorted by P2Rank
-    probability descending, rank 1 leftmost), in this band's own color where `column` is
-    True, white otherwise - figure_1_calculations.py's compute_pocket_scores, itself from
-    output/77_pocket_annotation/pocket_detection_interpro_updated.csv."""
-    scores = pd.read_csv(os.path.join(plots_dir, "figure_1_pocket_scores.csv"))
-    nc = stylia.NamedColors()
-    present_color = getattr(nc, color_name)
-    colors = [present_color if v else nc.white for v in scores[column]]
-    ax.bar(scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
-    ax.set_xlim(scores["pocket_rank"].min(), scores["pocket_rank"].max())
-    ax.set_ylim(0, 1)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    stylia.label(ax, xlabel="", ylabel=title)
-    ax.yaxis.label.set_rotation(0)
-    ax.yaxis.label.set_ha("right")
-    ax.yaxis.label.set_va("center")
-
-
-# ===========================================================================
 # Panel-saving scaffolding (ported from figure_3_plot.py / figure_4_plot.py)
 # ===========================================================================
 
@@ -790,7 +932,26 @@ def build_panel_b(size, padding):
     save_panel(fig, "b", padding=padding)
 
 
+# Extra crop-in factor on top of autocrop_to_content, per request ("too much blank space") -
+# tune by eye if the structure still isn't filling the panel, or clips at this value.
+LYSS_PANEL_ZOOM = 1.3
+
+# Canonical pocket group index (POCKET_COLORS order: white, dark gray, black) -> (label text,
+# (x, y) label position in AXES FRACTION coords, horizontal/vertical text alignment). Per
+# request: "Pocket A" (top-right) must point at the black sphere (group 2, not the original
+# white/group 0), "Pocket B" sits mid-left (not bottom-left), and "Pocket C" took over group 0's
+# (white) former bottom-right slot. A black leader line (ax.annotate's arrowprops) connects
+# each corner/edge label to its actual sphere position regardless of these swaps.
+LYSS_POCKET_LABELS = {
+    2: ("Pocket A", (0.95, 0.95), "right", "top"),
+    1: ("Pocket B", (0.05, 0.5), "left", "center"),
+    0: ("Pocket C", (0.95, 0.05), "right", "bottom"),
+}
+
+
 def build_panel_c(size, padding):
+    """Structural RMSD heatmap - moved here (from panel d) per request, swapping places with
+    the lysS ensemble render (now panel d, build_panel_d)."""
     nc = stylia.NamedColors()
     fig, ax = plt.subplots(figsize=size)
     fig.patch.set_facecolor("white")
@@ -808,33 +969,49 @@ def build_panel_c(size, padding):
     save_panel(fig, "c", padding=padding)
 
 
-def build_panel_d(size, padding):
-    """P2Rank probability curve + 4 domain bands, migrated from figure_3_plot.py's own
-    panel c (previously a blank placeholder here, before that a PocketVec cosine-distance
-    heatmap). Outer gridspec splits P2Rank prob. from the 4-domain-row block
-    (ROW_BLOCK_HSPACE gap, ROW_BLOCK_HEIGHT_RATIOS split); an inner subgridspec then packs
-    the 4 domain rows with their own tighter DOMAIN_ROWS_HSPACE gap."""
-    fig = plt.figure(figsize=size)
+def build_panel_d(size, padding, rerun=False):
+    """lysS's 5 pipeline structures, superposed as cartoon-only renders (no surface) all in
+    lysS's own color - see render_lysS_ensemble - cropped in further (LYSS_PANEL_ZOOM) to
+    remove blank margin. Each canonical pocket's sphere is labeled "Pocket A/B/C (n/total)" -
+    n being how many of lysS's raw pocket detections (across its 5 structures) that canonical
+    pocket absorbed during dedup, out of the total pocket structures for lysS - at a fixed
+    corner/edge with a leader line to its actual (detected) position - see
+    render_lysS_ensemble's centroid_px return and LYSS_POCKET_LABELS. Moved here (from panel c)
+    per request, swapping places with the structural RMSD heatmap (now panel c,
+    build_panel_c)."""
+    png_path, centroid_px = render_lysS_ensemble(rerun=rerun)
+    _, group_indices, _ = _lysS_canonical_pocket_groups()
+    group_counts = {i: group_indices.count(i) for i in set(group_indices)}
+
+    fig, ax = plt.subplots(figsize=size)
     fig.patch.set_facecolor("white")
-    outer_gs = fig.add_gridspec(2, 1, height_ratios=[ROW_BLOCK_HEIGHT_RATIOS[0], sum(ROW_BLOCK_HEIGHT_RATIOS[1:])],
-                                 hspace=ROW_BLOCK_HSPACE)
-    plot_pocket_scores_row(stylize(fig.add_subplot(outer_gs[0, 0])))
-    domain_gs = outer_gs[1, 0].subgridspec(len(DOMAIN_STRIP_COLUMNS), 1, hspace=DOMAIN_ROWS_HSPACE)
-    for i, (column, title, color_name) in enumerate(DOMAIN_STRIP_COLUMNS):
-        ax = stylize(fig.add_subplot(domain_gs[i, 0]))
-        plot_domain_strip_row(ax, column=column, title=title, color_name=color_name)
-    # tight_layout() isn't compatible with this nested subgridspec (falls back to
-    # matplotlib's stock default margins, clipping the longest row labels on the left) -
-    # figure_1_plot.py's own save_panel() exposes an explicit escape hatch for exactly
-    # this, so the margin is set directly here rather than via a manual post-hoc
-    # fig.subplots_adjust() call after save_panel() runs (figure_3_plot.py's own
-    # workaround, needed there only because its simpler save_panel() lacks this
-    # parameter). Left margin is a FIXED ABSOLUTE width (ROW_LABEL_LEFT_MARGIN_IN),
-    # converted to a fraction of this panel's own delta_x - stays correct regardless of
-    # how panel d's own width is tuned in panel_layout.csv.
-    save_panel(fig, "d", use_tight_layout=False,
-               subplots_adjust=dict(left=ROW_LABEL_LEFT_MARGIN_IN / size[0], right=0.995),
-               padding=padding)
+    stylize(ax)
+    ax.set_axis_off()
+
+    img = mpimg.imread(png_path)
+    cropped, x_off, y_off = crop_for_display(img, zoom=LYSS_PANEL_ZOOM)
+    ax.imshow(cropped, interpolation="none", resample=False)
+    ax.set_aspect("equal", adjustable="datalim")
+
+    for i, (label_text, label_pos, ha, va) in LYSS_POCKET_LABELS.items():
+        if i not in centroid_px:
+            continue
+        full_label = f"{label_text} ({group_counts.get(i, 0)})"
+        raw_x, raw_y = centroid_px[i]
+        data_xy = (raw_x - x_off, raw_y - y_off)
+        # Label background matches that pocket's own sphere color (POCKET_COLORS), with text
+        # color picked for contrast (readable_text_color) - white/dark gray/black spheres need
+        # black/white/white label text respectively.
+        facecolor = POCKET_COLORS[i]
+        ax.annotate(full_label, xy=data_xy, xycoords="data", xytext=label_pos,
+                    textcoords="axes fraction", ha=ha, va=va, fontsize=stylia.FONTSIZE,
+                    color=readable_text_color(facecolor),
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor=facecolor, edgecolor="black",
+                              linewidth=stylia.LINEWIDTH),
+                    arrowprops=dict(arrowstyle="-", color="black", linewidth=stylia.LINEWIDTH))
+
+    stylia.label(ax, xlabel="", ylabel="")
+    save_panel(fig, "d", use_tight_layout=False, padding=padding)
 
 
 def main(rerun=False, subpanels=None, show_grids=False, store_pymol=False, remove_pngs=False):
@@ -861,7 +1038,7 @@ def main(rerun=False, subpanels=None, show_grids=False, store_pymol=False, remov
         build_panel_c(sizes["c"], paddings["c"])
 
     if "d" in subpanels:
-        build_panel_d(sizes["d"], paddings["d"])
+        build_panel_d(sizes["d"], paddings["d"], rerun=rerun)
 
     merge_panels()
 

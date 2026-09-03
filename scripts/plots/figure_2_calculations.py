@@ -24,8 +24,12 @@ pocket-residue lines + H-bond dashes, following notebooks/46_docking_exploration
 pymol_screenshot()) of the single best-scoring compound per gene. Docked 3D poses (not just
 scores) are only archived (as a per-pocket docking.tar.gz) for a small hand-curated subset of
 pockets - 6 of 276 for HL, 14 of 276 for REAL 10B, 0 for REAL 10M - covering 6 genes total
-(alaS, aspS, ileS, lysS, pheS, pheT). So "best compound" here is the best score among only that
-gene's pose-archived (library, pocket) candidates, restricted to HL/REAL 10B (REAL 10M can never
+(alaS, aspS, ileS, lysS, pheS, pheT). Candidates are further restricted to each gene's
+canonical-pocket winners (best REAL 10B p1 per spatial_cluster_id, matching figure_2_plot.py's
+panel c dedup) so panel d's stars always land on one of panel c's columns - a pose-archived
+structure that isn't its cluster's winner is skipped even if its own single best compound
+scores well. So "best compound" here is the best score among only that gene's pose-archived,
+canonical-winner (library, pocket) candidates, restricted to HL/REAL 10B (REAL 10M can never
 contribute a renderable snapshot - no poses are archived for it anywhere) - not the true best
 across all of a gene's pockets/libraries, most of which only ever had their score kept.
 
@@ -209,17 +213,51 @@ def pockets_with_poses(library_dir):
     )
 
 
-def best_compound_candidates(uniprot_to_gene):
+def load_pocket_clusters():
+    """structure-level pocket id -> spatial_cluster_id, from the same 6.14 A greedy
+    centroid dedup figure_1_calculations.py uses for gene_to_unique_pocket_count
+    (scripts/77_pocket_annotation/09_cluster_pockets.py's persisted assignments) -
+    lets snapshot candidates be restricted to each canonical pocket's own winner,
+    matching figure_2_plot.py's panel c dedup."""
+    path = os.path.join(ROOT, "output", "77_pocket_annotation", "pocket_clusters.csv")
+    df = pd.read_csv(path)
+    df["pocket_id"] = df["File name"].str.replace(".pdb", "", regex=False) + "_pocket_" + df["Pocket number"].astype(str)
+    return df.set_index("pocket_id")["spatial_cluster_id"].to_dict()
+
+
+def canonical_pocket_winners(pocket_to_cluster):
+    """{(gene, pocket)} of every canonical pocket's REAL 10B p1 winner - the same
+    per-(gene, spatial_cluster_id) selection figure_2_plot.py's gene_docking_stats()
+    applies to panel c, recomputed here so panel d only draws snapshots from structures
+    that actually get a column in panel c."""
+    docking_percentiles = pd.read_csv(os.path.join(plots_dir, "figure_2c_docking_percentiles.csv"))
+    docking_percentiles["spatial_cluster_id"] = docking_percentiles["pocket"].map(pocket_to_cluster)
+    real10b = docking_percentiles[docking_percentiles["library"] == "REAL 10B"]
+    winners = real10b.sort_values("p1").drop_duplicates(["gene", "spatial_cluster_id"])
+    return set(zip(winners["gene"], winners["pocket"]))
+
+
+def best_compound_candidates(uniprot_to_gene, winner_pockets):
     """{gene: [{library, pocket, compound, score}, ...]} - one entry per (library, pose-archived
-    pocket) belonging to that gene, each already reduced to that pocket's own best-scoring
-    compound. compute_docking_snapshots() flattens these across genes and takes the global
-    top-N by score, so a gene can supply more than one of the N snapshots."""
+    pocket) belonging to that gene, restricted to that gene's canonical-pocket winners
+    (winner_pockets), each already reduced to that pocket's own best-scoring compound.
+    compute_docking_snapshots() flattens these across genes and takes the global top-N by
+    score, so a gene can supply more than one of the N snapshots. Also requires the
+    structure's own .pdbqt to be resolvable (find_structure_pdbqt) - a winner can have
+    docked poses (docking.tar.gz) archived without the protein .pdbqt ever being copied
+    into this library's tree (e.g. alphafold3_P9WFV3_model_0, ileS), which would otherwise
+    only surface as a pymol_snapshot() crash deep in the rendering step."""
     candidates = defaultdict(list)
     for library, library_dir in POSE_LIBRARIES.items():
         for pocket in pockets_with_poses(library_dir):
             uniprot_ac = pocket.split("_model_")[0].split("_")[-1]
             gene = uniprot_to_gene.get(uniprot_ac)
-            if gene is None:
+            if gene is None or (gene, pocket) not in winner_pockets:
+                continue
+            try:
+                find_structure_pdbqt(library_dir, pocket)
+            except FileNotFoundError:
+                print(f"  Warning: no .pdbqt found for pocket '{pocket}' ({library}), skipping as a snapshot candidate.")
                 continue
             scores = load_scores(os.path.join(library_dir, pocket, "report.csv"))
             candidates[gene].append({
@@ -347,8 +385,9 @@ def compute_docking_snapshots():
     with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
         uniprot_to_gene = json.load(f)["uniprot_to_gene"]
 
-    banner("Finding pose-archived compound candidates (HL/REAL 10B only)")
-    candidates_by_gene = best_compound_candidates(uniprot_to_gene)
+    banner("Finding pose-archived compound candidates (HL/REAL 10B only, canonical-pocket winners only)")
+    winner_pockets = canonical_pocket_winners(load_pocket_clusters())
+    candidates_by_gene = best_compound_candidates(uniprot_to_gene, winner_pockets)
 
     # Frozen to the original 6-gene pose-archived pool (2026-08-25, user decision): gatA/glyS/
     # trpS/tyrS picked up pose archives on 2026-08-10/08-19, after this panel was last built
@@ -363,14 +402,6 @@ def compute_docking_snapshots():
 
     banner(f"Rendering top-{N_SNAPSHOTS} PyMOL snapshots (minimum repeated genes, best score first)")
     top = sorted(select_minimizing_repeats(candidates_by_gene, N_SNAPSHOTS), key=lambda e: e["score"])
-
-    # Manual curation override (2026-08-25, user request): drop lysS's automatic pick in favor
-    # of a second aspS pocket - select_minimizing_repeats() never reaches this aspS candidate on
-    # its own, since alaS's own second-best pocket outscores it in the round-robin.
-    top = [e for e in top if e["gene"] != "lysS"]
-    top.append(next(e for e in candidates_by_gene["aspS"]
-                     if e["pocket"] == "alphafold3_P9WFW3_model_3_pocket_2"))
-    top.sort(key=lambda e: e["score"])
 
     output_dir = os.path.join(plots_dir, "docking_snapshots")
     os.makedirs(output_dir, exist_ok=True)
