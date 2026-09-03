@@ -1,14 +1,14 @@
 """
 Figure 1.5 (main figure, sitting between Figure 1 and Figure 2): top row is panel a (65%
-width) - the 1x3 PocketVec / HLL docking / REAL 10B docking t-SNE comparison (ported from
-FigSupp/reference_pockets_tsne_comparison.py - 3 reference canonical pockets highlighted
-by gene color, bold-lettered callout badges pinned to fixed corners of the HLL panel) -
-and panel b (35% width, currently blank - reserved placeholder, per request). Panel c is
-the 19-row pocket-score strip figure across all 276 detected pockets (ported from
-FigSupp/figure_supp_pocket.py - P2Rank info, domain annotation, docking-score summaries,
-aaRS-class strips), spanning the full width below. Panels a/b and c are promoted from
-supplementary to main-figure status here; the 2 source scripts are retired once this one
-is confirmed working.
+width) - the PocketVec t-SNE (3 reference canonical pockets highlighted by gene color,
+bold-lettered callout badges pinned to fixed corners) - and panel b (35% width, currently
+blank - reserved placeholder, per request). The Enamine-library-docking t-SNEs (HLL, REAL
+10B) that used to sit alongside PocketVec here have moved out to their own supplementary
+figure, FigSupp/tSNE_Enamine.py. Panel c is the 19-row pocket-score strip figure across all
+276 detected pockets (ported from FigSupp/figure_supp_pocket.py - P2Rank info, domain
+annotation, docking-score summaries, aaRS-class strips), spanning the full width below.
+Panels a/b and c are promoted from supplementary to main-figure status; the 2 original
+source scripts were retired once this one was confirmed working.
 
 Built on figure_1_plot.py's panel-per-file architecture: each panel is its own standalone
 figure, saved as its own PDF (Fig_1_5a.pdf, Fig_1_5b.pdf, Fig_1_5c.pdf) at an EXACT physical
@@ -48,7 +48,6 @@ from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
 
 from default import RANDOM_SEED
-from docking_tsne import compute_docking_tsne_embedding
 from pocket_group_plots import calculate_density, density_to_sizes, load_canonical_pocket_labels
 from pocketvec_tsne_embedding import compute_pocketvec_embedding
 
@@ -95,13 +94,10 @@ LABEL_CORNERS = {
     "gltS_cluster1": (0.03, 0.03, "left", "bottom"),   # bottom-left
 }
 
-EMBEDDINGS = [
-    ("PocketVec", lambda: compute_pocketvec_embedding(output_dir, RANDOM_SEED)),
-    ("HLL docking", lambda: compute_docking_tsne_embedding(
-        os.path.join(output_dir, "unidock_docking", "docking_results"), RANDOM_SEED)),
-    ("REAL 10B docking", lambda: compute_docking_tsne_embedding(
-        os.path.join(output_dir, "unidock_REAL_docking_2", "docking_results"), RANDOM_SEED)),
-]
+# HLL docking / REAL 10B docking t-SNEs moved out to FigSupp/tSNE_Enamine.py (per request) -
+# panel a is now just the single PocketVec embedding, so it carries the reference-pocket
+# callout badges itself instead of only the (now-removed) HLL panel.
+EMBEDDING = ("PocketVec", lambda: compute_pocketvec_embedding(output_dir, RANDOM_SEED))
 
 
 def plot_tsne_panel(ax, coords, canonical, title, annotate):
@@ -697,16 +693,16 @@ def merge_panels():
 # ===========================================================================
 
 def build_panel_a(size, padding):
-    fig = plt.figure(figsize=size)
+    title, embed_fn = EMBEDDING
+    keys, coords = embed_fn()
+    canonical = load_canonical_pocket_labels(output_dir, keys)
+
+    fig, ax = plt.subplots(figsize=size)
     fig.patch.set_facecolor("white")
-    gs = fig.add_gridspec(1, 3)
-    for col, (title, embed_fn) in enumerate(EMBEDDINGS):
-        keys, coords = embed_fn()
-        canonical = load_canonical_pocket_labels(output_dir, keys)
-        ax = stylize(fig.add_subplot(gs[0, col]))
-        plot_tsne_panel(ax, coords, canonical, title, annotate=(title == "HLL docking"))
+    stylize(ax)
+    plot_tsne_panel(ax, coords, canonical, title, annotate=True)
     save_panel(fig, "a", use_tight_layout=False,
-               subplots_adjust=dict(left=0.06, right=0.99, top=0.90, bottom=0.12), padding=padding)
+               subplots_adjust=dict(left=0.15, right=0.85, top=0.85, bottom=0.15), padding=padding)
 
 
 def build_panel_b(size, padding):
