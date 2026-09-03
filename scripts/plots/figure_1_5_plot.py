@@ -427,10 +427,12 @@ AARS_CLASSES = ["Class I", "Class II", "Other"]
 ROWS_HSPACE = 0.2
 
 # Fixed absolute left margin, comfortably wider than the longest row label ("Catalytic
-# conf.", ~0.44in at FONTSIZE_SMALL) so the text has visible breathing room rather than
-# sitting flush against the page edge. Panel a's own left margin (build_panel_a) is widened
-# to match this same absolute page position, rather than shrinking this one to the limit.
-ROW_LABEL_LEFT_MARGIN_IN = 1.1
+# conf.", ~0.44in at FONTSIZE_SMALL plus labelpad) so the text has visible breathing room
+# rather than sitting flush against the page edge. Set to match panel a's own plot-box left
+# edge (build_panel_a: left=0.28 on a 6cm-wide panel -> 0.28*6/2.54in) so panels a and c's
+# boxes align at the same absolute page position - c's margin is narrowed to meet a, rather
+# than a's square being shrunk to meet c.
+ROW_LABEL_LEFT_MARGIN_IN = 0.28 * 6 / 2.54
 
 # P2Rank block: pocket_probability + pocket_score + 6 physchem rows + plot_ligand_evidence_row.
 N_P2RANK_ROWS = 2 + len(PHYSCHEM_ROWS) + 1
@@ -733,14 +735,6 @@ def build_panel_a(size, padding):
     fig.patch.set_facecolor("white")
     stylize(ax)
     plot_tsne_panel(ax, coords, canonical, title, annotate=True)
-    # right=0.97 (not the symmetric 0.85) shifts the square further right within its own
-    # page, closing most of the horizontal gap to panel b - box_aspect(1) still keeps it
-    # square, just re-centered within this now heavily off-center margin box (the box is
-    # height-constrained by top/bottom, so the box's own left edge only moves a third as
-    # fast as this "left" value - box_left = 3*(left+right) - 2.1, in cm). left=0.28 puts
-    # the box's left edge at the same absolute page position as panel c's own plot box (see
-    # ROW_LABEL_LEFT_MARGIN_IN) - panel a's own left margin is widened to match c, rather
-    # than shrinking c's comfortable label margin down to the limit.
     save_panel(fig, "a", use_tight_layout=False,
                subplots_adjust=dict(left=0.28, right=0.97, top=0.85, bottom=0.15), padding=padding)
 
@@ -763,11 +757,9 @@ def build_panel_b(size, padding, rerun=False):
     non-P2Rank physicochemical descriptors from pocket_physchem_molmap.py (PANEL_B_PHYSCHEM_ROWS
     - PHYSCHEM_ROWS's 6 plus avg_bfactor, which panel c excludes per earlier request), one
     column each, for that same pocket - reusing panel c's own PHYSCHEM_NORMS/SECTION1_CMAP so a
-    given color means the same thing in both panels. subplots_adjust's own right= (0.95, not
-    0.99) reserves a small blank margin at the panel's right edge for other content later -
-    chosen so the content's right edge lands at the same absolute page position as panel c's
-    own (right=0.9667 there, over c's full 18cm vs. b's 12cm width: 0.9667*18 == 6 + 0.95*12,
-    both landing 0.6cm short of the page's own right edge)."""
+    given color means the same thing in both panels. subplots_adjust's own right=0.995 uses
+    almost the full panel width for content, prioritizing a large gallery over matching
+    panel c's own right margin exactly."""
     prepare_panel_c_data(rerun=rerun)
     physchem = pocket_scores.copy()
     physchem["key"] = [make_key(fn, pn) for fn, pn in zip(physchem["File name"], physchem["Pocket number"])]
@@ -841,9 +833,15 @@ def build_panel_b(size, padding, rerun=False):
 
     # top=0.85/bottom=0.15 matches panel a's own subplots_adjust exactly (both panels are
     # the same 6cm height), so panel b's gallery content is vertically aligned with panel
-    # a's actual plot box, not just sharing the same overall page height.
+    # a's actual plot box, not just sharing the same overall page height. left is small and
+    # independent of ROW_LABEL_LEFT_MARGIN_IN - panel b's own row labels are short, two-line
+    # ("Pocket A" / "(ileS)") and don't need nearly as much reserved room as panel c's
+    # single-line labels, so most of panel b's own width goes to content. right=0.95 aligns
+    # the physchem columns' own right edge with panel c's right edge (right=0.9667 there,
+    # over c's full 18cm vs. b's 12cm width starting at page x=6cm: 0.9667*18 == 6 + 0.95*12).
     save_panel(fig, "b", use_tight_layout=False,
-               subplots_adjust=dict(left=0.28, right=0.95, top=0.85, bottom=0.15), padding=padding)
+               subplots_adjust=dict(left=0.02, right=0.95, top=0.85, bottom=0.15),
+               padding=padding)
 
 
 def build_panel_c(size, padding, rerun=False):
@@ -884,7 +882,7 @@ def build_panel_c(size, padding, rerun=False):
     # right=0.90 (not 0.995) reserves blank space at the panel's right edge for other content
     # later, matching panel b's own reserved margin.
     save_panel(fig, "c", use_tight_layout=False,
-               subplots_adjust=dict(left=0.28, right=0.9667, top=0.88, bottom=0.12),
+               subplots_adjust=dict(left=ROW_LABEL_LEFT_MARGIN_IN / size[0], right=0.9667, top=0.88, bottom=0.12),
                padding=padding)
 
 
