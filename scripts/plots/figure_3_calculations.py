@@ -1,72 +1,85 @@
 """
-Computes all data feeding figure_3_plot.py: physicochemical properties for HL/REAL 10M/REAL 10B
-(panel B), per-pocket docking-score percentiles for all three libraries (panel C), and one
-best-compound PyMOL docking snapshot per gene (panel D).
+Computes the data feeding figure_3_plot.py: multi-target docking hits from the Enamine REAL 10B
+round-2 screening (output/unidock_REAL_docking_2, ~99,105 compounds x 276 pockets across all 21
+genes).
 
-HL and REAL 10M (compute_hl_and_real10m): random 100k samples, physicochemical properties via
-docking_utils.compute_properties(). REAL 10B (compute_real10b): the Enamine REAL 10B library is
-too large to hold locally, so it's sampled 1000 compounds per chunk (994 chunks), merged and
-re-sampled down to 100k, then run through the same property calculation. Resumable: one CSV per
-chunk (processed/figure_3b_REAL10B_samples/{chunk}.csv), skips chunks already sampled - each
-chunk's ~90MB SMILES mapping is deleted after use to keep tmp/ bounded across 994 chunks (herbert's
-root disk has little headroom).
+A compound "hits" a gene's target if its docking score beats a cutoff in ANY of that gene's own
+pockets (OR across pockets, i.e. the gene's best/min score vs. the cutoff) - the same pocket->gene
+aggregation used by scripts/68_plot_results.py's _score_upsets and
+scripts/39_reduce_n_hits_I.py's collapse_per_protein, generalized here from ~4 curated genes to all
+21. Target identity doesn't matter for this analysis - only how many distinct genes a compound
+hits.
 
-Docking percentiles (compute_docking_percentiles): median, p1/p0.1 (top-1,000/top-100 out of
-each pocket's screened compound set) per pocket, for all three libraries. Stores precomputed
-summary stats rather than raw score arrays - 276 pockets x ~100k compounds per library would make
-for an unnecessarily large file. REAL 10M stats use each pocket's prioritized top-100k
-"active" set only (docking_utils.load_real_positive_scores), not the shared ~12,958-compound
-background sample also present in that library's docking output - matching HL's and REAL 10B's
-fully-screened sets.
+load_real_pocket_scores(): builds the full compound x pocket score matrix (docking_utils.build_matrix
+over all 276 pockets). compute_gene_min_scores(pocket_scores): reduces that matrix pockets -> genes
+via min-per-gene-group. Split into two functions (rather than one) so compute_gene_summary_stats can
+also reuse the raw per-pocket matrix to split HL/REAL10B docking scores by catalytic vs
+non-catalytic pocket. Not cached to disk - only the final per-cutoff hit CSVs are kept.
 
-Docking snapshots (compute_docking_snapshots): a PyMOL render (cartoon protein + stick ligand +
-pocket-residue lines + H-bond dashes, following notebooks/46_docking_exploration_IIa.ipynb's
-pymol_screenshot()) of the single best-scoring compound per gene. Docked 3D poses (not just
-scores) are only archived (as a per-pocket docking.tar.gz) for a small hand-curated subset of
-pockets - 6 of 276 for HL, 14 of 276 for REAL 10B, 0 for REAL 10M - covering 6 genes total
-(alaS, aspS, ileS, lysS, pheS, pheT). Candidates are further restricted to each gene's
-canonical-pocket winners (best REAL 10B p1 per spatial_cluster_id, matching figure_3_plot.py's
-panel c dedup) so panel d's stars always land on one of panel c's columns - a pose-archived
-structure that isn't its cluster's winner is skipped even if its own single best compound
-scores well. So "best compound" here is the best score among only that gene's pose-archived,
-canonical-winner (library, pocket) candidates, restricted to HL/REAL 10B (REAL 10M can never
-contribute a renderable snapshot - no poses are archived for it anywhere) - not the true best
-across all of a gene's pockets/libraries, most of which only ever had their score kept.
+compute_multi_target_hits(): for each cutoff in CUTOFFS, counts how many of the 21 genes each
+compound hits, filters to n_targets >= MIN_TARGETS, and saves one CSV per cutoff (compound_id,
+smiles, n_targets, targets_hit, score_<gene> for all 21 genes) - written even when empty, since a
+zero-hit result at a stringent cutoff is a real finding.
+
+compute_protein_hit_counts(): for each cutoff, counts how many compounds (out of all ~99,105) hit
+each of the 21 genes - a library-wide reference stat, not itself plotted by figure_3_plot.py.
+
+compute_selected_set_protein_hits(): the same per-gene x per-cutoff count, but restricted to the
+already-selected SELECTED_SET_CUTOFF multi-target hit set (the >= MIN_TARGETS compounds saved by
+compute_multi_target_hits) rather than the full library, and across PANEL_A_CUTOFFS (5 cutoffs,
+loosest to strictest). Feeds figure_3_plot.py's panel a bars - this matches
+notebooks/46_docking_exploration_deliverables.ipynb's precedent exactly, where the plotted `df` was
+likewise a pre-filtered "selected compounds" set, not the full screened library.
 
 Usage:
-    python figure_3_calculations.py [--max-chunks N]
+    python figure_3_calculations.py
 """
-import argparse
-import glob
-import json
 import os
 import sys
-import tarfile
-import tempfile
-from collections import defaultdict
 
 root = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(root, "..", "..", "src"))
 
-import numpy as np
+import json
+import tarfile
+
 import pandas as pd
 
-from default import RANDOM_SEED
-from docking_utils import LIBRARIES, compute_properties, load_real_positive_scores, load_scores, sample_prescreened_smiles
-from screening_10b_utils import download_file, list_smiles_chunks
+from docking_utils import LIBRARIES, build_matrix, load_scores, lookup_smiles
 
 ROOT = os.path.join(root, "..", "..")
-TMP_DIR = os.path.join(ROOT, "tmp")
-SAMPLES_DIR = os.path.join(ROOT, "processed", "figure_3b_REAL10B_samples")
 plots_dir = os.path.join(ROOT, "output", "plots", "figure_3")
-os.makedirs(TMP_DIR, exist_ok=True)
-os.makedirs(SAMPLES_DIR, exist_ok=True)
+data_dir = os.path.join(plots_dir, "data")
 os.makedirs(plots_dir, exist_ok=True)
+os.makedirs(data_dir, exist_ok=True)
 
-HL_SAMPLE_N = 100_000
-REAL10M_SAMPLE_N = 100_000
-N_PER_CHUNK = 1000
-N_FINAL = 100_000
+CUTOFFS = [-10, -11, -12]
+MIN_TARGETS = 4
+
+# Loosest -> strictest; the population figure_3_plot.py's panel a breaks down by protein is the
+# already-selected multi-target hit set at this same cutoff (see compute_selected_set_protein_hits).
+PANEL_A_CUTOFFS = [-8, -9, -10, -11, -12]
+SELECTED_SET_CUTOFF = -11
+
+# User-confirmed per-gene overrides for compute_gene_summary_stats' otherwise-NaN novelty /
+# experimental_tractability placeholders. Genes not listed here stay NaN (no reported attempt
+# either way - "we don't know", not "it failed").
+NOVELTY_OVERRIDES = {"ileS": False, "glyS": False}
+
+# True = reported to express OK in the literature review (pheS/pheT: Gade et al. 2025 Eur J Med
+# Chem, Michalska et al. 2021 NAR, Wang et al. 2021 JBC; aspS: Gurcha et al. 2014 PLoS ONE; lysS:
+# Green et al. 2022 Nat Commun, Davis et al. 2025 J Med Chem; ileS: Sassanfar et al. 1996
+# Biochemistry, functional complementation/charging assay, not purified to homogeneity but
+# reported to express; metS/leuS: Kovalenko et al. 2019 Med Chem Commun, IC50s imply active
+# enzyme; trpS: Yang et al. 2022 ACS Chem Biol; gltS/gluS: Paravisi et al. 2009 FEBS J, purified to
+# homogeneity). False = glyS, the one gene reported NOT to express solubly in E. coli (Fenwick et
+# al. 2025 PLoS One switched to M. smegmatis and still found an unstable monomer/disordered active
+# site; confirmed independently by our experimental collaborators).
+EXPERIMENTAL_TRACTABILITY_OVERRIDES = {
+    "pheS": True, "pheT": True, "aspS": True, "lysS": True, "ileS": True,
+    "metS": True, "leuS": True, "trpS": True, "gltS": True,
+    "glyS": False,
+}
 
 
 def banner(title):
@@ -76,362 +89,349 @@ def banner(title):
     print(line)
 
 
-def compute_hl_and_real10m():
-    banner("HL (Enamine Hit Locator 100K) - random 100k sample")
-    hl_smiles = sample_prescreened_smiles("DL", exclude_ids=set(), n=HL_SAMPLE_N, seed=RANDOM_SEED)
-    print(f"Sampled {len(hl_smiles):,} compounds")
-    hl_props = compute_properties(hl_smiles)
-    output_path = os.path.join(plots_dir, "figure_3a_HL.csv")
-    hl_props.to_csv(output_path)
-    print(f"Saved to {output_path}")
-
-    banner("REAL 10M (Enamine REAL 9.56M) - random 100k sample")
-    real10m_smiles = sample_prescreened_smiles("REAL_ROUND1", exclude_ids=set(), n=REAL10M_SAMPLE_N, seed=RANDOM_SEED)
-    print(f"Sampled {len(real10m_smiles):,} compounds")
-    real10m_props = compute_properties(real10m_smiles)
-    output_path = os.path.join(plots_dir, "figure_3a_REAL10M.csv")
-    real10m_props.to_csv(output_path)
-    print(f"Saved to {output_path}")
-
-
-def sample_real10b_chunk(chunk, chunk_index):
-    out_path = os.path.join(SAMPLES_DIR, f"{chunk}.csv")
-    if os.path.isfile(out_path):
-        return out_path
-
-    ids_path = os.path.join(TMP_DIR, f"{chunk}_SMILES_IDs.tsv.zip")
-    download_file(ids_path)
-    try:
-        df = pd.read_csv(ids_path, sep="\t")
-        sample = df.sample(n=min(N_PER_CHUNK, len(df)), random_state=RANDOM_SEED + chunk_index)
-        sample[["id", "smiles"]].to_csv(out_path, index=False)
-    finally:
-        os.remove(ids_path)
-    return out_path
-
-
-def compute_real10b(max_chunks=None):
-    banner("Discovering REAL 10B chunks")
-    chunks = list_smiles_chunks()
-    if max_chunks is not None:
-        chunks = chunks[:max_chunks]
-    print(f"{len(chunks)} chunk(s) to process")
-
-    banner("Sampling 1000 compounds per chunk")
-    n_processed, n_skipped = 0, 0
-    for i, chunk in enumerate(chunks):
-        out_path = os.path.join(SAMPLES_DIR, f"{chunk}.csv")
-        if os.path.isfile(out_path):
-            n_skipped += 1
-            continue
-        print(f"[{i + 1}/{len(chunks)}] {chunk}")
-        sample_real10b_chunk(chunk, i)
-        n_processed += 1
-    print(f"Processed {n_processed}, skipped (already done) {n_skipped}")
-
-    banner("Merging per-chunk samples")
-    sample_files = sorted(glob.glob(os.path.join(SAMPLES_DIR, "*.csv")))
-    merged = pd.concat([pd.read_csv(f) for f in sample_files], ignore_index=True)
-    print(f"Merged pool: {len(merged):,} compounds from {len(sample_files)} chunk file(s)")
-
-    final = merged.sample(n=min(N_FINAL, len(merged)), random_state=RANDOM_SEED)
-    print(f"Final random sample: {len(final):,} compounds")
-
-    banner("Computing properties")
-    smiles_dict = dict(zip(final["id"], final["smiles"]))
-    props = compute_properties(smiles_dict)
-    output_path = os.path.join(plots_dir, "figure_3b_REAL10B.csv")
-    props.to_csv(output_path)
-    print(f"Saved to {output_path}")
-
-
-def pocket_percentiles(pocket, scores, library, uniprot_to_gene):
+def pocket_to_gene(pocket, uniprot_to_gene):
     uniprot_ac = pocket.split("_model_")[0].split("_")[-1]
-    return {
-        "pocket": pocket,
-        "uniprot_ac": uniprot_ac,
-        "gene": uniprot_to_gene.get(uniprot_ac, "unknown"),
-        "library": library,
-        "n": len(scores),
-        "median": np.median(scores),
-        "p0_1": np.percentile(scores, 0.1),
-        "p1": np.percentile(scores, 1),
+    return uniprot_to_gene.get(uniprot_ac)
+
+
+def load_real_pocket_scores():
+    banner("Loading gene mapping from figure 1's color mapping")
+    with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
+        uniprot_to_gene = json.load(f)["uniprot_to_gene"]
+
+    banner("Loading REAL 10B round-2 docking scores (276 pockets)")
+    pockets = sorted(os.listdir(LIBRARIES["REAL"]))
+    pocket_map = {}
+    for pocket in pockets:
+        gene = pocket_to_gene(pocket, uniprot_to_gene)
+        if gene is None:
+            print(f"  Warning: no gene mapping for pocket '{pocket}', skipping.")
+            continue
+        pocket_map[pocket] = pocket
+    pocket_scores = build_matrix(pocket_map, LIBRARIES["REAL"], label="Loading pocket scores")
+    print(f"Pocket score matrix: {pocket_scores.shape[0]:,} compounds x {pocket_scores.shape[1]} pockets")
+    return pocket_scores
+
+
+def compute_gene_min_scores(pocket_scores):
+    banner("Loading gene mapping from figure 1's color mapping")
+    with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
+        uniprot_to_gene = json.load(f)["uniprot_to_gene"]
+
+    banner("Reducing pockets -> genes (min score per gene, i.e. best of that gene's own pockets)")
+    gene_of_pocket = {p: pocket_to_gene(p, uniprot_to_gene) for p in pocket_scores.columns}
+    gene_scores = pocket_scores.T.groupby(gene_of_pocket).min().T
+    print(f"Gene score matrix: {gene_scores.shape[0]:,} compounds x {gene_scores.shape[1]} genes")
+
+    banner("Looking up SMILES")
+    smiles_map = lookup_smiles(gene_scores.index.tolist(), "REAL")
+    gene_scores.insert(0, "smiles", gene_scores.index.map(smiles_map))
+    gene_scores.index.name = "compound_id"
+    return gene_scores
+
+
+def compute_multi_target_hits(gene_scores):
+    gene_cols = [c for c in gene_scores.columns if c != "smiles"]
+
+    for cutoff in CUTOFFS:
+        banner(f"Cutoff <= {cutoff}")
+        hit = gene_scores[gene_cols] <= cutoff
+        n_targets = hit.sum(axis=1)
+
+        tally = n_targets.value_counts().sort_index()
+        for k, count in tally.items():
+            print(f"  {k} target(s): {count:,} compound(s)")
+        print(f"  >= {MIN_TARGETS} target(s): {(n_targets >= MIN_TARGETS).sum():,} compound(s)")
+
+        selected = n_targets[n_targets >= MIN_TARGETS].index
+        out = pd.DataFrame(index=selected)
+        out["smiles"] = gene_scores.loc[selected, "smiles"]
+        out["n_targets"] = n_targets.loc[selected]
+        out["targets_hit"] = hit.loc[selected].apply(lambda row: ",".join(row.index[row]), axis=1)
+        for gene in gene_cols:
+            out[f"score_{gene}"] = gene_scores.loc[selected, gene]
+        out = out.sort_values(["n_targets"] + [f"score_{g}" for g in gene_cols],
+                               ascending=[False] + [True] * len(gene_cols))
+        out = out.reset_index(names="compound_id")
+
+        out_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(cutoff)}.csv")
+        out.to_csv(out_path, index=False)
+        print(f"  Saved {len(out):,} row(s) to {out_path}")
+
+
+def compute_protein_hit_counts(gene_scores):
+    gene_cols = [c for c in gene_scores.columns if c != "smiles"]
+
+    banner("Per-protein hit counts across cutoffs")
+    counts = pd.DataFrame({
+        f"count_cutoff{abs(cutoff)}": (gene_scores[gene_cols] <= cutoff).sum(axis=0)
+        for cutoff in CUTOFFS
+    })
+    counts.index.name = "gene"
+    counts = counts.reset_index()
+
+    out_path = os.path.join(data_dir, "figure_3_protein_hit_counts.csv")
+    counts.to_csv(out_path, index=False)
+    print(counts.to_string(index=False))
+    print(f"Saved to {out_path}")
+
+
+def compute_gene_summary_stats(gene_scores, pocket_scores):
+    banner("Per-gene summary stats (21 proteins): max P2Rank prob + best HL Lib / REAL 10B docking scores, "
+           "each further split by catalytic vs non-catalytic pocket")
+    with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
+        uniprot_to_gene = json.load(f)["uniprot_to_gene"]
+
+    pockets = pd.read_csv(os.path.join(ROOT, "output", "pocket_detection_data.csv"))
+    pockets["gene"] = pockets["Uniprot AC"].map(uniprot_to_gene)
+    max_prob = pockets.groupby("gene")["Pocket probability"].max()
+    all_genes = list(max_prob.index)
+    catalytic_map = load_pocket_catalytic_map()
+
+    # HL Lib = Enamine Hit Locator Library 100k, LIBRARIES["DL"] - see scripts/56, 61, 68,
+    # figure_2_calculations.py's own "HL" naming for the same library.
+    dl_pockets = sorted(os.listdir(LIBRARIES["DL"]))
+    pocket_map = {p: p for p in dl_pockets if pocket_to_gene(p, uniprot_to_gene) is not None}
+    dl_scores = build_matrix(pocket_map, LIBRARIES["DL"], label="Loading HL Lib pocket scores")
+    gene_of_pocket = {p: pocket_to_gene(p, uniprot_to_gene) for p in dl_scores.columns}
+    best_hl_score = dl_scores.T.groupby(gene_of_pocket).min().T.min(axis=0)
+    # Catalytic/non-catalytic split reuses dl_scores (already loaded above) - just filters which
+    # columns go into the per-gene min, no second build_matrix/disk read.
+    dl_cat_pockets = [p for p in dl_scores.columns if catalytic_map.get(p, False)]
+    dl_noncat_pockets = [p for p in dl_scores.columns if not catalytic_map.get(p, False)]
+    best_hl_score_cat = _best_score_per_gene(dl_scores, dl_cat_pockets, gene_of_pocket, all_genes)
+    best_hl_score_noncat = _best_score_per_gene(dl_scores, dl_noncat_pockets, gene_of_pocket, all_genes)
+
+    # REAL 10B (round-2) best score per gene, reusing the gene_scores matrix compute_gene_min_scores
+    # already built (compound x gene, min-per-gene-group over that gene's own pockets) rather than
+    # rebuilding the 99,105-compound x 276-pocket matrix from scratch.
+    real_gene_cols = [c for c in gene_scores.columns if c != "smiles"]
+    best_real_score = gene_scores[real_gene_cols].min(axis=0)
+    # Catalytic/non-catalytic split needs the raw per-pocket matrix (pocket_scores, passed in from
+    # main()) since gene_scores has already been reduced pockets -> genes and can't be re-split.
+    gene_of_pocket_real = {p: pocket_to_gene(p, uniprot_to_gene) for p in pocket_scores.columns}
+    real_cat_pockets = [p for p in pocket_scores.columns if catalytic_map.get(p, False)]
+    real_noncat_pockets = [p for p in pocket_scores.columns if not catalytic_map.get(p, False)]
+    best_real_score_cat = _best_score_per_gene(pocket_scores, real_cat_pockets, gene_of_pocket_real, all_genes)
+    best_real_score_noncat = _best_score_per_gene(pocket_scores, real_noncat_pockets, gene_of_pocket_real, all_genes)
+
+    # Cross-polypharmacology score: raw pairwise hit-overlap count with every OTHER gene, at
+    # SELECTED_SET_CUTOFF - i.e. figure_3_plot.py's plot_circos_overlap own node_strength (row sum
+    # + column sum of the overlap matrix, user-confirmed via AskUserQuestion as "raw overlap with
+    # others, same as the circos plot"), persisted here instead of being discarded after rendering.
+    # SELECTED_SET_CUTOFF must stay equal to figure_3_plot.py's CIRCOS_CUTOFF for these to match.
+    # Requires compute_multi_target_hits to have already written this cutoff's hits CSV.
+    hits_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(SELECTED_SET_CUTOFF)}.csv")
+    selected = pd.read_csv(hits_path)
+    circos_gene_cols = [c.removeprefix("score_") for c in selected.columns if c.startswith("score_")]
+    hit_sets = {g: set(selected.loc[selected[f"score_{g}"] <= SELECTED_SET_CUTOFF, "compound_id"])
+                for g in circos_gene_cols}
+    overlap = pd.DataFrame(0, index=circos_gene_cols, columns=circos_gene_cols, dtype=int)
+    for g1 in circos_gene_cols:
+        for g2 in circos_gene_cols:
+            if g1 != g2:
+                overlap.loc[g1, g2] = len(hit_sets[g1] & hit_sets[g2])
+    cross_polypharm_score = overlap.sum(axis=0) + overlap.sum(axis=1)
+
+    result = {
+        gene: {
+            "max_p2rank_prob": float(max_prob[gene]),
+            "best_hl_docking_score": float(best_hl_score[gene]),
+            "best_real10b_docking_score": float(best_real_score[gene]),
+            # NaN for gatA/pheT, which have zero catalytic-labeled pockets - not a bug, see
+            # load_pocket_catalytic_map/CATALYTIC_CONFIDENCE_MIN.
+            "best_hl_docking_score_catalytic": float(best_hl_score_cat[gene]),
+            "best_hl_docking_score_noncatalytic": float(best_hl_score_noncat[gene]),
+            "best_real10b_docking_score_catalytic": float(best_real_score_cat[gene]),
+            "best_real10b_docking_score_noncatalytic": float(best_real_score_noncat[gene]),
+            "cross_polypharmacology_score": int(cross_polypharm_score[gene]),
+            # Not computed yet - NaN unless overridden above.
+            "novelty": NOVELTY_OVERRIDES.get(gene, float("nan")),
+            "experimental_tractability": EXPERIMENTAL_TRACTABILITY_OVERRIDES.get(gene, float("nan")),
+        }
+        for gene in max_prob.index
     }
+    print(json.dumps(result, indent=2))
+
+    out_path = os.path.join(data_dir, "figure_3_gene_summary_stats.json")
+    with open(out_path, "w") as f:
+        json.dump(result, f, indent=2)
+    print(f"Saved {len(result)} gene(s) to {out_path}")
 
 
-def compute_docking_percentiles():
-    banner("Loading gene mapping from figure 1's color mapping")
-    with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
-        uniprot_to_gene = json.load(f)["uniprot_to_gene"]
+# A pocket counts as "catalytic" for panel f's Catalytic row at catalytic_confidence >= 3 (either
+# strong direct-PDB or strong AlphaFill ligand evidence for the Catalytic Domain (ATP/ligase) label
+# - see scripts/77_pocket_annotation/10_assemble_final_table.py's confidence scale, 0-4), vs. the
+# rest (weak/no evidence or no catalytic label at all, confidence 0-2) - a threshold the user
+# specified directly, not chosen here.
+CATALYTIC_CONFIDENCE_MIN = 3
 
+
+def load_pocket_catalytic_map():
+    """{pocket_dir_name: is_catalytic} for all 276 pockets, e.g. 'alphafold2_P9WFS9_model_0_pocket_1'
+    -> True/False at CATALYTIC_CONFIDENCE_MIN, for splitting compute_gene_summary_stats' docking-score
+    rows by catalytic vs non-catalytic pocket (see figure_3_plot.py's TIER_ROW_FIELDS)."""
+    interpro = pd.read_csv(os.path.join(ROOT, "output", "77_pocket_annotation", "pocket_detection_interpro_updated.csv"),
+                            keep_default_na=False)
+    label = interpro["File name"].str.replace(".pdb", "", regex=False) + "_pocket_" + interpro["Pocket number"].astype(str)
+    return dict(zip(label, interpro["catalytic_confidence"] >= CATALYTIC_CONFIDENCE_MIN))
+
+
+def _best_score_per_gene(score_matrix, pocket_cols, gene_of_pocket, all_genes):
+    """Min score per gene over just `pocket_cols` (a subset of score_matrix's columns), reindexed to
+    `all_genes` so a gene with no pockets in this subset (e.g. gatA/pheT have zero catalytic pockets)
+    gets an explicit NaN rather than being silently dropped or raising a KeyError downstream."""
+    if not pocket_cols:
+        return pd.Series(float("nan"), index=all_genes)
+    grouping = {p: gene_of_pocket[p] for p in pocket_cols}
+    return score_matrix[pocket_cols].T.groupby(grouping).min().T.min(axis=0).reindex(all_genes)
+
+
+def _compute_pockets_for_compound(compound_id, genes, gene_to_uniprot, pockets_by_gene, interpro):
+    """Per-gene best-VERIFIED-retained-pose pocket walk, used by
+    compute_top_avg_score_compounds_pockets. For each gene: rank that gene's own pockets by
+    this compound's score (best/most negative first - docked poses were only ever retained for a
+    curated subset of pockets, so the true best-scoring one often isn't among them), then walk down
+    until a pocket with an actually-verified retained pose is found (tar exists AND contains this
+    compound's SDF - a tar's mere presence doesn't guarantee this compound is in it), else fall back
+    to the true best pocket with has_pose=False. The score reported is THIS pocket's own score
+    (matching what's actually depicted), not the gene's true best - showing a fallback pocket's
+    ligand pose next to a different pocket's score would be inconsistent with what the image shows.
+    Returns a list of row dicts."""
     rows = []
-
-    banner("HL (output/unidock_docking) - percentiles per pocket")
-    for pocket in sorted(os.listdir(LIBRARIES["DL"])):
-        report_path = os.path.join(LIBRARIES["DL"], pocket, "report.csv")
-        if not os.path.isfile(report_path):
-            print(f"  Warning: report not found for pocket '{pocket}', skipping.")
-            continue
-        scores = load_scores(report_path).values
-        rows.append(pocket_percentiles(pocket, scores, "HL", uniprot_to_gene))
-
-    banner("REAL 10M (output/unidock_REAL_docking, prioritized 100k only) - percentiles per pocket")
-    for pocket in sorted(os.listdir(LIBRARIES["DL"])):
-        scores = load_real_positive_scores(pocket).values
-        if len(scores) == 0:
-            print(f"  Warning: no REAL 10M positive scores for pocket '{pocket}', skipping.")
-            continue
-        rows.append(pocket_percentiles(pocket, scores, "REAL 10M", uniprot_to_gene))
-
-    banner("REAL 10B (output/unidock_REAL_docking_2) - percentiles per pocket")
-    for pocket in sorted(os.listdir(LIBRARIES["REAL"])):
-        report_path = os.path.join(LIBRARIES["REAL"], pocket, "report.csv")
-        if not os.path.isfile(report_path):
-            print(f"  Warning: report not found for pocket '{pocket}', skipping.")
-            continue
-        scores = load_scores(report_path).values
-        rows.append(pocket_percentiles(pocket, scores, "REAL 10B", uniprot_to_gene))
-
-    df = pd.DataFrame(rows)
-    output_path = os.path.join(plots_dir, "figure_3c_docking_percentiles.csv")
-    df.to_csv(output_path, index=False)
-    print(f"Saved {len(df)} row(s) to {output_path}")
-    for library, group in df.groupby("library"):
-        print(f"  {library}: {len(group)} pocket(s)")
-
-
-# Only these two libraries ever archive docked 3D poses (a per-pocket docking.tar.gz) - REAL 10M's
-# docking_results/ tree has report.csv (scores) everywhere but no docking.tar.gz anywhere, so it
-# can never supply a renderable pose and is excluded here.
-POSE_LIBRARIES = {"HL": LIBRARIES["DL"], "REAL 10B": LIBRARIES["REAL"]}
-
-
-def pockets_with_poses(library_dir):
-    return sorted(
-        pocket for pocket in os.listdir(library_dir)
-        if os.path.isfile(os.path.join(library_dir, pocket, "docking.tar.gz"))
-    )
-
-
-def load_pocket_clusters():
-    """structure-level pocket id -> spatial_cluster_id, from the same 6.14 A greedy
-    centroid dedup figure_1_calculations.py uses for gene_to_unique_pocket_count
-    (scripts/77_pocket_annotation/09_cluster_pockets.py's persisted assignments) -
-    lets snapshot candidates be restricted to each canonical pocket's own winner,
-    matching figure_3_plot.py's panel c dedup."""
-    path = os.path.join(ROOT, "output", "77_pocket_annotation", "pocket_clusters.csv")
-    df = pd.read_csv(path)
-    df["pocket_id"] = df["File name"].str.replace(".pdb", "", regex=False) + "_pocket_" + df["Pocket number"].astype(str)
-    return df.set_index("pocket_id")["spatial_cluster_id"].to_dict()
-
-
-def canonical_pocket_winners(pocket_to_cluster):
-    """{(gene, pocket)} of every canonical pocket's REAL 10B p1 winner - the same
-    per-(gene, spatial_cluster_id) selection figure_3_plot.py's gene_docking_stats()
-    applies to panel c, recomputed here so panel d only draws snapshots from structures
-    that actually get a column in panel c."""
-    docking_percentiles = pd.read_csv(os.path.join(plots_dir, "figure_3c_docking_percentiles.csv"))
-    docking_percentiles["spatial_cluster_id"] = docking_percentiles["pocket"].map(pocket_to_cluster)
-    real10b = docking_percentiles[docking_percentiles["library"] == "REAL 10B"]
-    winners = real10b.sort_values("p1").drop_duplicates(["gene", "spatial_cluster_id"])
-    return set(zip(winners["gene"], winners["pocket"]))
-
-
-def best_compound_candidates(uniprot_to_gene, winner_pockets):
-    """{gene: [{library, pocket, compound, score}, ...]} - one entry per (library, pose-archived
-    pocket) belonging to that gene, restricted to that gene's canonical-pocket winners
-    (winner_pockets), each already reduced to that pocket's own best-scoring compound.
-    compute_docking_snapshots() flattens these across genes and takes the global top-N by
-    score, so a gene can supply more than one of the N snapshots. Also requires the
-    structure's own .pdbqt to be resolvable (find_structure_pdbqt) - a winner can have
-    docked poses (docking.tar.gz) archived without the protein .pdbqt ever being copied
-    into this library's tree (e.g. alphafold3_P9WFV3_model_0, ileS), which would otherwise
-    only surface as a pymol_snapshot() crash deep in the rendering step."""
-    candidates = defaultdict(list)
-    for library, library_dir in POSE_LIBRARIES.items():
-        for pocket in pockets_with_poses(library_dir):
-            uniprot_ac = pocket.split("_model_")[0].split("_")[-1]
-            gene = uniprot_to_gene.get(uniprot_ac)
-            if gene is None or (gene, pocket) not in winner_pockets:
+    for gene in genes:
+        ranked = []
+        for pocket in pockets_by_gene.get(gene, []):
+            scores = load_scores(os.path.join(LIBRARIES["REAL"], pocket, "report.csv"))
+            if compound_id not in scores.index:
                 continue
-            try:
-                find_structure_pdbqt(library_dir, pocket)
-            except FileNotFoundError:
-                print(f"  Warning: no .pdbqt found for pocket '{pocket}' ({library}), skipping as a snapshot candidate.")
+            ranked.append((scores[compound_id], pocket))
+        ranked.sort()
+
+        chosen_pocket, chosen_score, has_pose = ranked[0][1], ranked[0][0], False
+        for score, pocket in ranked:
+            tar_path = os.path.join(LIBRARIES["REAL"], pocket, "docking.tar.gz")
+            if not os.path.isfile(tar_path):
                 continue
-            scores = load_scores(os.path.join(library_dir, pocket, "report.csv"))
-            candidates[gene].append({
-                "gene": gene, "library": library, "pocket": pocket,
-                "compound": scores.idxmin(), "score": scores.min(),
-            })
-    return candidates
+            with tarfile.open(tar_path, "r|gz") as tf:
+                if any(m.name == f"docking/{compound_id}_out.sdf" for m in tf):
+                    chosen_pocket, chosen_score, has_pose = pocket, score, True
+                    break
 
+        best_pocket, best_score = chosen_pocket, chosen_score
+        is_true_best_pocket = best_pocket == ranked[0][1]
+        structure_name, pocket_number = best_pocket.rsplit("_pocket_", 1)
 
-def find_structure_pdbqt(library_dir, pocket):
-    """Usually a pocket's own folder holds a copy of its structure's .pdbqt, but some sibling
-    pockets sharing the same structure only keep ONE shared copy, stored under a different
-    sibling's folder (e.g. alphafold3_P9WFU9_model_1's .pdbqt lives only under
-    .../model_1_pocket_2/, not .../model_1_pocket_1/, even though pocket_1 also uses it) - so
-    search every sibling pocket of the same structure, not just this one's own folder."""
-    structure = pocket.rsplit("_pocket_", 1)[0]
-    direct = os.path.join(library_dir, pocket, structure + ".pdbqt")
-    if os.path.isfile(direct):
-        return direct
-    for sibling in os.listdir(library_dir):
-        if sibling.startswith(structure + "_pocket_"):
-            candidate = os.path.join(library_dir, sibling, structure + ".pdbqt")
-            if os.path.isfile(candidate):
-                return candidate
-    raise FileNotFoundError(f"{structure}.pdbqt not found in any sibling pocket folder under {library_dir}")
-
-
-def pymol_snapshot(pocket, compound, library_dir, out_path):
-    """One PyMOL render (cartoon protein + stick ligand + pocket-residue lines + H-bond dashes)
-    of a single docked compound - following notebooks/46_docking_exploration_IIa.ipynb's
-    pymol_screenshot(), trimmed to just the PNG (no pandamap 2D-interaction diagram, no separate
-    .pdb dump)."""
-    import pymol
-    from pymol import cmd
-
-    pocket_dir = os.path.join(library_dir, pocket)
-    structure_path = find_structure_pdbqt(library_dir, pocket)
-
-    with tarfile.open(os.path.join(pocket_dir, "docking.tar.gz"), "r|gz") as tf:
-        for member in tf:
-            if member.name == f"docking/{compound}_out.sdf":
-                data = tf.extractfile(member).read()
-                break
+        uniprot_ac = gene_to_uniprot[gene]
+        annotations = interpro[
+            (interpro["Uniprot AC"] == uniprot_ac)
+            & (interpro["File name"] == f"{structure_name}.pdb")
+            & (interpro["Pocket number"] == int(pocket_number))
+        ]["Interpro curated annotation"].unique()
+        if len(annotations) == 0:
+            interpro_categories = "NA"
         else:
-            raise FileNotFoundError(f"{compound}_out.sdf not found in {pocket_dir}/docking.tar.gz")
+            categories = {"CAT" if a == "Catalytic Domain (ATP Binding Site)" else "Other" for a in annotations}
+            interpro_categories = ",".join(sorted(categories))
 
-    tmp_fd, tmp_sdf = tempfile.mkstemp(suffix=".sdf")
-    os.close(tmp_fd)
-    try:
-        with open(tmp_sdf, "w") as f:
-            f.write(data.decode("utf-8", errors="replace"))
-
-        pymol.finish_launching(["pymol", "-cq"])
-        cmd.reinitialize()
-        cmd.bg_color("white")
-        cmd.set("ray_opaque_background", 0)
-
-        cmd.load(structure_path, "structure")
-        cmd.util.cbag("structure")
-        cmd.set_color("structure_col", [0x8D / 255, 0xC7 / 255, 0xFA / 255])
-        cmd.color("structure_col", "structure and elem C")
-
-        lig = "lig"
-        cmd.load(tmp_sdf, lig)
-        cmd.util.cbag(lig)
-        cmd.set_color("ligC_orange", [0xF5 / 255, 0xA6 / 255, 0x3A / 255])
-        cmd.color("ligC_orange", f"{lig} and elem C")
-
-        cmd.hide("everything", "structure")
-        cmd.show("cartoon", "structure")
-        cmd.set("cartoon_transparency", 0.4, "structure")
-        cmd.select("pocket_atoms", f"(structure within 6 of {lig}) and not solvent")
-        cmd.show("lines", "pocket_atoms")
-        cmd.show("sticks", lig)
-        cmd.orient(lig)
-        cmd.zoom(lig, buffer=6)
-        cmd.h_add("structure")
-        cmd.h_add(lig)
-
-        pairs = cmd.find_pairs(f"{lig} and donor", "pocket_atoms and acceptor", mode=1, cutoff=3.5, angle=45)
-        pairs += cmd.find_pairs(f"{lig} and acceptor", "pocket_atoms and donor", mode=1, cutoff=3.5, angle=45)
-        cmd.delete("hbonds")
-        for a1, a2 in list(dict.fromkeys(pairs)):
-            cmd.distance("hbonds", a1, a2)
-        cmd.color("yellow", "hbonds")
-        cmd.hide("labels", "hbonds")
-        cmd.set("dash_width", 2)
-        cmd.hide("everything", "elem H")
-
-        cmd.set("ray_shadows", 0)
-        cmd.set("ray_trace_mode", 1)
-        cmd.png(out_path, width=1200, height=1200, dpi=300, ray=1)
-    finally:
-        os.remove(tmp_sdf)
+        print(f"  {gene}: {best_pocket} (score={best_score}, has_pose={has_pose}, "
+              f"is_true_best_pocket={is_true_best_pocket}, interpro={interpro_categories})")
+        rows.append({
+            "compound_id": compound_id,
+            "gene": gene,
+            "uniprot_ac": uniprot_ac,
+            "structure_name": structure_name,
+            "pocket_number": int(pocket_number),
+            "pocket_name": best_pocket,
+            "score": best_score,
+            "has_pose": has_pose,
+            "is_true_best_pocket": is_true_best_pocket,
+            "interpro_categories": interpro_categories,
+        })
+    return rows
 
 
-# Matches panel D's 7-column layout in figure_3_plot.py - a fixed count, not one-per-gene, since
-# only 6 genes have any pose-archived candidates at all (see POSE_LIBRARIES above) and repeats
-# are wanted rather than leaving a slot empty.
-N_SNAPSHOTS = 7
-
-
-def select_minimizing_repeats(candidates_by_gene, n):
-    """Picks n entries with the minimum possible number of repeated genes: every gene's own best
-    candidate is taken before any gene's second-best, every gene's second-best before any third,
-    etc. - a gene only repeats once all other genes (with a candidate left) have already gotten
-    that many picks. Within each round, ties across genes are broken by score."""
-    remaining = {gene: sorted(entries, key=lambda e: e["score"]) for gene, entries in candidates_by_gene.items()}
-    selected = []
-    round_index = 0
-    while len(selected) < n:
-        round_pool = sorted(
-            (entries[round_index] for entries in remaining.values() if len(entries) > round_index),
-            key=lambda e: e["score"],
-        )
-        if not round_pool:
-            break  # no gene has any candidate left at this depth
-        selected.extend(round_pool[:n - len(selected)])
-        round_index += 1
-    return selected
-
-
-def compute_docking_snapshots():
-    banner("Loading gene mapping from figure 1's color mapping")
+def _load_gene_uniprot_maps():
     with open(os.path.join(ROOT, "output", "plots", "figure_1", "color_mapping.json")) as f:
         uniprot_to_gene = json.load(f)["uniprot_to_gene"]
+    gene_to_uniprot = {g: u for u, g in uniprot_to_gene.items()}
+    return uniprot_to_gene, gene_to_uniprot
 
-    banner("Finding pose-archived compound candidates (HL/REAL 10B only, canonical-pocket winners only)")
-    winner_pockets = canonical_pocket_winners(load_pocket_clusters())
-    candidates_by_gene = best_compound_candidates(uniprot_to_gene, winner_pockets)
 
-    # Frozen to the original 6-gene pose-archived pool (2026-08-25, user decision): gatA/glyS/
-    # trpS/tyrS picked up pose archives on 2026-08-10/08-19, after this panel was last built
-    # (2026-08-07) - excluding them here keeps this revision scoped to the requested lysS -> aspS
-    # swap only. Drop this filter in a later, separate update to fold the new genes in.
-    ORIGINAL_POSE_GENES = {"alaS", "aspS", "ileS", "lysS", "pheS", "pheT"}
-    candidates_by_gene = {g: v for g, v in candidates_by_gene.items() if g in ORIGINAL_POSE_GENES}
+def _load_pockets_by_gene(uniprot_to_gene):
+    pockets = sorted(os.listdir(LIBRARIES["REAL"]))
+    pockets_by_gene = {}
+    for pocket in pockets:
+        gene = pocket_to_gene(pocket, uniprot_to_gene)
+        pockets_by_gene.setdefault(gene, []).append(pocket)
+    return pockets_by_gene
 
-    all_candidates = [e for entries in candidates_by_gene.values() for e in entries]
-    for e in sorted(all_candidates, key=lambda e: e["score"]):
-        print(f"  {e['gene']:<8} {e['library']:<8} {e['pocket']:<45} {e['compound']:<15} {e['score']:.3f}")
 
-    banner(f"Rendering top-{N_SNAPSHOTS} PyMOL snapshots (minimum repeated genes, best score first)")
-    top = sorted(select_minimizing_repeats(candidates_by_gene, N_SNAPSHOTS), key=lambda e: e["score"])
+# Best-average-docking-score pair from the cutoff-12 multi-target hit tier (each hits exactly 4
+# genes there) - user-confirmed via AskUserQuestion, for figure_3_plot.py's panel d (one row per
+# compound: 2D structure + one docking-pose render per gene in SHOWCASE_GENES).
+TOP_AVG_SCORE_COMPOUND_IDS = ["s_271570____28264988____28567424", "s_51____13974142____77337"]
 
-    output_dir = os.path.join(plots_dir, "docking_snapshots")
-    os.makedirs(output_dir, exist_ok=True)
-    for old_file in glob.glob(os.path.join(output_dir, "*.png")):
-        os.remove(old_file)
+# Fixed Tier-1 gene set/order shown for BOTH compounds above (per request) - independent of
+# each compound's own cutoff-12 hit set (pheS, not pheT, since figure_3 keeps them as separate
+# genes rather than figure_4's own merged "pheST" label). _compute_pockets_for_compound looks up
+# each gene's best-scoring pocket for the compound directly from its docking report, regardless
+# of hit/non-hit status, so this works even for a gene the compound didn't "hit" at the
+# multi-target cutoff.
+SHOWCASE_GENES = ["pheS", "aspS", "lysS", "alaS"]
 
-    index_rows = []
-    for rank, entry in enumerate(top, start=1):
-        filename = f"{rank:02d}_{entry['gene']}.png"
-        out_path = os.path.join(output_dir, filename)
-        print(f"#{rank} {entry['gene']}: {entry['compound']} in {entry['pocket']} "
-              f"({entry['library']}, score {entry['score']:.3f}) -> {out_path}")
-        pymol_snapshot(entry["pocket"], entry["compound"], POSE_LIBRARIES[entry["library"]], out_path)
-        index_rows.append({**entry, "rank": rank, "filename": filename})
 
-    index_path = os.path.join(output_dir, "index.csv")
-    pd.DataFrame(index_rows).to_csv(index_path, index=False)
-    print(f"Saved {len(top)} snapshot(s) and {index_path}")
+def compute_top_avg_score_compounds_pockets():
+    banner("Locating TOP_AVG_SCORE_COMPOUND_IDS's actual best-scoring pocket per SHOWCASE_GENES gene")
+
+    uniprot_to_gene, gene_to_uniprot = _load_gene_uniprot_maps()
+    pockets_by_gene = _load_pockets_by_gene(uniprot_to_gene)
+    interpro = pd.read_csv(os.path.join(ROOT, "output", "pocket_detection_data_interpro.tsv"), sep="\t")
+
+    all_rows = []
+    for compound_rank, compound_id in enumerate(TOP_AVG_SCORE_COMPOUND_IDS, start=1):
+        print(f"  Compound {compound_rank} ({compound_id}): showing {SHOWCASE_GENES}")
+        rows = _compute_pockets_for_compound(compound_id, SHOWCASE_GENES, gene_to_uniprot, pockets_by_gene, interpro)
+        for r in rows:
+            r["compound_rank"] = compound_rank
+        all_rows.extend(rows)
+
+    out = pd.DataFrame(all_rows)
+    out_path = os.path.join(data_dir, "figure_3_top_avg_score_compounds_pockets.csv")
+    out.to_csv(out_path, index=False)
+    print(f"  {out['has_pose'].sum()}/{len(out)} gene(s) have a retained docked pose.")
+    print(f"Saved {len(out):,} row(s) to {out_path}")
+
+
+def compute_selected_set_protein_hits():
+    hits_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(SELECTED_SET_CUTOFF)}.csv")
+    selected = pd.read_csv(hits_path)
+    gene_cols = [c.removeprefix("score_") for c in selected.columns if c.startswith("score_")]
+
+    banner(f"Selected set (n={len(selected)}, >= {MIN_TARGETS} targets @ cutoff {SELECTED_SET_CUTOFF}) "
+           "- per-protein hit counts")
+    rows = []
+    for gene in gene_cols:
+        row = {"gene": gene}
+        for cutoff in PANEL_A_CUTOFFS:
+            row[f"count_cutoff{abs(cutoff)}"] = int((selected[f"score_{gene}"] <= cutoff).sum())
+        rows.append(row)
+    counts = pd.DataFrame(rows)
+
+    out_path = os.path.join(data_dir, "figure_3_selected_set_protein_hit_counts.csv")
+    counts.to_csv(out_path, index=False)
+    print(counts.to_string(index=False))
+    print(f"Saved to {out_path}")
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--max-chunks", type=int, default=None,
-                         help="Limit REAL 10B sampling to the first N chunks (for a quick dry run).")
-    args = parser.parse_args()
-
-    compute_hl_and_real10m()
-    compute_real10b(max_chunks=args.max_chunks)
-    compute_docking_percentiles()
-    compute_docking_snapshots()
+    pocket_scores = load_real_pocket_scores()
+    gene_scores = compute_gene_min_scores(pocket_scores)
+    compute_multi_target_hits(gene_scores)
+    compute_protein_hit_counts(gene_scores)
+    compute_gene_summary_stats(gene_scores, pocket_scores)
+    compute_selected_set_protein_hits()
+    compute_top_avg_score_compounds_pockets()
 
 
 if __name__ == "__main__":
