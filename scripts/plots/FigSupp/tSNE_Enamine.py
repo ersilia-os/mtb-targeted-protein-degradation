@@ -1,6 +1,6 @@
 """
 Supplementary figure: the 2 Enamine-library-docking t-SNE embeddings (HLL docking, REAL
-9.92B docking) split out of figure_1_5_plot.py's panel a, which now shows only the
+9.92B docking) split out of figure_2_plot.py's panel a, which now shows only the
 PocketVec embedding. Same 3 reference canonical pockets (gltS_cluster1, tyrS_cluster1,
 ileS_cluster1) highlighted by their gene's canonical color, with bold-lettered callout
 badges pinned to fixed corners of the HLL panel only (as before - both panels show the

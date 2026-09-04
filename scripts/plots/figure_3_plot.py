@@ -1,177 +1,344 @@
 """
-Figure 3: multi-target docking hits from figure_3_calculations.py.
+Figure 3: compound-property distributions (panel b), per-gene docking-percentile grid
+one column per canonical (deduplicated) pocket (panel c), and top docking-pose snapshots
+(panel d), from figure_3_calculations.py. Panel a is a hand-authored Inkscape schematic
+(scheme.svg, exported to scheme.pdf) - not built by this script at all, just pasted in.
 
-Each named panel (a-d) is rendered into its OWN standalone figure and saved as its own PDF
-(Fig_3a.pdf ... Fig_3d.pdf, see main()/save_panel()), rather than assembled into one composite
-figure - panels are meant to be laid out externally (e.g. in a manuscript figure tool). Each
-panel's figsize comes from output/plots/figure_3/panel_layout.csv, a user-authored CSV with columns
-panel, x, delta_x, y, delta_y, padding. delta_x/delta_y (cm) are each panel's exact saved page size
-(converted to inches for matplotlib - see load_panel_sizes()); x/y are reserved for future
-external-layout positioning; padding (0-1, see apply_padding()) is a per-dimension linear shrink
-factor controlling deliberate blank margin around a panel's content WITHOUT affecting any font/
-tick/label size (those are always absolute point values in matplotlib, independent of an axes' box
-size) - 0 fills the page (every panel's current default), 1 shrinks the content to a zero-size
-point at the center.
+Built on figure_1_plot.py's panel-per-file architecture instead of the original, single
+shared b+c+d matplotlib block PIL-composited onto a rasterized scheme.pdf: b/c/d each
+save as their own standalone PDF at an EXACT physical size read from
+output/plots/figure_3/panel_layout.csv (columns: panel, x, delta_x, y, delta_y, padding,
+in cm), with a baked-in panel letter (add_panel_label). Panel a (scheme.pdf) is pasted
+the same way via pypdf, scaled to fit its declared box in case the Inkscape export
+doesn't match panel_layout.csv exactly - no rasterization, no Poppler dependency, and its
+own "a" label is baked on separately (_render_panel_a_label(), a small transparent
+overlay PDF merged on top of it) since scheme.pdf itself carries no label. Merging into
+one positioned master PDF (Fig_3_full.pdf) happens in this same file (merge_panels(),
+called at the end of main()), matching figure_1_plot.py's choice to fold plot+merge into
+one script. merge_panels() also exports a flattened Fig_3_full.png of that same merged
+page (user request) via pymupdf - a real Python dependency, but not Poppler, so this
+doesn't reintroduce the dependency panel a's own vector merge above deliberately avoids.
 
-The former panel c (P2Rank probability curve + 4 domain-annotation strips, previously "f") has been
-migrated to figure_1_plot.py's own panel d, along with its data (figure_1_calculations.py's
-compute_pocket_scores) - it no longer lives in this file. The showcase-compound panel and the tier
-grid were then relabeled to "c" and "d" respectively to keep the letters contiguous, and finally
-swapped with each other per request - the tier grid is now "c" (genes-as-columns, in an 8x3cm
-wide/short slot below panel a, aligned to its 8cm-wide left column) and the showcase-compound panel
-is now "d" (spanning the full 15cm page width below that, since it needs the room for 5
-structure/pose columns per row without clipping their labels).
-
-Panel a follows the nested-overlaid-bars convention from
-notebooks/46_docking_exploration_deliverables.ipynb: one bar per protein per cutoff, drawn loosest
-cutoff (most compounds) first and strictest (fewest compounds) last, so each stricter cutoff's bar
-sits fully inside the previous one instead of a standard grouped/stacked layout. The population is
-figure_3_calculations.py's SELECTED_SET_CUTOFF multi-target hit set (compounds already selected as
-hitting >= MIN_TARGETS genes at that cutoff), not the full screened library - so the y-axis ceiling
-is that set's own size, and every bar height is a count out of that fixed total. Proteins sorted by
-their compound count at cutoff -11, descending. Bars are colored with stylia's FadingColormap
-("crimson" preset), sampled evenly across CUTOFFS - near-white for the loosest/outermost cutoff
-(-8, most compounds) fading to vivid red for the strictest/innermost cutoff (-12, fewest but
-best-scoring compounds), per request over the previous arbitrary categorical palette.
-
-Panel b is a chord (Circos) diagram of pairwise protein hit overlap, at CIRCOS_CUTOFF, within that
-same selected set - following notebooks/46_docking_exploration_IIIa_colors.ipynb's precedent
-(pycirclize's Circos.chord_diagram, rasterized via FigureCanvasAgg into a stylia axes), colored with
-figure_1's own gene->color mapping so protein colors stay consistent across every figure. Genes with
-zero hits at the cutoff are dropped outright (a chord diagram sector needs a nonzero span); among
-the rest, low-degree genes get a blank (padded-space) label instead of their real name - same
-declutter heuristic as that notebook - since their sector is too small for real text without
-overlapping its neighbors.
-
-Panel c (plot_tier_grid_placeholder, name kept despite no longer being a pure placeholder) is a
-TIER_GRID_ROW_LABELS rows (P2Rank prob., HL cat., HL non-cat., REAL cat., REAL non-cat.,
-Cross-pharm., Exp. feas.) x 21 columns (all genes) grid, colored mostly from
-figure_3_calculations.py's figure_3_gene_summary_stats.json - see TIER_ROW_FIELDS for the
-row->field mapping. The first 6 rows are continuous and graded by equal terciles across the 21
-genes (green/amber/red for best/middle/worst third, _tercile_colors) - a data-driven split, no
-invented absolute cutoff, per request over hand-picked thresholds. The 4 docking rows split each
-library's combined best-score row (an earlier version of this panel) by catalytic vs non-catalytic
-pocket (figure_3_calculations.py's load_pocket_catalytic_map, CATALYTIC_CONFIDENCE_MIN); gatA and
-pheT have zero catalytic-labeled pockets, so their 2 catalytic cells are NaN and rendered
-TIER_GRID_NA (grey) instead of being forced into a tercile. Cross-pharm. has no field of its own in
-figure_3_gene_summary_stats.json, instead reusing plot_circos_overlap's own node_strength metric
-(total pairwise multi-target-hit compound overlap with every other gene, at CIRCOS_CUTOFF - see
-_compute_cross_pharmacology_scores) so this column's ranking agrees with panel b's chord-diagram
-ordering (e.g. pheS > glyS > alaS > ...), per request. Exp. feas. is the only non-continuous
-("boolean") row: green if that gene is reported to express OK, red if reported not to, grey
-(TIER_GRID_NA) if unassessed - see figure_3_calculations.py's EXPERIMENTAL_TRACTABILITY_OVERRIDES,
-a direct literal mapping rather than a tercile split, since most genes are grey/unassessed rather
-than falling on a continuous scale. The earlier per-row "Sel./Nov./Exp." text annotations to the
-right of the grid were dropped per request; Exp. feas. is now a real column instead. Gene rows are
-ordered by each gene's summed row-ordering score across all 7 columns, best at top, worst at
-bottom - per request over the previous alphabetical order. Every column but Exp. feas. contributes
-+1/0/-1 per green/amber/red cell (TIER_GRID_SCORE, 0 for TIER_GRID_NA too); Exp. feas. instead
-contributes +2/0/-3 (TIER_GRID_BOOL_SCORE) - direct experimental evidence outweighs an ordinary
-best/worst-tercile computational cell, per request; see that constant's own comment for why -3
-specifically (picked to land glyS's row between lysS and leuS, per request).
-
-Panel d (previously split across two analogous panels, d and e, merged into one per request, then
-relabeled from d to c once the P2Rank/domain-strip panel migrated out, then swapped with the tier
-grid and relabeled back to d) is two stacked full-width rows, one per showcase compound -
-figure_3_calculations.py's TOP_AVG_SCORE_COMPOUND_IDS, the 2 compounds (of the cutoff-12
-multi-target hit tier, each hitting exactly 4 genes there) with the best average docking score
-across their hit genes, a criterion the user picked explicitly (AskUserQuestion) over
-best-single-score or broadest-gene-coverage alternatives. Each row is a 2D RDKit structure
-depiction (render_2d_structure, no PyMOL/stylia, per project convention for plain structure images,
-labeled with its own compound_id since two different compounds are on screen) followed by that
-compound's 4 docking-pose renders, one per hit gene, at each gene's ACTUAL best-scoring pocket
-(figure_3_calculations.py's compute_top_avg_score_compounds_pockets - the same per-gene min-score
-pocket compute_gene_min_scores uses to call a hit, not merely the highest-P2Rank-probability pocket
-notebooks/46_pocket_visualisation.ipynb simplifies to, and falling back to a gene's next-best pocket
-- flagged with a trailing "*" on that gene's badge - when the true best pocket has no retained
-pose; both compounds' hit genes turned out to already have a verified retained pose, no omissions
-needed here unlike the single-compound panel this replaced). Rendering follows
-scripts/47b_reference_pocket_visualization.py's established PyMOL recipe (reference structure
-translucent cartoon, docked ligand pose extracted from docking.tar.gz and colored with the project's
-standard orange-carbon convention), simplified to one ligand/no pocket sphere/no PDB or AlphaFill
-overlays, camera oriented + zoomed tightly on the ligand alone (cmd.orient + a fixed-size zoom box,
-no per-image autocrop) so every panel is framed at an identical, directly comparable physical scale.
-Also shown: pocket atoms within SHOWCASE_NEAR_LIGAND_CUTOFF A of the ligand as thin context sticks
-(hydrogens excluded), and detected protein-ligand H-bonds as yellow dashes (_add_hbond_dashes,
-adapted from 47b's own unused draft of the same logic). Each pose render carries a gene-name badge
-(top-left, colored via figure_1's gene_to_color) and the docking score (bottom, plain text in a
-white-boxed frame) - the InterPro CAT/Other/NA classification and each gene's UniProt AC are still
-computed/saved by compute_top_avg_score_compounds_pockets but not drawn here.
-
-merge_panels() pastes every generated panel onto one positioned master PDF
-(Fig_3_full.pdf), called automatically at the end of main() - formerly a separate
-figure_3_merge.py script, now folded into this same file.
+panel_layout.csv is a first-draft starting point (a's box matches scheme.pdf's own
+measured size; b/c/d are rough guesses), to be tuned iteratively by rendering and
+looking, not solved analytically up front.
 
 Usage:
-    python figure_3_plot.py [--rerun] [--subpanels a,b,c,d,e]
+    python figure_3_plot.py [--subpanels b,c,d]
 """
 import argparse
 import json
 import os
 import sys
-import tarfile
-import tempfile
+from collections import defaultdict
 
 root = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(root, "..", "..", "src"))
 
-os.environ["QT_QPA_PLATFORM"] = "offscreen"
-
-import matplotlib as mpl
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pymol
-import stylia
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.offsetbox import AnnotationBbox, OffsetImage
-from pycirclize import Circos
-from pymol import cmd
+from matplotlib.ticker import FormatStrFormatter, MaxNLocator
+from PIL import Image
 from pypdf import PdfReader, PdfWriter, Transformation
 import pymupdf
-from rdkit import Chem
-from rdkit.Chem import rdCoordGen
-from rdkit.Chem.Draw import rdMolDraw2D
+from scipy.stats import gaussian_kde
+import stylia
 from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
-
-from docking_utils import LIBRARIES, lookup_smiles
 
 # Format: print | Style: article — change with stylia.set_format() / stylia.set_style()
 stylia.set_format("print")
 stylia.set_style("article")
 
-# pycirclize sets this to "tight" as an import-time side effect, which would silently override
-# every plt.savefig() call below (even ones that don't pass bbox_inches="tight" themselves) and
-# defeat save_panel()'s exact-figsize saving - reset to matplotlib's own default.
-mpl.rcParams["savefig.bbox"] = None
-
 plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_3")
-data_dir = os.path.join(plots_dir, "data")
-renders_dir = os.path.join(plots_dir, "renders")
 os.makedirs(plots_dir, exist_ok=True)
-os.makedirs(data_dir, exist_ok=True)
-os.makedirs(renders_dir, exist_ok=True)
 
-PANEL_LETTERS = ["a", "b", "c", "d"]  # panel c (P2Rank prob./domain strips) migrated to
-# figure_1_plot.py's own panel d; former "d"/"e" (showcase compounds/tier grid) relabeled
-# "c"/"d" to keep the letters contiguous, then swapped with each other so the tier grid is
-# "c" and showcase compounds is "d". Order here is merge_panels()'s PASTE order (last =
-# drawn on top) - "c" is pasted after "a" (its own bold "c" label needs to stay visible),
-# but c is saved with a transparent background (see main()'s "c" block) so a's gene-name
-# x-tick labels - which sit in the 0.5cm band where a's box deliberately overlaps c's, per
-# request - show through c's blank margin instead of being hidden behind an opaque page.
+PANEL_LETTERS = ["a", "b", "c", "d"]
 panel_layout_path = os.path.join(plots_dir, "panel_layout.csv")
+
+# ===========================================================================
+# Panel b data + helper: compound-property distributions
+# (ported verbatim from the original shared-figure version of this script, abc/shrink_factor dropped - panel-lettering
+# is now centralized in save_panel()/add_panel_label() instead of per-axes)
+# ===========================================================================
+
+PROPERTIES = ["MW", "cLogP", "TPSA", "RotBonds", "HBA", "AromaticRings", "QED"]
+DISCRETE_PROPS = {"RotBonds", "HBA", "AromaticRings"}
+PROP_XLIMS = {
+    "MW":            (200, 500),
+    "cLogP":         (-3, 6),
+    "TPSA":          (0, 160),
+    "RotBonds":      (0, 11),
+    "HBA":           (0, 11),
+    "AromaticRings": (0, 5),
+    "QED":           (0.2, 1),
+}
+PROP_XLABELS = {"AromaticRings": "Aromatic rings", "RotBonds": "Rot. bonds", "HBA": "HBA"}
+PROP_XTICKS = {
+    "MW":            [300, 400],
+    "cLogP":         [-2, 0, 2, 4],
+    "TPSA":          [50, 100],
+    "AromaticRings": [0, 2, 4],
+    "QED":           [0.4, 0.6, 0.8],
+}
+PROP_BINSIZE = {"RotBonds": 2, "HBA": 2}
+
+# (label, csv filename in plots/figure_3/, NamedColors name)
+LIBRARIES = [
+    ("HL",       "figure_3a_HL.csv",       "crimson"),
+    ("REAL 10M", "figure_3a_REAL10M.csv",  "turquoise"),
+    ("REAL 10B", "figure_3b_REAL10B.csv",  "amber"),
+]
+
+
+def load_libraries():
+    loaded = []
+    for label, filename, color_name in LIBRARIES:
+        df = pd.read_csv(os.path.join(plots_dir, filename))
+        loaded.append((label, color_name, df))
+    return loaded
+
+
+def load_gene_colors():
+    """Gene->color mapping from figure 1 - reused here so protein colors stay consistent
+    across figures instead of a second palette."""
+    with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
+        return json.load(f)["gene_to_color"]
+
+
+def plot_property(ax, prop, libraries):
+    nc = stylia.NamedColors()
+    lo, hi = PROP_XLIMS[prop]
+
+    ax.patch.set_visible(False)
+
+    if prop in DISCRETE_PROPS:
+        bin_size = PROP_BINSIZE.get(prop, 1)
+
+        def binned(df):
+            return (df[prop].dropna().astype(int) // bin_size) * bin_size
+
+        all_vals = set()
+        for _, _, df in libraries:
+            all_vals |= set(binned(df))
+        vals = sorted(all_vals)
+        edges = vals + [vals[-1] + bin_size]
+        for label, color_name, df in libraries:
+            data = binned(df)
+            freq = pd.Series(data).value_counts(normalize=True).reindex(vals, fill_value=0)
+            color = nc.get(color_name)
+            ax.stairs(freq.values, edges, baseline=0, color=color, linewidth=stylia.LINEWIDTH * 1.5,
+                      label=f"{label} (n={len(df) // 1000}k)")
+        ax.set_xlim(lo - 0.5, hi + 0.5)
+        stylia.label(ax, xlabel="", ylabel="", title=PROP_XLABELS.get(prop, prop))
+    else:
+        for label, color_name, df in libraries:
+            data = df[prop].dropna().values
+            kde = gaussian_kde(data)
+            x = np.linspace(lo, hi, 300)
+            y = kde(x)
+            color = nc.get(color_name)
+            ax.plot(x, y, color=color, linewidth=stylia.LINEWIDTH * 1.5, label=f"{label} (n={len(df) // 1000}k)")
+        ax.set_xlim(lo, hi)
+        stylia.label(ax, xlabel="", ylabel="", title=PROP_XLABELS.get(prop, prop))
+        if prop == "MW":
+            ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+            ax.yaxis.set_major_formatter(FormatStrFormatter("%.3f"))
+
+    if prop in PROP_XTICKS:
+        ax.set_xticks(PROP_XTICKS[prop])
+
+    ax.tick_params(axis="y", left=False, labelleft=False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(False)
+
+
+# ===========================================================================
+# Panel c data + helper: per-gene docking-percentile grid
+# (ported verbatim from the original shared-figure version of this script, abc/shrink_factor dropped)
+# ===========================================================================
+
+def load_docking_percentiles():
+    return pd.read_csv(os.path.join(plots_dir, "figure_3c_docking_percentiles.csv"))
+
+
+def load_pocket_clusters():
+    """structure-level pocket id -> spatial_cluster_id, from the same 6.14 A greedy
+    centroid dedup figure_1_calculations.py uses for gene_to_unique_pocket_count
+    (scripts/77_pocket_annotation/09_cluster_pockets.py's persisted assignments) -
+    collapses panel c's per-structure pockets down to one column per canonical site."""
+    path = os.path.join(root, "..", "..", "output", "77_pocket_annotation", "pocket_clusters.csv")
+    df = pd.read_csv(path)
+    df["pocket_id"] = df["File name"].str.replace(".pdb", "", regex=False) + "_pocket_" + df["Pocket number"].astype(str)
+    return df.set_index("pocket_id")["spatial_cluster_id"].to_dict()
+
+
+def gene_docking_stats(docking_percentiles, gene, pocket_to_cluster):
+    """Per-canonical-pocket median and p1 docking score for one gene - columns are a
+    (stat, library) MultiIndex, canonical pockets sorted by REAL 10B's p1 ascending (most
+    negative/best first) so both stats share one x-axis order across all three libraries
+    instead of each sorting independently. A canonical pocket can have several
+    structure-level candidates (same physical site detected on different structures) -
+    only the one with the best (most negative) REAL 10B p1 represents it here, so each
+    cluster contributes exactly one column instead of one per redundant detection. Empty
+    DataFrame if the gene has no docking data - plot_gene_panel() falls back to its
+    dummy-dot placeholder in that case."""
+    gene_df = docking_percentiles[docking_percentiles["gene"] == gene].copy()
+    if gene_df.empty:
+        return gene_df
+    gene_df["spatial_cluster_id"] = gene_df["pocket"].map(pocket_to_cluster)
+    real10b = gene_df[gene_df["library"] == "REAL 10B"]
+    winners = real10b.sort_values("p1").drop_duplicates("spatial_cluster_id")["pocket"]
+    gene_df = gene_df[gene_df["pocket"].isin(winners)]
+    pivoted = gene_df.pivot(index="pocket", columns="library", values=["median", "p1"])
+    return pivoted.sort_values(("p1", "REAL 10B"))
+
+
+def load_docking_snapshot_index():
+    """Ordered rows (rank, gene, library, pocket, compound, score, filename) for panel d's 7
+    snapshot cells - figure_3_calculations.py's compute_docking_snapshots() writes this index
+    alongside the PNGs since panel d shows a fixed top-7 by score (repeats allowed), not one slot
+    per gene, so the same gene's snapshots need distinguishing beyond just its name."""
+    index_path = os.path.join(plots_dir, "docking_snapshots", "index.csv")
+    if not os.path.isfile(index_path):
+        return pd.DataFrame()
+    return pd.read_csv(index_path).sort_values("rank")
+
+
+def plot_gene_panel(ax, gene, color, docking_df=None, show_ylabel=False, show_yticks=False,
+                     snapshot_rows=None):
+    """One cell of panel c's 3x7 gene grid, titled with a colored circle + gene name.
+    Plots each library's per-pocket median and p1 docking score (x = pocket identity,
+    unlabeled - only their relative order matters here) when docking_df is given;
+    otherwise a dummy single-dot scatter placeholder (for a gene with no docking data at
+    all) in the gene's own color. show_ylabel (row's first column) draws the "Docking
+    score" text with no tick marks/numbers; show_yticks (row's LAST column) draws the
+    tick marks/numbers on that column's right edge with no label text - splitting the two
+    across opposite ends of the row (rather than stacking both on the first column) is
+    what lets the row's own left margin shrink to just the label's width, per request.
+    Every column is one canonical pocket (gene_docking_stats() already dedups to that),
+    so all points render at the same size."""
+    ax.patch.set_visible(False)
+    if docking_df is not None and not docking_df.empty:
+        nc = stylia.NamedColors()
+        n = len(docking_df)
+        x = list(range(n))
+        for label, _, color_name in LIBRARIES:
+            lib_color = nc.get(color_name)
+            marker_size = stylia.MARKERSIZE * 1.6
+            ax.scatter(x, docking_df[("median", label)], marker="_", s=marker_size,
+                       linewidths=stylia.LINEWIDTH * 1.5, color=lib_color, zorder=3)
+            ax.scatter(x, docking_df[("p1", label)], s=marker_size, color=lib_color, linewidth=0, zorder=3)
+        # A margin that's a pure multiple of (n - 1) shrinks to near-zero for genes with only
+        # 2-3 canonical pockets, so the outermost big points sit right on the frame - the
+        # 0.35 floor keeps a readable gap regardless of n, only kicking in below ~n=5 (0.08 *
+        # (n-1) already exceeds it from n=6 up, so larger grids are unaffected).
+        margin = max(0.08 * (n - 1), 0.35)
+        ax.set_xlim(-margin, (n - 1) + margin)
+        ax.set_ylim(-15, -6)
+
+        points = []
+        for row in snapshot_rows or []:
+            if row["pocket"] not in docking_df.index:
+                continue
+            points.append((docking_df.index.get_loc(row["pocket"]), row["score"], int(row["rank"])))
+        points.sort(key=lambda p: p[1])
+
+        LABEL_BASE_DX = 0.05 * max(n - 1, 1)
+        MIN_LABEL_SEP = 1.1
+        prev_label_y = None
+        for x_pos, score, rank in points:
+            label_y = score if prev_label_y is None else max(score, prev_label_y + MIN_LABEL_SEP)
+            prev_label_y = label_y
+            label_x = x_pos + LABEL_BASE_DX
+            ax.scatter([x_pos], [score], marker="*", s=stylia.MARKERSIZE * 1.5, color="black",
+                       linewidth=0, zorder=6)
+            ax.text(label_x, label_y, str(rank), fontsize=stylia.FONTSIZE, ha="left", va="center",
+                    zorder=6)
+
+        ax.set_xticks([])
+        ax.tick_params(axis="y", left=False, labelleft=False, right=False, labelright=False)
+        if show_yticks:
+            # Numbers on the RIGHT edge of the row's last column, not attached to the labeled
+            # first column - lets the first column's own left margin shrink to just the
+            # "Docking score" text's width instead of text+numbers stacked together (same idea as
+            # figure_1's boxplot tick_right(), which keeps a label on its own separate side).
+            ax.yaxis.tick_right()
+            ax.tick_params(axis="y", right=True, labelright=True)
+        stylia.label(ax, xlabel="", ylabel="Docking score" if show_ylabel else "")
+        ax.grid(True, axis="y")
+    else:
+        ax.scatter([0.5], [0.5], color=color, edgecolor="black", linewidth=0.5,
+                   s=stylia.MARKERSIZE * 3, zorder=2)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        stylia.label(ax, xlabel="", ylabel="")
+        ax.grid(False)
+
+    legend_handles = [Line2D([0], [0], marker="o", color="w", label=gene, markerfacecolor=color,
+                              markeredgecolor="black", markeredgewidth=0.5, markersize=stylia.MARKERSIZE)]
+    ax.legend(handles=legend_handles, loc="lower center", frameon=False, bbox_to_anchor=(0.5, 1.05),
+              fontsize=stylia.FONTSIZE, handletextpad=0.3)
+
+
+# ===========================================================================
+# Panel d data + helper: top docking-pose snapshots
+# (ported verbatim from the original shared-figure version of this script, abc dropped)
+# ===========================================================================
+
+LIBRARY_DISPLAY_NAMES = {"HL": "Hit Locator", "REAL 10M": "REAL 10M", "REAL 10B": "REAL 10B"}
+
+
+def plot_docking_snapshot(ax, rank, image_path, library, score):
+    """One panel d cell: a best-compound PyMOL docking snapshot, titled with the panel's own
+    plain-text number (outside the frame via loc="lower center", no color/marker), plus two more
+    plain-text legends - which library (top center) and its docking score (bottom center)."""
+    ax.imshow(np.array(Image.open(image_path)))
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    number_handle = [Line2D([0], [0], linestyle="None", marker="None", label=str(rank))]
+    number_legend = ax.legend(handles=number_handle, loc="lower center", frameon=False,
+                               bbox_to_anchor=(0.5, 1.0), fontsize=stylia.FONTSIZE_BIG, handlelength=0,
+                               handletextpad=0, borderaxespad=0)
+    ax.add_artist(number_legend)
+
+    library_handle = [Line2D([0], [0], linestyle="None", marker="None",
+                              label=LIBRARY_DISPLAY_NAMES.get(library, library))]
+    library_legend = ax.legend(handles=library_handle, loc="upper center", frameon=True, framealpha=0.8,
+                                edgecolor="black", fontsize=stylia.FONTSIZE, handlelength=0, handletextpad=0)
+    ax.add_artist(library_legend)
+
+    score_handle = [Line2D([0], [0], linestyle="None", marker="None", label=f"Score: {score:.2f}")]
+    ax.legend(handles=score_handle, loc="lower center", frameon=True, framealpha=0.8, edgecolor="black",
+              fontsize=stylia.FONTSIZE, handlelength=0, handletextpad=0)
+
+
+# ===========================================================================
+# Panel-saving scaffolding (ported near-verbatim from figure_1_plot.py)
+# ===========================================================================
+
+PANEL_LABEL_MARGIN = 0.02
+
+
+def add_panel_label(fig, letter):
+    """Bold panel letter at the top-left of the FIGURE (page), fixed regardless of
+    padding - from figure_4_plot.py. Used for b/c/d only - panel a's label is baked on
+    separately by _render_panel_a_label(), since scheme.pdf isn't a matplotlib figure."""
+    fig.text(PANEL_LABEL_MARGIN, 1 - PANEL_LABEL_MARGIN, letter, fontweight="bold",
+              fontsize=stylia.FONTSIZE_BIG, color=get_fg_color(), ha="left", va="top",
+              transform=fig.transFigure)
+
+
+MAX_WIDTH_IN = stylia.SIZE  # Nature two-column guideline (~7.09in/18cm) - from figure_4_plot.py
 
 
 def load_panel_sizes(panels):
-    """panel -> (width_in, height_in), from output/plots/figure_3/panel_layout.csv (columns:
-    panel, x, delta_x, y, delta_y, all in cm - x/y unused for now, reserved for future
-    external-layout positioning). Only requires/returns rows for `panels` (e.g. a --subpanels
-    subset), not every row in PANEL_LETTERS. Raises a clear error if the file or a needed row is
-    missing."""
     if not os.path.exists(panel_layout_path):
         raise FileNotFoundError(
             f"{panel_layout_path} not found. Expected columns: panel, x, delta_x, y, delta_y (cm), "
@@ -184,9 +351,6 @@ def load_panel_sizes(panels):
 
 
 def load_panel_padding(panels):
-    """panel -> padding fraction (0-1) from panel_layout.csv's padding column - see
-    apply_padding() for what this controls. Missing column defaults every panel to 0 (today's
-    already-tuned zero-margin behavior, unchanged)."""
     df = pd.read_csv(panel_layout_path).set_index("panel")
     if "padding" not in df.columns:
         return {p: 0.0 for p in panels}
@@ -197,12 +361,6 @@ def load_panel_padding(panels):
 
 
 def apply_padding(fig, padding):
-    """Scales every axes in `fig` toward the figure's own center by (1-padding) - see
-    panel_layout.csv's padding column. Pure geometric Bbox transform, applied AFTER each panel's
-    own tight-fit/clip-avoidance logic has already run (a no-op at padding=0, so it only ADDS
-    margin on top of an already clip-safe baseline, never re-introduces clipping). Font/tick/
-    label sizes are unaffected - matplotlib renders those at fixed absolute point sizes regardless
-    of an axes' box size, so this only moves/shrinks the plotted geometry, not the text."""
     scale = 1 - padding
     for ax in fig.axes:
         pos = ax.get_position()
@@ -213,77 +371,51 @@ def apply_padding(fig, padding):
         ax.set_position([x0, y0, x1 - x0, y1 - y0])
 
 
-PANEL_LABEL_MARGIN_IN = 0.02 * 8 / 2.54  # ~0.063in - was a 0.02 figure-fraction of panel a/c's
-# 8cm width; now an absolute inset so a/c/d's labels (they share the same x=0 left edge once
-# pasted) land at the same x position regardless of each panel's own width, instead of drifting
-# per-panel since a figure-fraction of a wider panel (e.g. d, 15cm) is a bigger absolute inset.
-PANEL_LABEL_MARGIN_Y = 0.02  # top inset stays a figure-fraction - panels are stacked at
-# different y's already, so there's no cross-panel alignment to preserve here.
-
-
-def add_panel_label(fig, letter):
-    """Bold panel letter at the top-left of the FIGURE (page) itself, not the axes - stays at a
-    fixed page corner regardless of panel_layout.csv's padding, unlike stylia.label()'s own abc
-    mechanism (ax.set_title(loc="left"), anchored to the axes' own top edge, which would drift
-    inward as padding grows). Same style values as that mechanism (bold, FONTSIZE_BIG, stylia's
-    own foreground color for the active style)."""
-    margin_x = PANEL_LABEL_MARGIN_IN / fig.get_size_inches()[0]
-    fig.text(margin_x, 1 - PANEL_LABEL_MARGIN_Y, letter, fontweight="bold",
-             fontsize=stylia.FONTSIZE_BIG, color=get_fg_color(), ha="left", va="top",
-             transform=fig.transFigure)
-
-
-# Max page width a saved panel PDF may reach - stylia.SIZE is documented as Nature's two-column
-# width (7.09in / ~18.0cm, dynamically resolved for the active format). No max height for now.
-MAX_WIDTH_IN = stylia.SIZE
-
-
-def save_panel(fig, letter, padding=0.0, tight_layout_rect=None, transparent=False, axes_x_range=None):
-    # No bbox_inches="tight" (unlike stylia.save_figure) - that recomputes the saved page to fit
-    # the actual rendered content, ignoring figsize. Panels must save at EXACTLY their
-    # panel_layout.csv delta_x/delta_y, per request - plt.tight_layout() (also on via stylia's
-    # figure.autolayout rcParam) still reflows labels/legends to fit within that fixed canvas, it
-    # just doesn't grow the canvas to match them.
-    # tight_layout_rect: reserves a top margin (or other edge) inside tight_layout's own target
-    # rect, for a panel short enough that add_panel_label's bold letter (added below, AFTER
-    # tight_layout runs, so tight_layout can't otherwise account for it) collides with the
-    # topmost tick label - e.g. panel c's 3cm-tall tier grid.
-    # transparent: for a panel (currently just c) pasted on top of another panel it deliberately
-    # overlaps - lets that other panel's content show through this panel's own blank margin,
-    # instead of this panel's opaque white page background hiding it. Only its actual drawn
-    # content (e.g. the tier grid's cell rectangles, each with their own explicit facecolor)
-    # stays opaque - matplotlib's transparent=True zeroes the figure/axes PATCH alpha alone.
-    # axes_x_range: (x0, x1) figure-fraction override for every axes' left/right edge, applied
-    # AFTER tight_layout's own automatic placement. tight_layout sizes each panel's left margin
-    # to ITS OWN longest tick label, so two same-width panels with differently-sized labels (e.g.
-    # a's "400"/"200"/"0" vs c's "HL non-cat."/"REAL non-cat.") otherwise get different left
-    # insets - this lets one match the other's plot border exactly, per request (used to make a's
-    # border match c's, shrinking a's own plot area since c's row labels need more room).
-    plt.tight_layout(rect=tight_layout_rect)
-    computed_x_range = (fig.axes[0].get_position().x0, fig.axes[0].get_position().x1)
-    if axes_x_range is not None:
-        x0, x1 = axes_x_range
-        for ax in fig.axes:
-            pos = ax.get_position()
-            ax.set_position([x0, pos.y0, x1 - x0, pos.height])
-    apply_padding(fig, padding)  # after tight_layout, so it isn't undone by it for a/b/c
+def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=None,
+               subplots_adjust=None, padding=0.0):
+    """Saves at exactly panel_layout.csv's delta_x/delta_y (no bbox_inches="tight").
+    use_tight_layout=False + subplots_adjust is the escape hatch for panels where
+    tight_layout() warns/fails - from figure_5_plot.py. fig.set_tight_layout(False)
+    defeats stylia's own auto-relayout rcParam, which would otherwise silently override
+    this layout at savefig time."""
+    fig.set_tight_layout(False)
+    if use_tight_layout:
+        plt.tight_layout(pad=tight_pad, w_pad=tight_w_pad)
+    else:
+        fig.subplots_adjust(**(subplots_adjust or dict(left=0.01, right=0.99, top=0.99, bottom=0.01)))
+    apply_padding(fig, padding)
     add_panel_label(fig, letter)
     output_path = os.path.join(plots_dir, f"Fig_3{letter}.pdf")
-    plt.savefig(output_path, dpi=600, transparent=transparent)
+    plt.savefig(output_path, dpi=600, transparent=False)
     plt.close(fig)
     print(f"Saved Fig_3{letter}.pdf")
-    return computed_x_range
 
 
 CM_TO_PT = 72 / 2.54
 
 
+def _render_panel_a_label(delta_x_cm, delta_y_cm):
+    """Bakes a bold "a" label (same style/corner-inset as add_panel_label()) onto its own
+    transparent-background PDF, sized to match panel a's declared box - scheme.pdf itself
+    has no label drawn into it, so this overlay supplies one instead of requiring a manual
+    edit in Inkscape."""
+    fig = plt.figure(figsize=(delta_x_cm / 2.54, delta_y_cm / 2.54))
+    fig.patch.set_alpha(0)
+    add_panel_label(fig, "a")
+    label_path = os.path.join(plots_dir, "_panel_a_label.pdf")
+    fig.savefig(label_path, transparent=True)
+    plt.close(fig)
+    return label_path
+
+
 def merge_panels():
-    """Pastes each Fig_3{letter}.pdf onto one positioned master PDF (Fig_3_full.pdf) per
-    panel_layout.csv's x/y - pure translation (no rescaling, true vector via pypdf), since
-    each panel already saves at its exact target size. Folded in from the former
-    figure_3_merge.py (now removed) so plot + merge happen in one script, matching
-    figure_1_plot_v2.py/figure_2_plot_v2.py's own convention."""
+    """Pastes each panel onto one positioned master PDF (Fig_3_full.pdf) per
+    panel_layout.csv's x/y. b/c/d are pure translation (already saved at their exact
+    declared size via save_panel()). Panel a (scheme.pdf, hand-authored in Inkscape, not
+    script-generated) is additionally scaled to fit its declared box, in case the
+    Inkscape export doesn't match panel_layout.csv pixel-for-pixel. Ported from
+    figure_1_plot.py's own merge_panels(), kept in this same file per the same
+    plot+merge-in-one-script convention now shared by all 4 figures."""
     df = pd.read_csv(panel_layout_path).set_index("panel")
     missing = [p for p in PANEL_LETTERS if p not in df.index]
     if missing:
@@ -296,16 +428,34 @@ def merge_panels():
     master_page = writer.add_blank_page(width=total_width_cm * CM_TO_PT, height=total_height_cm * CM_TO_PT)
 
     for p in PANEL_LETTERS:
-        panel_path = os.path.join(plots_dir, f"Fig_3{p}.pdf")
+        panel_path = os.path.join(plots_dir, "scheme.pdf" if p == "a" else f"Fig_3{p}.pdf")
         if not os.path.exists(panel_path):
             print(f"  Skipping {p}: {panel_path} not found - Fig_3_full.pdf will be missing it.")
             continue
         panel_page = PdfReader(panel_path).pages[0]
-        x_top_cm, y_top_cm, delta_y_cm = df.loc[p, "x"], df.loc[p, "y"], df.loc[p, "delta_y"]
+
+        x_top_cm, y_top_cm = df.loc[p, "x"], df.loc[p, "y"]
+        delta_x_cm, delta_y_cm = df.loc[p, "delta_x"], df.loc[p, "delta_y"]
         x_pt = x_top_cm * CM_TO_PT
         y_bottom_pt = (total_height_cm - y_top_cm - delta_y_cm) * CM_TO_PT
-        master_page.merge_transformed_page(panel_page, Transformation().translate(tx=x_pt, ty=y_bottom_pt))
-        print(f"  Placed Fig_3{p}.pdf at x={x_top_cm}cm, y={y_top_cm}cm (top-left)")
+
+        transform = Transformation()
+        if p == "a":
+            actual_w_pt = float(panel_page.mediabox.width)
+            actual_h_pt = float(panel_page.mediabox.height)
+            target_w_pt = delta_x_cm * CM_TO_PT
+            target_h_pt = delta_y_cm * CM_TO_PT
+            transform = transform.scale(target_w_pt / actual_w_pt, target_h_pt / actual_h_pt)
+        transform = transform.translate(tx=x_pt, ty=y_bottom_pt)
+
+        master_page.merge_transformed_page(panel_page, transform)
+        print(f"  Placed {os.path.basename(panel_path)} at x={x_top_cm}cm, y={y_top_cm}cm (top-left)")
+
+        if p == "a":
+            label_path = _render_panel_a_label(delta_x_cm, delta_y_cm)
+            label_page = PdfReader(label_path).pages[0]
+            master_page.merge_transformed_page(label_page, Transformation().translate(tx=x_pt, ty=y_bottom_pt))
+            os.remove(label_path)
 
     output_path = os.path.join(plots_dir, "Fig_3_full.pdf")
     with open(output_path, "wb") as f:
@@ -314,7 +464,9 @@ def merge_panels():
 
     # Flattened PNG alongside the vector PDF (user request), rendered at the same dpi=600
     # save_panel's own PDFs already use for their embedded raster content - pymupdf renders the
-    # already-merged page directly (no external Poppler binary, unlike pdftoppm/pdf2image).
+    # already-merged page directly (no external Poppler binary, unlike pdftoppm/pdf2image, so
+    # this doesn't reintroduce the Poppler dependency panel a's own merge deliberately avoids -
+    # see module docstring).
     png_path = os.path.join(plots_dir, "Fig_3_full.png")
     pdf_doc = pymupdf.open(output_path)
     zoom = 600 / 72  # pymupdf's Pixmap render defaults to 72dpi
@@ -324,912 +476,93 @@ def merge_panels():
     print(f"Saved {png_path}")
 
 
-# Panel f's 5 sub-columns (probability curve + 4 domain bands) are packed with a gap between them
-# (RIGHT_BLOCK_WSPACE) - independent of MOSAIC's own (default) row/column gaps. Widths are 4:1:1:1:1
-# (RIGHT_BLOCK_WIDTH_RATIOS), not equal - the probability curve carries a real value per pocket, the
-# 4 domain bands are just present/absent, so the curve gets more room to read, per request.
-RIGHT_BLOCK_WSPACE = 0.45
-RIGHT_BLOCK_WIDTH_RATIOS = [4, 1, 1, 1, 1]
-
-# Fraction of each of panel f's 5 sub-axes reserved, at the top, for their rotated column-header
-# xlabel (see reserve_top_header). tight_layout() can't budget space for this label itself -
-# ax.xaxis.set_label_coords() (needed to keep the rotated label's alignment stable across
-# redraws) disables matplotlib's automatic layout awareness of it, so without a manual
-# reservation the label gets clipped flush against the saved page's top edge (confirmed
-# empirically both by removing the reservation entirely, and by panel f's own delta_y shrinking
-# from 11.7 to 8.78cm - "P2Rank prob." and "Anticodon binding" both visibly truncated at the old
-# 0.07-0.12 range). This is a FRACTION of panel f's own height, calibrated against the longest
-# header ("Anticodon binding") - re-verify (render + inspect, don't just eyeball) whenever
-# delta_y changes, since the same fraction doesn't necessarily still clear the header at a
-# different absolute height.
-RIGHT_BLOCK_HEADER_FRAC = 0.13
-
-def reserve_top_header(ax, frac):
-    """Shrink `ax` from the top by `frac` of its own height, leaving its bottom edge fixed - so a
-    later ax.set_xlabel(..., top-positioned) has real, allocated room to render into instead of
-    overflowing past the axes into whatever sits above it (see RIGHT_BLOCK_HEADER_FRAC)."""
-    pos = ax.get_position()
-    ax.set_position([pos.x0, pos.y0, pos.width, pos.height * (1 - frac)])
-    return ax
-
-
-# Loosest -> strictest, matching the draw order (background bar first, tightest cutoff on top) and
-# figure_3_calculations.py's PANEL_A_CUTOFFS/SELECTED_SET_CUTOFF.
-CUTOFFS = [-8, -9, -10, -11, -12]
-SELECTED_SET_CUTOFF = -11
-SORT_BY_CUTOFF = -11
-YLIM_MAX = 500
-
-
-def plot_protein_hit_counts(ax):
-    counts = pd.read_csv(os.path.join(data_dir, "figure_3_selected_set_protein_hit_counts.csv"))
-    counts = counts.sort_values(f"count_cutoff{abs(SORT_BY_CUTOFF)}", ascending=False).reset_index(drop=True)
-
-    palette = stylia.FadingColormap("crimson").sample(len(CUTOFFS))
-    for x, row in counts.iterrows():
-        for c, cutoff in enumerate(CUTOFFS):
-            label = str(cutoff) if x == 0 else None
-            ax.bar(x, row[f"count_cutoff{abs(cutoff)}"], color=palette[c], edgecolor="black",
-                   linewidth=stylia.LINEWIDTH, zorder=2, label=label)
-
-    # Headroom above the tallest bar (362) so the bars themselves only fill ~80% of the axis
-    # height, leaving blank space between the bars and the top spine/legend/"a" label - without
-    # moving the legend or title from their original positions.
-    ax.set_ylim(0, YLIM_MAX)
-    ax.set_xlim(-1, 21)
-    ax.set_xticks(range(len(counts)))
-    ax.set_xticklabels(counts["gene"], rotation=90, fontsize=stylia.FONTSIZE_SMALL)
-    # Outside the axes to the right, vertically centered - no xlim padding trick needed since it
-    # doesn't compete with the plot area at all.
-    ax.legend(title="Docking score", loc="upper center", bbox_to_anchor=(0.5, 1), fontsize=stylia.FONTSIZE_SMALL, framealpha=0.8, ncol=5)
-    stylia.label(ax, xlabel="", ylabel="Number of\ncompounds")
-
-
-CIRCOS_CUTOFF = -11
-
-# Genes contributing less than this fraction of the diagram's total pairwise overlap would get a
-# blank (padded-space, still correctly colored) sector label instead of their real name - per
-# request, every gene keeps its real label now except CIRCOS_HIDE_LABELS below, so this is 0 (never
-# triggers). Was 1/25, matching notebooks/46_docking_exploration_IIIa_colors.ipynb's threshold.
-CIRCOS_DECLUTTER_FRACTION = 0
-
-# Blanked regardless of the threshold above - every gene here has a tiny sector (count_cutoff11 of
-# 1-15, vs. 45+ for the smallest of the labeled genes) and they all cluster together at the same
-# point on the circle, so their real-text labels stack on top of each other into an unreadable
-# smear rather than reading as separate sectors.
-CIRCOS_HIDE_LABELS = {"trpS", "serS", "gltS", "leuS", "metS", "pheT", "proS", "thrS"}
-
-CIRCOS_DPI = 200
-# stylia's medium tier (FONTSIZE, not FONTSIZE_SMALL), per request. pycirclize's own label_kws
-# size lives outside stylia's point system entirely (it's a creation-time value in a separate
-# 8x8in/200dpi figure that then gets rasterized and rescaled into panel b's actual axes box), so
-# hitting this exactly requires computing the real scale factor at runtime (see
-# plot_circos_overlap's calibration pass) rather than a fixed literal - the correct label_kws size
-# depends on panel b's own declared size in panel_layout.csv and on the matrix/crop content, both
-# of which can change.
-CIRCOS_LABEL_TARGET_FONTSIZE = stylia.FONTSIZE
-
-
-def _build_cropped_circos_image(matrix, cmap, label_size):
-    """Builds the circos chord diagram at `label_size` (pycirclize's own creation-time label size,
-    not a final on-page point size) and crops to its non-white content bounding box - the render
-    part of plot_circos_overlap's two-pass calibration, called once as a probe and once at the
-    calibrated size."""
-    circos = Circos.chord_diagram(
-        matrix, space=2, cmap=cmap,
-        label_kws=dict(size=label_size),
-        link_kws=dict(ec="white", lw=0, alpha=1),
-    )
-    # chord_diagram() hardcodes each sector's outer arc border (ec="black", lw=0.5) with no kwarg
-    # to override it - drop straight to the underlying Patch objects (2 per sector's outer track:
-    # a borderless facecolor patch, then a fill-less edgecolor patch drawn on top - see pycirclize's
-    # Track.axis()) and zero their linewidth before rendering, to match the borderless links above.
-    for sector in circos.sectors:
-        for track in sector.tracks:
-            for patch in track.patches:
-                patch.set_linewidth(0)
-    fig_circos = circos.plotfig(figsize=(8, 8), dpi=CIRCOS_DPI)
-    canvas = FigureCanvas(fig_circos)
-    canvas.draw()
-    w, h = fig_circos.canvas.get_width_height()
-    img = np.frombuffer(canvas.tostring_argb(), dtype=np.uint8).reshape(h, w, 4)[:, :, [1, 2, 3, 0]]
-    plt.close(fig_circos)
-
-    # plotfig()'s own canvas leaves a lot of blank margin around the actual diagram - crop to the
-    # non-white content bounding box (as figure_1_plot.py's autocrop_to_content does for the PyMOL
-    # renders) so the diagram fills panel b instead of sitting small in a mostly-empty box.
-    nonwhite = np.where((img[..., :3] < 250).any(axis=2))
-    y0, y1 = nonwhite[0].min(), nonwhite[0].max()
-    x0, x1 = nonwhite[1].min(), nonwhite[1].max()
-    return img[y0:y1 + 1, x0:x1 + 1]
-
-
-def plot_circos_overlap(ax):
-    hits_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(CIRCOS_CUTOFF)}.csv")
-    selected = pd.read_csv(hits_path)
-    gene_cols = [c.removeprefix("score_") for c in selected.columns if c.startswith("score_")]
-
-    with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
-        gene_to_color = json.load(f)["gene_to_color"]
-
-    hit_sets = {g: set(selected.loc[selected[f"score_{g}"] <= CIRCOS_CUTOFF, "compound_id"]) for g in gene_cols}
-    genes = [g for g in gene_cols if hit_sets[g]]
-
-    matrix = pd.DataFrame(0, index=genes, columns=genes, dtype=int)
-    for g1 in genes:
-        for g2 in genes:
-            if g1 != g2:
-                matrix.loc[g1, g2] = len(hit_sets[g1] & hit_sets[g2])
-
-    node_strength = matrix.sum(axis=0) + matrix.sum(axis=1)
-    order = node_strength.sort_values(ascending=False).index
-    matrix = matrix.loc[order, order]
-    node_strength = node_strength.loc[order]
-
-    # Declutter: low-degree genes' sectors are too small for real text without the labels
-    # overlapping each other, so give them a unique blank label instead (still correctly colored
-    # via cmap, just not named) - same heuristic and threshold as the notebook precedent.
-    cmap = {g: gene_to_color[g] for g in genes}
-    threshold = (node_strength.sum() / 2) * CIRCOS_DECLUTTER_FRACTION
-    rename_map = {}
-    for i, g in enumerate(matrix.index, start=1):
-        if node_strength[g] < threshold or g in CIRCOS_HIDE_LABELS:
-            blank = " " * i
-            rename_map[g] = blank
-            cmap[blank] = gene_to_color[g]
-    matrix = matrix.rename(index=rename_map, columns=rename_map)
-
-    # Chord diagrams double-count a symmetric matrix's upper+lower triangles - zero the lower
-    # triangle (diagonal is already 0, self-overlap is meaningless) so each pair's link is drawn once.
-    matrix.values[np.tril_indices_from(matrix.values, k=0)] = 0
-
-    # Two-pass calibration: the scale factor between pycirclize's own label_kws size and a real
-    # on-page point size can only be known AFTER a render is cropped and placed into `ax` (whose
-    # own final box size only resolves once the layout engine actually runs) - so probe once at an
-    # arbitrary size, measure the true points-per-raster-pixel via ax.transData directly (not an
-    # assumed aspect-ratio match - dpi-independent of whatever plt.savefig(dpi=...) is used later,
-    # since points are tied to fig.get_size_inches(), not raster resolution), then re-render at the
-    # size that actually lands on CIRCOS_LABEL_TARGET_FONTSIZE for THIS panel's own current
-    # delta_x/delta_y and THIS matrix's own crop shape.
-    PROBE_LABEL_SIZE = 30
-    probe_img = _build_cropped_circos_image(matrix, cmap, PROBE_LABEL_SIZE)
-    ax.imshow(probe_img)
-    ax.axis("off")
-    ax.figure.tight_layout()  # matches save_panel()'s own call, so the measured box is the real one
-    ax.figure.canvas.draw()
-
-    p0x = ax.transData.transform((0, 0))[0]
-    p1x = ax.transData.transform((1, 0))[0]
-    pt_per_raster_px = abs(p1x - p0x) / ax.figure.dpi * 72
-    probe_em_height_px = PROBE_LABEL_SIZE * CIRCOS_DPI / 72
-    probe_effective_pt = probe_em_height_px * pt_per_raster_px
-    calibrated_size = PROBE_LABEL_SIZE * (CIRCOS_LABEL_TARGET_FONTSIZE / probe_effective_pt)
-    print(f"  Circos labels: size={PROBE_LABEL_SIZE} probe measured {probe_effective_pt:.2f}pt "
-          f"-> calibrated size={calibrated_size:.2f} for target {CIRCOS_LABEL_TARGET_FONTSIZE}pt")
-
-    final_img = _build_cropped_circos_image(matrix, cmap, calibrated_size)
-    ax.images[0].remove()
-    ax.imshow(final_img)
-    stylia.label(ax, xlabel="", ylabel="")
-
-
-# Typical P2Rank pocket-probability cutoff, per request - source/cite before this value appears
-# in a manuscript legend (e.g. the P2Rank paper or its own documentation). Still used by the tier
-# grid's P2Rank prob. column below, even though the P2Rank probability curve panel itself
-# (plot_pocket_scores_row, migrated to figure_1_plot.py's panel d) no longer lives in this file.
-P2RANK_CUTOFF = 0.2
-
-# Panel c's P2Rank prob. column grades against this same P2RANK_CUTOFF (amber/red boundary) plus
-# this additional green boundary, per request - unlike every other TIER_ROW_FIELDS column, which
-# is graded by a data-driven tercile split (see that constant's comment) rather than an absolute
-# cutoff. Cite before either value appears in a manuscript legend.
-P2RANK_HIGH_CONFIDENCE_CUTOFF = 0.8
-
-
-# Row label -> figure_3_gene_summary_stats.json field -> how to grade it. "continuous_low_better"
-# rows are graded by equal terciles across the 21 genes (7 green/7 amber/7 red, ranked by that
-# field) - a data-driven split with no invented absolute cutoff, per request (AskUserQuestion)
-# over hand-picked thresholds. "p2rank_absolute" (P2Rank prob.) is the one exception to that rule -
-# graded against fixed absolute cutoffs instead (P2RANK_HIGH_CONFIDENCE_CUTOFF/P2RANK_CUTOFF), per
-# a later explicit request overriding the tercile default for just this column. "cross_pharmacology"
-# has no field of its own (it isn't in figure_3_gene_summary_stats.json) - see
-# _compute_cross_pharmacology_scores below. The 4 docking rows split each library's combined
-# best-score row by catalytic vs non-catalytic pocket (figure_3_calculations.py's
-# load_pocket_catalytic_map) - gatA/pheT have zero catalytic pockets, so their 2 catalytic cells
-# are NaN, handled by _tercile_colors as TIER_GRID_NA rather than a tercile.
-TIER_ROW_FIELDS = [
-    ("P2Rank prob.", "max_p2rank_prob", "p2rank_absolute"),
-    ("HL cat.", "best_hl_docking_score_catalytic", "continuous_low_better"),
-    ("HL non-cat.", "best_hl_docking_score_noncatalytic", "continuous_low_better"),
-    ("REAL cat.", "best_real10b_docking_score_catalytic", "continuous_low_better"),
-    ("REAL non-cat.", "best_real10b_docking_score_noncatalytic", "continuous_low_better"),
-    ("Cross-pharm.", None, "cross_pharmacology"),
-    ("Exp. feas.", "experimental_tractability", "boolean"),
-]
-TIER_GRID_ROW_LABELS = [label for label, _, _ in TIER_ROW_FIELDS]
-TIER_GRID_GREEN = "lime"
-TIER_GRID_AMBER = "amber"
-TIER_GRID_RED = "crimson"
-TIER_GRID_NA = "silver"  # gene has no pocket at all in this column's catalytic/non-catalytic bucket
-
-
-def _tercile_colors(values_by_gene, higher_is_better):
-    """Split genes into equal thirds (7/7/7 of 21) by `values_by_gene`, best third green, middle
-    third amber, worst third red - see TIER_ROW_FIELDS' comment for why terciles, not fixed
-    cutoffs. A gene with a NaN value (e.g. gatA/pheT have zero catalytic pockets, so their
-    catalytic docking-score fields are undefined) is excluded from the tercile split entirely and
-    colored TIER_GRID_NA instead of being force-ranked into green/amber/red."""
-    na_genes = [g for g in values_by_gene if values_by_gene[g] != values_by_gene[g]]  # NaN != NaN
-    finite = {g: v for g, v in values_by_gene.items() if g not in na_genes}
-    ordered_genes = sorted(finite, key=lambda g: finite[g], reverse=higher_is_better)
-    third = len(ordered_genes) // 3
-    colors = {}
-    for i, gene in enumerate(ordered_genes):
-        if i < third:
-            colors[gene] = TIER_GRID_GREEN
-        elif i < 2 * third:
-            colors[gene] = TIER_GRID_AMBER
-        else:
-            colors[gene] = TIER_GRID_RED
-    for gene in na_genes:
-        colors[gene] = TIER_GRID_NA
-    return colors
-
-
-def _compute_cross_pharmacology_scores(cutoff):
-    """Per-gene node strength (summed pairwise multi-target-hit compound overlap with every other
-    gene) at `cutoff` - the same node_strength metric plot_circos_overlap (panel b) sorts its chord
-    diagram by, so panel c's Cross-pharm. column agrees with panel b on gene order (e.g.
-    pheS > glyS > alaS > ...). Computed independently of plot_circos_overlap (small duplicated
-    block, same per-file-helper convention as autocrop_to_content) over ALL 21 genes, not just the
-    ones with a nonzero chord sector there - a gene with zero multi-target hits at this cutoff
-    legitimately gets a node strength of 0 (worst tercile), rather than being dropped."""
-    hits_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(cutoff)}.csv")
-    selected = pd.read_csv(hits_path)
-    gene_cols = [c.removeprefix("score_") for c in selected.columns if c.startswith("score_")]
-    hit_sets = {g: set(selected.loc[selected[f"score_{g}"] <= cutoff, "compound_id"]) for g in gene_cols}
-    matrix = pd.DataFrame(0, index=gene_cols, columns=gene_cols, dtype=int)
-    for g1 in gene_cols:
-        for g2 in gene_cols:
-            if g1 != g2:
-                matrix.loc[g1, g2] = len(hit_sets[g1] & hit_sets[g2])
-    return (matrix.sum(axis=0) + matrix.sum(axis=1)).to_dict()
-
-
-
-# Per-cell-color point value for plot_tier_grid_placeholder's row ordering (green best/+1, amber
-# neutral/0, red worst/-1) - summed across a gene's TIER_ROW_FIELDS columns to rank genes best to
-# worst top to bottom, per request over the previous alphabetical row order. TIER_GRID_NA (no
-# catalytic pocket for this gene, e.g. gatA/pheT) scores 0, same neutral weight as amber, rather
-# than penalizing a gene for a column that's structurally inapplicable to it.
-TIER_GRID_SCORE = {TIER_GRID_GREEN: 1, TIER_GRID_AMBER: 0, TIER_GRID_RED: -1, TIER_GRID_NA: 0}
-
-# Exp. feasibility's own row-ordering weight, used INSTEAD of TIER_GRID_SCORE for that one column -
-# per request, a confirmed poor-expression finding (False, currently only glyS) should weigh more
-# heavily against a gene than an ordinary worst-tercile docking score (-1), and a confirmed
-# good-expression finding (True) should weigh more heavily in favor than an ordinary best-tercile
-# one (+1) - reflecting that this is direct experimental evidence, not a computational proxy like
-# the other 6 columns. NA (unassessed) still scores 0, same neutral treatment as every other column.
-# False=-3 (rather than an earlier -5) was picked, given glyS is currently the only False-flagged
-# gene, specifically so glyS's own summed score lands at 3 - tied with leuS/gltS on score alone,
-# then sorted ahead of both by its own (much higher) raw cross-pharmacology node strength, landing
-# glyS's row between lysS (4) and leuS (3) - per explicit request for that row position, not an
-# independently-derived weight. Re-check this still holds if a second gene is ever flagged False.
-TIER_GRID_BOOL_SCORE = {True: 2, False: -3}
-
-
-def plot_tier_grid_placeholder(ax):
-    """21 genes (columns) x TIER_GRID_ROW_LABELS rows grid of rectangles, colored from
-    figure_3_calculations.py's figure_3_gene_summary_stats.json (plus Cross-pharm., see
-    _compute_cross_pharmacology_scores) - see TIER_ROW_FIELDS for the row->field mapping and
-    grading rule. Columns are ordered by each gene's summed column-ordering score across all rows
-    (TIER_GRID_SCORE per row, except Exp. feasibility which uses its own heavier
-    TIER_GRID_BOOL_SCORE weights - see that constant's comment), best (greenest) at the left,
-    worst (reddest) at the right - ties (there will be several, since the score is a small
-    integer) are broken by raw cross_pharm_scores node_strength (descending),
-    then alphabetically as a final tiebreak, per request. Genes-as-columns (this panel's
-    original layout) to fit its wide/short box - 21 gene columns read fine across a wide axis,
-    whereas 21 gene rows didn't fit this box's short height. A marker row just below the grid
-    (no tick marks) flags "*" for genes in output/selected_pockets.csv and "X" for a gene with
-    an explicit novelty=False (figure_3_calculations.py's NOVELTY_OVERRIDES, currently only
-    ileS) - blank otherwise."""
-    with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
-        genes = sorted(json.load(f)["gene_to_color"].keys())
-    with open(os.path.join(data_dir, "figure_3_gene_summary_stats.json")) as f:
-        stats = json.load(f)
-    selected_genes = set(pd.read_csv(os.path.join(root, "..", "..", "output", "selected_pockets.csv"))["gene_name"])
-
-    nc = stylia.NamedColors()
-    cross_pharm_scores = None
-    col_colors = []
-    # Parallel to col_colors, but holds this column's actual row-ordering contribution per gene -
-    # equal to TIER_GRID_SCORE[color] for every column except Exp. feasibility, which uses its own
-    # TIER_GRID_BOOL_SCORE weights instead (see that constant's comment).
-    col_scores = []
-    for _, field, kind in TIER_ROW_FIELDS:
-        if kind == "p2rank_absolute":
-            # Fixed absolute cutoffs (P2RANK_HIGH_CONFIDENCE_CUTOFF/P2RANK_CUTOFF), not a tercile
-            # split - the one exception among TIER_ROW_FIELDS, per explicit request. Row-ordering
-            # score still uses the standard TIER_GRID_SCORE (+1/0/-1), same as every other
-            # tercile-graded column.
-            colors = {}
-            for gene in genes:
-                value = stats[gene][field]
-                if value > P2RANK_HIGH_CONFIDENCE_CUTOFF:
-                    colors[gene] = TIER_GRID_GREEN
-                elif value > P2RANK_CUTOFF:
-                    colors[gene] = TIER_GRID_AMBER
-                else:
-                    colors[gene] = TIER_GRID_RED
-            col_colors.append(colors)
-            col_scores.append({gene: TIER_GRID_SCORE[colors[gene]] for gene in genes})
-        elif kind == "cross_pharmacology":
-            cross_pharm_scores = _compute_cross_pharmacology_scores(CIRCOS_CUTOFF)
-            values_by_gene = {gene: cross_pharm_scores[gene] for gene in genes}
-            colors = _tercile_colors(values_by_gene, higher_is_better=True)
-            col_colors.append(colors)
-            col_scores.append({gene: TIER_GRID_SCORE[colors[gene]] for gene in genes})
-        elif kind == "boolean":
-            # True -> green ("reported to express OK"), False -> red ("reported not to"), NaN ->
-            # TIER_GRID_NA ("we don't know") - a direct 3-way mapping, not a tercile split, since
-            # this field is categorical (figure_3_calculations.py's EXPERIMENTAL_TRACTABILITY_
-            # OVERRIDES), not continuous. Row-ordering score uses TIER_GRID_BOOL_SCORE (+2/-5), NOT
-            # TIER_GRID_SCORE (+1/-1) like every other column - see that constant's comment.
-            colors = {}
-            scores = {}
-            for gene in genes:
-                value = stats[gene][field]
-                if value is True:
-                    colors[gene] = TIER_GRID_GREEN
-                    scores[gene] = TIER_GRID_BOOL_SCORE[True]
-                elif value is False:
-                    colors[gene] = TIER_GRID_RED
-                    scores[gene] = TIER_GRID_BOOL_SCORE[False]
-                else:
-                    colors[gene] = TIER_GRID_NA
-                    scores[gene] = 0
-            col_colors.append(colors)
-            col_scores.append(scores)
-        else:
-            values_by_gene = {gene: stats[gene][field] for gene in genes}
-            colors = _tercile_colors(values_by_gene, higher_is_better=(kind == "continuous_high_better"))
-            col_colors.append(colors)
-            col_scores.append({gene: TIER_GRID_SCORE[colors[gene]] for gene in genes})
-
-    # Column order: primarily each gene's summed score across col_scores (best/greenest first,
-    # Exp. feasibility weighted per TIER_GRID_BOOL_SCORE rather than TIER_GRID_SCORE); ties broken
-    # by its raw (pre-tercile) cross_pharm_scores node_strength, descending (still no invented
-    # cutoff - reuses data already computed above), then alphabetically as a final tiebreak for
-    # true 0-vs-0 node-strength ties (e.g. gatA/gatB, neither of which shares any multi-target hit
-    # with any other gene) - reproduces both explicitly requested tie orders (pheS > glyS > lysS >
-    # valS; pheT > gatA > gatB) without hardcoding either as a literal gene-name list.
-    gene_scores = {gene: sum(s[gene] for s in col_scores) for gene in genes}
-    genes = sorted(genes, key=lambda g: (-gene_scores[g], -cross_pharm_scores[g], g))
-
-    # Manual override (user-confirmed), applied AFTER the score-based sort above: glyS moves
-    # from its score-sorted position to sit directly between ileS and pheS, which the sort
-    # already placed adjacent to each other - so this doesn't disturb any other gene's relative
-    # order, and the "pheS > glyS > lysS > valS" tie order in the comment above still describes
-    # the underlying score ranking, just no longer the displayed column order.
-    genes.remove("glyS")
-    genes.insert(genes.index("ileS") + 1, "glyS")
-
-    for row, colors in enumerate(col_colors):
-        for col, gene in enumerate(genes):
-            facecolor = getattr(nc, colors[gene])
-            ax.add_patch(plt.Rectangle((col, row), 1, 1, facecolor=facecolor,
-                                        edgecolor="white", linewidth=stylia.LINEWIDTH))
-
-    ax.set_xlim(0, len(genes))
-    ax.set_ylim(0, len(TIER_GRID_ROW_LABELS))
-    ax.invert_yaxis()  # first row (TIER_ROW_FIELDS[0]) at the top
-
-    ax.set_xticks([i + 0.5 for i in range(len(genes))])
-    ax.set_xticklabels(genes, rotation=90, fontsize=stylia.FONTSIZE_SMALL)
-    ax.set_yticks([i + 0.5 for i in range(len(TIER_GRID_ROW_LABELS))])
-    ax.set_yticklabels(TIER_GRID_ROW_LABELS, fontsize=stylia.FONTSIZE_SMALL)
-    stylia.label(ax, xlabel="", ylabel="")
-    # No outer axes border, per request - only the individual cells' own white edges (set above)
-    # remain visible.
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-
-    # Marker just above the grid's first row (moved up from below the last row, per request):
-    # "*" for genes in output/selected_pockets.csv, "x" for a gene with an explicit
-    # novelty=False, nothing otherwise. Plotted directly on `ax` with ax.annotate() (not a twiny
-    # + tick label) so the marker's data anchor (xy) is in the exact same data coordinates as the
-    # column rectangles above (col + 0.5). va="bottom" anchors the BOTTOM of the text at
-    # MARKER_Y_BASE (glyph extends further upward/away from the grid, on screen, regardless of
-    # the y-axis inversion), but va="bottom" alone doesn't line "*" and "x" up with each other -
-    # measured directly on this exact figure (dpi=1200, fontsize=5): "*"'s own visible ink sits
-    # further above its anchor than "x"'s does (a font-metrics difference, "*" apparently carries
-    # more empty space below its ink than "x" does). MARKER_Y_NUDGE_PT compensates in POINTS
-    # (xytext, textcoords="offset points") rather than data units deliberately - a data-unit
-    # nudge is scale-dependent (it broke, silently misaligning the two glyphs again, the first
-    # time this panel's y-axis scale changed from a later margin tweak); a points offset is a
-    # fixed physical distance, so it stays correct regardless of any future axes-scale change.
-    # MARKER_Y_BASE=0.4 (was -0.15, moved closer to the grid per request) - the nominal offset
-    # from ylim's lower bound (0) needed to be well into row 0's own data range (0 to 1) before
-    # the rendered ink actually sits close above the grid, given how much invisible padding
-    # va="bottom" leaves below each glyph. clip_on=False since the anchor sits inside the axes'
-    # own drawable area (not past ylim).
-    MARKER_Y_BASE = 0.25
-    MARKER_Y_NUDGE_PT = {"*": 0.0, "x": 1.9}
-    for col, gene in enumerate(genes):
-        if gene in selected_genes:
-            marker = "*"
-        elif stats[gene]["novelty"] is False:
-            marker = "x"
-        else:
-            continue
-        ax.annotate(marker, xy=(col + 0.5, MARKER_Y_BASE), xycoords="data",
-                    xytext=(0, MARKER_Y_NUDGE_PT[marker]), textcoords="offset points",
-                    ha="center", va="bottom", fontsize=stylia.FONTSIZE_SMALL, clip_on=False)
-
-
-# Matches scripts/47b_reference_pocket_visualization.py's COLOR_LIGAND_DOCKED / notebooks/
-# 46_pocket_visualisation.ipynb's convention - orange carbons for a docked (as opposed to
-# experimental/AlphaFill/homolog) ligand pose, kept consistent across every PyMOL render in the repo.
-COLOR_LIGAND_DOCKED = [0xF5 / 255, 0xA6 / 255, 0x3A / 255]
-COLOR_STRUCTURE = [0.7804, 0.8275, 0.8667]
-
-# Angstrom cube centered on the ligand alone (not the whole structure, unlike figure_1_plot.py's/
-# 47b's renders) so every panel-g sub-image is framed at a comparable, tightly-zoomed scale
-# regardless of each protein's own size - a framing choice, tune by eye if too tight or too sparse.
-SHOWCASE_ZOOM_BOX = 16.0
-
-# Distance cutoff for the near-ligand context sticks (not the H-bond geometry below, which has its
-# own fixed 3.5 A / 45 degree criteria).
-SHOWCASE_NEAR_LIGAND_CUTOFF = 5.0
-
-
-def _color_ligand(selection, carbon_color, color_name):
-    cmd.util.cbag(selection)
-    cmd.set_color(color_name, carbon_color)
-    cmd.color(color_name, f"{selection} and elem C")
-
-
-def _add_hbond_dashes(receptor_sel, ligand_sel, dash_name, cutoff=3.5, angle=45):
-    """Detect donor/acceptor H-bond contacts between ligand_sel and receptor_sel, drawn as a
-    yellow dashed-line object. Adapted from scripts/47b_reference_pocket_visualization.py's own
-    (commented-out, unused there) add_hbond_dashes - same criteria (cutoff/angle) and
-    find_pairs/distance mechanics, just actually wired in here and colored yellow per request
-    instead of that draft's black. Returns the number of contacts found."""
-    nearby = f"({receptor_sel} within 6 of {ligand_sel}) and not solvent"
-    pairs = []
-    pairs += cmd.find_pairs(f"{ligand_sel} and donor", f"{nearby} and acceptor", mode=1, cutoff=cutoff, angle=angle)
-    pairs += cmd.find_pairs(f"{ligand_sel} and acceptor", f"{nearby} and donor", mode=1, cutoff=cutoff, angle=angle)
-    pairs = list(dict.fromkeys(pairs))
-    if not pairs:
-        return 0
-    cmd.delete(dash_name)
-    for a1, a2 in pairs:
-        cmd.distance(dash_name, a1, a2)
-    cmd.hide("labels", dash_name)
-    cmd.color("yellow", dash_name)
-    cmd.set("dash_width", 3, dash_name)
-    return len(pairs)
-
-
-def _zoom_to_fixed_box(selection, box_size, box_name="_zoom_box"):
-    (xmin, ymin, zmin), (xmax, ymax, zmax) = cmd.get_extent(selection)
-    cx, cy, cz = 0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax)
-    h = box_size / 2.0
-    cmd.delete(box_name)
-    corners = [
-        (cx - h, cy - h, cz - h), (cx - h, cy - h, cz + h),
-        (cx - h, cy + h, cz - h), (cx - h, cy + h, cz + h),
-        (cx + h, cy - h, cz - h), (cx + h, cy - h, cz + h),
-        (cx + h, cy + h, cz - h), (cx + h, cy + h, cz + h),
-    ]
-    for i, (x, y, z) in enumerate(corners):
-        cmd.pseudoatom(f"{box_name}_{i}", pos=[x, y, z])
-    cmd.group(box_name, f"{box_name}_*")
-    cmd.zoom(box_name, buffer=0.0, complete=1)
-    cmd.delete(box_name)
-    cmd.delete(f"{box_name}_*")
-
-
-def render_showcase_pocket(row, rerun=False):
-    # Keyed by compound_id AND gene, not gene alone - panels c and d dock different compounds into
-    # some of the same genes (glyS, lysS, pheS, alaS all recur between the two), which would
-    # otherwise silently collide on a gene-only cache key.
-    png_path = os.path.join(renders_dir, f"figure_3_showcase_{row['compound_id']}_{row['gene']}.png")
-    if os.path.exists(png_path) and not rerun:
-        print(f"Reusing existing render for {row['compound_id']}/{row['gene']}: {png_path}")
-        return png_path
-
-    pymol.finish_launching(["pymol", "-cq"])
-    cmd.reinitialize()
-
-    structure_path = os.path.join(root, "..", "..", "output", "aligned_relaxed_structures",
-                                   row["uniprot_ac"], f"{row['structure_name']}.pdb")
-    cmd.load(structure_path, "structure")
-    cmd.set_color("structure_color", COLOR_STRUCTURE)
-    cmd.color("structure_color", "structure")
-    cmd.show("cartoon", "structure")
-    cmd.hide("lines", "structure")
-    cmd.hide("sticks", "structure")
-    # No pocket-sphere overlay (per request) - gene identity/color is already carried by each
-    # render's own corner badge, so the cartoon's only job here is to stay out of the ligand's way.
-    # Higher transparency than the original 0.3 for exactly that reason.
-    # cartoon_transparency, not the generic transparency setting - the latter governs surface
-    # representation and is a no-op on a cartoon (confirmed by the first render still showing a
-    # fully-opaque loop occluding the ligand despite "transparency" being set).
-    cmd.set("cartoon_transparency", 0.6, "structure")
-
-    tar_path = os.path.join(LIBRARIES["REAL"], row["pocket_name"], "docking.tar.gz")
-    with tarfile.open(tar_path, "r|gz") as tf:
-        for member in tf:
-            if member.name != f"docking/{row['compound_id']}_out.sdf":
-                continue
-            data = tf.extractfile(member).read()
-            with tempfile.NamedTemporaryFile(suffix=".sdf", mode="wb", delete=False) as tmp:
-                tmp.write(data)
-                tmp_path = tmp.name
-            cmd.load(tmp_path, "ligand")
-            os.remove(tmp_path)
-            break
-    cmd.show("sticks", "ligand")
-    cmd.hide("lines", "ligand")
-    _color_ligand("ligand", COLOR_LIGAND_DOCKED, "ligC_docked")
-
-    # Atoms within SHOWCASE_NEAR_LIGAND_CUTOFF A of the ligand, as sticks (element-colored, carbons
-    # tinted to match the cartoon so they read as "protein" rather than a second ligand) - literal
-    # per-atom distance, not byres-expanded to whole residues (tried that first - full side chains
-    # reaching in from outside the cutoff radius buried the ligand in an unreadable thicket).
-    # Explicit hydrogens (present in these relaxed structures) are excluded - at this zoom every C-H
-    # bond became its own visible stick, still overwhelming the ligand even without byres. Thinner
-    # than the ligand's own default stick_radius so the pocket reads as context, not competing with
-    # the ligand for attention. cartoon_transparency only affects the cartoon representation, so
-    # these sticks stay fully opaque regardless of that setting.
-    cmd.select("near_ligand", f"(structure within {SHOWCASE_NEAR_LIGAND_CUTOFF} of ligand) and not hydro")
-    cmd.show("sticks", "near_ligand")
-    cmd.hide("lines", "near_ligand")
-    cmd.set("stick_radius", 0.1, "near_ligand")
-    _color_ligand("near_ligand", COLOR_STRUCTURE, "near_ligand_color")
-    cmd.delete("near_ligand")
-
-    # Protein-ligand H-bond interactions, as yellow dashes (see _add_hbond_dashes) - the identified
-    # "interactions" requested, on top of (not instead of) the near-ligand context sticks above.
-    _add_hbond_dashes("structure", "ligand", "hbonds")
-
-    cmd.bg_color("white")
-    # orthoscopic=1 -> true orthographic (parallel-projection) camera, not perspective - required at
-    # this render's tight zoom, since a perspective camera would visibly distort/skew the ligand's
-    # apparent geometry as the view gets this close.
-    cmd.set("orthoscopic", 1)
-    cmd.set("depth_cue", 0)
-    cmd.set("ray_trace_fog", 0)
-    cmd.set("ray_shadows", 0)
-    cmd.set("ray_trace_mode", 1)
-    cmd.set("ray_trace_gain", 0.02)
-    cmd.set("spec_reflect", 0)
-    cmd.set("specular", 0)
-    # PyMOL's default transparency_mode doesn't alpha-blend cartoon geometry correctly during ray
-    # tracing at this render's tight, ligand-centered zoom - a nearby loop rendered edge-on showed up
-    # as a solid opaque black blob over the ligand despite cartoon_transparency being set. Mode 2
-    # fixes the blending (confirmed by isolated testing) and also makes the transparency actually
-    # visible instead of still reading as near-opaque.
-    cmd.set("transparency_mode", 2)
-    cmd.set("antialias", 2)
-    # orient (not just zoom) to the ligand - without this, the camera keeps whatever default view
-    # angle the loaded structure's own coordinate frame happens to have, which for some proteins
-    # (e.g. lysS) looks down the ligand's long axis almost end-on instead of showing it spread out.
-    # cmd.orient() rotates to align the selection's own principal axes with the screen, which reads
-    # as "flat"/extended for a small molecule regardless of the structure's native orientation.
-    cmd.orient("ligand")
-    _zoom_to_fixed_box("ligand", box_size=SHOWCASE_ZOOM_BOX)
-    cmd.ray(1200, 1200)
-    cmd.png(png_path, dpi=600)
-
-    return png_path
-
-
-def render_2d_structure(compound_id, smiles, rerun=False):
-    # No PyMOL, no stylia (RDKit structure images are drawn plain, per project convention) - just a
-    # cached RDKit depiction, same cache-by-file-existence idiom as render_showcase_pocket. Drawing
-    # style matches the molecule-auditing skill's svg_for() (CoordGen coordinates), via the Cairo
-    # PNG backend instead of SVG to embed like every other raster image in this file -
-    # padding/bondLineWidth deviate from that skill's exact values per request (smaller molecule
-    # within the same canvas, thicker bonds).
-    png_path = os.path.join(renders_dir, f"figure_3_structure2d_{compound_id}.png")
-    if os.path.exists(png_path) and not rerun:
-        print(f"Reusing existing 2D structure render for {compound_id}: {png_path}")
-        return png_path
-    mol = Chem.MolFromSmiles(smiles)
-    rdCoordGen.AddCoords(mol)
-    d = rdMolDraw2D.MolDraw2DCairo(500, 500)
-    o = d.drawOptions()
-    # True (opaque white), not the skill's own transparent canvas - _draw_compound_pose_row now
-    # autocrops this raster and picks a number-label position by detecting non-white "ink"
-    # (same convention as figure_4_plot.py's _mol_image/autocrop_to_content); a transparent
-    # margin reads as black rather than white to that detection, breaking both. Same reasoning as
-    # figure_4_plot.py's own _mol_image, which found no visible/measurable difference between a
-    # transparent and opaque canvas on a white page.
-    o.clearBackground = True
-    # Back to RDKit's own default padding (0.05 per side, molecule fills 1-2*0.05=0.9 of the
-    # canvas) - the earlier 0.1625 (shrunk to 75% size) was reverted per request ("my bad").
-    o.padding = 0.05
-    o.bondLineWidth = 3
-    rdMolDraw2D.PrepareAndDrawMolecule(d, mol)
-    d.FinishDrawing()
-    d.WriteDrawingText(png_path)
-    return png_path
-
-
-def autocrop_to_content(img, padding_frac=0.05, background_frac=0.98):
-    """Crop a rendered raster to its non-white bounding box (plus a small margin) - same helper
-    as figure_1_plot.py's/figure_4_plot.py's own autocrop_to_content (duplicated per-file, same
-    convention as this project's other small per-figure helpers)."""
-    gray = img[..., :3].mean(axis=2)
-    max_val = 1.0 if np.issubdtype(img.dtype, np.floating) else 255
-    mask = gray < background_frac * max_val
-    rows = np.where(mask.any(axis=1))[0]
-    cols = np.where(mask.any(axis=0))[0]
-    if rows.size == 0 or cols.size == 0:
-        return img
-
-    h, w = img.shape[:2]
-    y0, y1 = rows[0], rows[-1]
-    x0, x1 = cols[0], cols[-1]
-    pad_y = int((y1 - y0) * padding_frac)
-    pad_x = int((x1 - x0) * padding_frac)
-    y0 = max(y0 - pad_y, 0)
-    y1 = min(y1 + pad_y, h - 1)
-    x0 = max(x0 - pad_x, 0)
-    x1 = min(x1 + pad_x, w - 1)
-    return img[y0:y1 + 1, x0:x1 + 1]
-
-
-# Panel d's structure column - shrunk to leave room for a compound-number label beside it
-# (user request), styled the same way as figure_4 panel e's own numbered compound cards
-# (figure_4_plot.py's MOL_IMAGE_FILL_FRAC/_mol_image_zoom/_label_xy_for_mol), ported here rather
-# than imported since figure_N_plot.py files don't cross-import (see e.g. autocrop_to_content's
-# own per-file duplication above).
-STRUCT_IMAGE_FILL_FRAC = 0.9
-# _draw_compound_pose_row's structure column is column 0 of plot_compound_pose_panel's own
-# fig.add_gridspec(1, n_cols, wspace=POSE_ROW_WSPACE) - kept as a named constant here (rather than
-# reading it back off the GridSpec) so the slot-size math below stays a plain, auditable formula.
-POSE_ROW_WSPACE = 0.05
-# Matches plot_compound_pose_panel's own fig.subplots_adjust(left=0.002, right=0.998, top=0.998,
-# bottom=0.002) - symmetric margin on all 4 sides.
-POSE_ROW_MARGIN = 0.002
-
-
-def _pose_row_slot_size_in(fig_size, n_cols):
-    """Physical (width, height) in inches of one column-slot within plot_compound_pose_panel's
-    1 x n_cols row - same analytical approach as figure_4_plot.py's _slot_size_in, adapted for a
-    single row (no hspace term needed)."""
-    usable_w = fig_size[0] * (1 - 2 * POSE_ROW_MARGIN)
-    usable_h = fig_size[1] * (1 - 2 * POSE_ROW_MARGIN)
-    slot_w_in = usable_w / (n_cols + (n_cols - 1) * POSE_ROW_WSPACE)
-    return slot_w_in, usable_h
-
-
-def _struct_image_zoom(slot_w_in, slot_h_in, raster_w, raster_h):
-    """OffsetImage zoom filling STRUCT_IMAGE_FILL_FRAC of the tighter dimension of a
-    slot_w_in x slot_h_in slot - verbatim port of figure_4_plot.py's _mol_image_zoom."""
-    return STRUCT_IMAGE_FILL_FRAC * min(slot_w_in * 72 / raster_w, slot_h_in * 72 / raster_h)
-
-
-# Compound-number label style - ported from figure_4_plot.py's own LABEL_FONT/LABEL_REACH_*/
-# LABEL_FOOTPRINT_MARGIN (user request: "bold Arial", same as figure_4 panel e's own compound
-# numbering).
-STRUCT_LABEL_FONT = {"family": "Arial", "fontweight": "bold", "fontsize": 7}
-STRUCT_LABEL_REACH_MIN = 0.15
-STRUCT_LABEL_REACH_MAX = 0.95
-STRUCT_LABEL_REACH_STEP = 0.05
-STRUCT_LABEL_FOOTPRINT_MARGIN = 2.0
-
-
-def _struct_text_half_size_in(s):
-    """Rendered (half_width, half_height) of `s` in STRUCT_LABEL_FONT, in inches - verbatim port
-    of figure_4_plot.py's _text_half_size_in."""
-    fig = plt.figure()
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    t = fig.text(0, 0, s, **STRUCT_LABEL_FONT)
-    fig.canvas.draw()
-    bbox = t.get_window_extent(renderer=renderer)
-    plt.close(fig)
-    return (STRUCT_LABEL_FOOTPRINT_MARGIN * bbox.width / fig.dpi / 2,
-            STRUCT_LABEL_FOOTPRINT_MARGIN * bbox.height / fig.dpi / 2)
-
-
-def _label_xy_for_struct(img, mol_zoom, slot_w_in, slot_h_in, label_text):
-    """Axes-fraction (x, y) placement for the compound-number label next to (not on top of) the
-    centered structure - ported from figure_4_plot.py's _label_xy_for_mol, dropping that
-    function's corner-grid avoidance (panel d's structure cell has no corner grids, only the
-    molecule's own ink to avoid). Splits the raster into 2x2 quadrants, picks the emptiest one as
-    the label's general direction, then walks outward from STRUCT_LABEL_REACH_MIN to
-    STRUCT_LABEL_REACH_MAX until the label's own measured footprint is ink-free."""
-    h, w = img.shape[:2]
-    max_val = 1.0 if np.issubdtype(img.dtype, np.floating) else 255
-    gray = img[..., :3].mean(axis=2)
-    ink = gray < 0.98 * max_val
-    mid_y, mid_x = h // 2, w // 2
-    quadrants = {
-        "tl": (slice(0, mid_y), slice(0, mid_x)),
-        "tr": (slice(0, mid_y), slice(mid_x, w)),
-        "bl": (slice(mid_y, h), slice(0, mid_x)),
-        "br": (slice(mid_y, h), slice(mid_x, w)),
-    }
-    density = {k: ink[rows, cols].mean() for k, (rows, cols) in quadrants.items()}
-    best = min(density, key=density.get)
-
-    disp_w_frac = (mol_zoom * w / 72) / slot_w_in
-    disp_h_frac = (mol_zoom * h / 72) / slot_h_in
-    x_sign = 1 if "r" in best else -1
-    y_sign = 1 if "t" in best else -1
-
-    half_w_in, half_h_in = _struct_text_half_size_in(label_text)
-    half_x_frac = half_w_in / slot_w_in
-    half_y_frac = half_h_in / slot_h_in
-    half_px_x = max(1, round(half_x_frac / disp_w_frac * w))
-    half_px_y = max(1, round(half_y_frac / disp_h_frac * h))
-
-    def _xy_at(reach):
-        return (0.5 + x_sign * reach * disp_w_frac / 2,
-                0.5 + y_sign * reach * disp_h_frac / 2)
-
-    def _clear_of_ink(reach):
-        col = round(mid_x + x_sign * reach * mid_x)
-        row = round(mid_y - y_sign * reach * mid_y)
-        r0, r1 = max(0, row - half_px_y), min(h, row + half_px_y)
-        c0, c1 = max(0, col - half_px_x), min(w, col + half_px_x)
-        return not ink[r0:r1, c0:c1].any()
-
-    reach = STRUCT_LABEL_REACH_MIN
-    while reach <= STRUCT_LABEL_REACH_MAX:
-        if _clear_of_ink(reach):
-            return _xy_at(reach)
-        reach += STRUCT_LABEL_REACH_STEP
-    return _xy_at(STRUCT_LABEL_REACH_MAX)
-
-
-# Hand-tuned (axes-fraction) nudge on top of _label_xy_for_struct's own auto-placed position, per
-# compound_rank - user-requested fine adjustment for these 2 specific showcase compounds (now both
-# rows within panel d: "1" further right/down, "2" slightly further up), same per-compound
-# hand-tuning convention as figure_1's MY_VIEWS / figure_4's VIEWS_DIR hand-tuned camera views.
-STRUCT_LABEL_NUDGE = {
-    1: (0.06, -0.06),
-    2: (-0.04, 0.12),
-}
-
-
-def _corner_badge(sub_ax, dot_color, label, loc, anchor_point, markersize=stylia.MARKERSIZE):
-    # Reuses figure_1_plot.py's colored-circle Line2D-handle-as-legend trick (already used
-    # project-wide for gene color coding), called multiple times per axes via add_artist() so each
-    # corner badge survives the next call instead of replacing it (ax.legend() alone only keeps the
-    # most recent one). anchor_point is in DATA (pixel) coordinates, not axes-fraction - with
-    # adjustable="datalim" the axes BOX can be letterboxed around the actual image (blank padding on
-    # the sides), so an axes-fraction anchor drifts off the visible image; pixel coordinates always
-    # track the image's own corners regardless of that padding.
-    handle = [Line2D([0], [0], marker="o", color="w", label=label,
-                      markerfacecolor=dot_color, markeredgecolor="black", markeredgewidth=0.5,
-                      markersize=markersize)]
-    legend = sub_ax.legend(handles=handle, loc=loc, bbox_to_anchor=anchor_point,
-                            bbox_transform=sub_ax.transData, frameon=True,
-                            framealpha=0.85, edgecolor="black", fontsize=stylia.FONTSIZE_SMALL,
-                            handletextpad=0.3, borderpad=0.3, labelspacing=0)
-    sub_ax.add_artist(legend)
-
-
-def _draw_compound_pose_row(fig, row_subgs, compound_rank, rerun=False):
-    """Draws one compound's 2D structure + one docking-pose render per hit gene into the given
-    1xN row_subgs slice (already positioned by the caller - this function only fills it in)."""
-    # keep_default_na=False - otherwise pandas silently reads the literal string "NA" in
-    # interpro_categories (unused here but present in the shared CSV schema) back as a real NaN.
-    pockets = pd.read_csv(os.path.join(data_dir, "figure_3_top_avg_score_compounds_pockets.csv"),
-                           keep_default_na=False)
-    # No .sort_values("gene") (alphabetical) - the CSV's own row order already IS the intended
-    # display order (figure_3_calculations.py's SHOWCASE_GENES: pheS, aspS, lysS, alaS, per
-    # request), and boolean-indexing here preserves that order.
-    pockets = pockets[pockets["compound_rank"] == compound_rank].reset_index(drop=True)
-    compound_id = pockets["compound_id"].iloc[0]
-
-    with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
-        gene_to_color = json.load(f)["gene_to_color"]
-
-    # Column 0: 2D structure - no PyMOL badges/score (they don't apply to the whole-compound cell),
-    # no border, and no compound_id title, per request. Drawn smaller than the cell (via
-    # OffsetImage/AnnotationBbox at STRUCT_IMAGE_FILL_FRAC, not a plain cell-filling imshow), with
-    # a "1"/"2" (compound_rank) label placed next to it clear of the molecule's own ink - same
-    # OffsetImage+ink-avoiding-label mechanism as figure_4 panel e's own numbered compound cards
-    # (user request).
-    smiles = lookup_smiles([compound_id], "REAL")[compound_id]
-    struct_ax = stylize(fig.add_subplot(row_subgs[0, 0]))
-    struct_ax.axis("off")
-    struct_ax.set_xlim(0, 1)
-    struct_ax.set_ylim(0, 1)
-    stylia.label(struct_ax, xlabel="", ylabel="")
-
-    struct_img = autocrop_to_content(mpimg.imread(render_2d_structure(compound_id, smiles, rerun=rerun)))
-    slot_w_in, slot_h_in = _pose_row_slot_size_in(fig.get_size_inches(), row_subgs.ncols)
-    raster_h, raster_w = struct_img.shape[:2]
-    struct_zoom = _struct_image_zoom(slot_w_in, slot_h_in, raster_w, raster_h)
-
-    struct_imagebox = OffsetImage(struct_img, zoom=struct_zoom)
-    struct_ab = AnnotationBbox(struct_imagebox, (0.5, 0.5), xycoords="axes fraction",
-                                frameon=False, box_alignment=(0.5, 0.5), pad=0,
-                                annotation_clip=False, zorder=1)
-    struct_ax.add_artist(struct_ab)
-
-    label_text = str(compound_rank)
-    label_x, label_y = _label_xy_for_struct(struct_img, struct_zoom, slot_w_in, slot_h_in, label_text)
-    nudge_x, nudge_y = STRUCT_LABEL_NUDGE.get(compound_rank, (0.0, 0.0))
-    label_x, label_y = label_x + nudge_x, label_y + nudge_y
-    struct_ax.text(label_x, label_y, label_text, transform=struct_ax.transAxes,
-                    ha="center", va="center", zorder=2, **STRUCT_LABEL_FONT)
-
-    # Columns 1-N: one docking-pose render per hit gene (border, gene-name badge, docking-score
-    # text) for visual consistency across the whole figure.
-    for i, row in pockets.iterrows():
-        sub_ax = stylize(fig.add_subplot(row_subgs[0, i + 1]))
-        img = mpimg.imread(render_showcase_pocket(row, rerun=rerun))
-
-        sub_ax.imshow(img)
-        sub_ax.axis("off")
-        sub_ax.set_aspect("equal", adjustable="datalim")
-
-        img_h, img_w = img.shape[:2]
-        # clip_on=False - each cell is very slightly taller than wide, so
-        # set_aspect("equal", adjustable="datalim") expands ylim (blank margin above/below the
-        # image) but leaves xlim locked exactly to the image's own edge; with the default
-        # clip_on=True the left/right edges of this border sit exactly ON that (unmargined) x
-        # clip boundary and lose their outer half to clipping, while the top/bottom edges (safely
-        # inside the y margin) render at full width - confirmed by rasterizing the saved PDF and
-        # measuring: left/right rendered at half the linewidth of top/bottom. clip_on=False
-        # renders the full stroke on all 4 sides, confirmed by the same measurement.
-        sub_ax.add_patch(plt.Rectangle((-0.5, -0.5), img_w, img_h, fill=False,
-                                        edgecolor="black", linewidth=stylia.LINEWIDTH, clip_on=False))
-
-        # No "*" for a fallback (non-true-best) pocket anymore, per request - is_true_best_pocket
-        # is still in the CSV for anyone checking, just not surfaced visually here.
-        _corner_badge(sub_ax, gene_to_color[row["gene"]], row["gene"],
-                      loc="upper left", anchor_point=(0, 0), markersize=stylia.MARKERSIZE * 0.5)
-
-        sub_ax.text(img_w / 2, img_h * 0.97, f"Docking score: {row['score']:.2f}",
-                    ha="center", va="bottom", fontsize=stylia.FONTSIZE, color="black",
-                    bbox=dict(facecolor="white", edgecolor="black", alpha=0.85, boxstyle="square,pad=0.25"))
-
-        stylia.label(sub_ax, xlabel="", ylabel="")
-
-
-def plot_compound_pose_panel(letter, size, compound_ranks, padding=0.0, rerun=False):
-    """Panel d (previously split across d and e, merged into one panel per request; then
-    relabeled to c once the former panel c's own P2Rank/domain-strip content migrated out
-    to figure_1_plot.py; then swapped with the tier grid and relabeled back to d - briefly
-    narrowed to 8cm to align with a/c's shared left column, but widened back to the full
-    15cm page width since its 5 structure/pose columns need the room, or their "Docking
-    score: ..." labels clip): one standalone figure with one stacked row per entry in
-    `compound_ranks` (2D structure + one docking-pose render per hit gene), each row for
-    TOP_AVG_SCORE_COMPOUND_IDS[compound_rank - 1] - see
-    _draw_compound_pose_row."""
-    fig = plt.figure(figsize=size)
+# ===========================================================================
+# Panel builders
+# ===========================================================================
+
+# Panels c and d are both 7-column grids at the same panel_layout.csv delta_x, and are meant to
+# read as one continuous set of columns (panel d's numbered snapshots cross-reference panel c's
+# per-gene plots via the same rank stars) - so their 7 columns must land at IDENTICAL x-positions/
+# widths. left/right/wspace here are explicit and shared between both build_panel_c/build_panel_d
+# (each with save_panel(..., use_tight_layout=False, ...)) instead of each panel's own independent
+# plt.tight_layout() call, which would otherwise size each panel's left margin to just its own
+# content (panel c's leftmost "Docking score" y-axis label needs real room; panel d's cells have no
+# axis decoration at all) and misalign the two grids. left is set wide enough for panel c's y-axis
+# label + tick numbers; panel d just carries that same margin as blank space on its own left edge.
+POCKET_ROW_LEFT = 0.035
+POCKET_ROW_RIGHT = 0.95
+POCKET_ROW_WSPACE = 0.08
+
+
+def build_panel_b(size, padding):
+    libraries = load_libraries()
+    fig, axs = plt.subplots(1, len(PROPERTIES), figsize=size)
     fig.patch.set_facecolor("white")
-    # Every axes here uses set_aspect("equal", adjustable="datalim") to keep its square image
-    # undistorted, which (like reserve_top_header's manual ax.set_position() in panel f) makes
-    # matplotlib back off tight_layout() for this whole figure - so the stock default margins
-    # (left=0.125, right=0.9, top=0.88, bottom=0.11) would otherwise govern the canvas, even
-    # though nothing here (image axes with axis("off"), badges/score text drawn INSIDE each
-    # image's own bounds) needs any margin at all.
-    fig.subplots_adjust(left=0.002, right=0.998, top=0.998, bottom=0.002)
-    pockets = pd.read_csv(os.path.join(data_dir, "figure_3_top_avg_score_compounds_pockets.csv"),
-                           keep_default_na=False)
-    outer_gs = fig.add_gridspec(len(compound_ranks), 1, hspace=0.01)
-    for i, compound_rank in enumerate(compound_ranks):
-        n_cols = 1 + (pockets["compound_rank"] == compound_rank).sum()  # 2D structure + one pose per hit gene
-        row_gs = outer_gs[i, 0].subgridspec(1, n_cols, wspace=0.05)
-        _draw_compound_pose_row(fig, row_gs, compound_rank, rerun=rerun)
-    save_panel(fig, letter, padding)
+    for ax, prop in zip(axs, PROPERTIES):
+        stylize(ax)
+        plot_property(ax, prop, libraries)
+    save_panel(fig, "b", use_tight_layout=False,
+               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.62, bottom=0.32,
+                                     wspace=POCKET_ROW_WSPACE),
+               padding=padding)
 
 
-def main(rerun=False, subpanels=None):
-    # Each panel is its own standalone figure/PDF now (see module docstring) - sizes come from
-    # the user-authored output/plots/figure_3/panel_layout.csv, not a shared mosaic. subpanels
-    # restricts which of PANEL_LETTERS actually get (re)generated - see --subpanels.
+def build_panel_c(size, padding):
+    gene_colors = load_gene_colors()
+    genes = sorted(gene_colors.keys())
+    n_gene_rows = 3
+    assert len(genes) == n_gene_rows * len(PROPERTIES), (
+        f"Expected {n_gene_rows * len(PROPERTIES)} genes for a {n_gene_rows}x{len(PROPERTIES)} "
+        f"grid, got {len(genes)}.")
+
+    docking_percentiles = load_docking_percentiles()
+    pocket_to_cluster = load_pocket_clusters()
+    snapshot_index = load_docking_snapshot_index()
+    snapshot_rows_by_gene = defaultdict(list)
+    for _, row in snapshot_index.iterrows():
+        snapshot_rows_by_gene[row["gene"]].append(row)
+
+    fig, axs = plt.subplots(n_gene_rows, len(PROPERTIES), figsize=size)
+    fig.patch.set_facecolor("white")
+    for i, gene in enumerate(genes):
+        row, col = divmod(i, len(PROPERTIES))
+        ax = stylize(axs[row, col])
+        docking_df = gene_docking_stats(docking_percentiles, gene, pocket_to_cluster)
+        plot_gene_panel(ax, gene, gene_colors[gene], docking_df=docking_df,
+                         show_ylabel=(col == 0), show_yticks=(col == len(PROPERTIES) - 1),
+                         snapshot_rows=snapshot_rows_by_gene.get(gene))
+    save_panel(fig, "c", use_tight_layout=False,
+               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.88, bottom=0.02,
+                                     wspace=POCKET_ROW_WSPACE, hspace=0.35),
+               padding=padding)
+
+
+def build_panel_d(size, padding):
+    snapshot_index = load_docking_snapshot_index()
+    fig, axs = plt.subplots(1, len(PROPERTIES), figsize=size)
+    fig.patch.set_facecolor("white")
+    for i, ax in enumerate(axs):
+        stylize(ax)
+        stylia.label(ax, xlabel="", ylabel="")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        if i < len(snapshot_index):
+            row = snapshot_index.iloc[i]
+            image_path = os.path.join(plots_dir, "docking_snapshots", row["filename"])
+            plot_docking_snapshot(ax, i + 1, image_path, row["library"], row["score"])
+    # top=0.76 (not 0.93 like panels b/c) - imshow's default equal-aspect shrinks each square
+    # snapshot to the column WIDTH (fixed, shared with panel c), so a nominal box much taller
+    # than it is wide (as panel_layout.csv's old delta_y=4 gave at top=0.93) just pads blank
+    # space above+below the visible image instead of enlarging it. top=0.76 with delta_y=3.1
+    # (panel_layout.csv) sizes the nominal box to match the column width, while still leaving
+    # enough absolute top margin for the "d" label plus each cell's rank-number legend.
+    save_panel(fig, "d", use_tight_layout=False,
+               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.76, bottom=0.05,
+                                     wspace=POCKET_ROW_WSPACE),
+               padding=padding)
+
+
+def main(subpanels=None):
     if subpanels is None:
         subpanels = PANEL_LETTERS
     sizes = load_panel_sizes(subpanels)
@@ -1241,64 +574,26 @@ def main(rerun=False, subpanels=None):
                   f"the {MAX_WIDTH_IN * 2.54:.2f}cm Nature two-column guideline by "
                   f"{(sizes[letter][0] - MAX_WIDTH_IN) * 2.54:.2f}cm.")
 
-    # "c" is built before "a" (despite drawing/lettering order) purely so its own natural
-    # tight_layout margin - sized to its longest row label ("HL non-cat." etc.) - is known
-    # up front and can be reused as "a"'s own left/right plot border below, per request.
-    c_x_range = None
-    if "c" in subpanels:
-        # Tier grid, labeled "c" (was "d", "e", "f") - swapped with the showcase-compound panel
-        # (below) per request, so the tier grid ("cards") and showcase poses ("docking poses")
-        # sit in that order top-to-bottom, both aligned to the same 8cm-wide left column as
-        # panel a.
-        fig, ax = plt.subplots(figsize=sizes["c"])
-        fig.patch.set_facecolor("white")
-        stylize(ax)
-        plot_tier_grid_placeholder(ax)
-        # Reserves headroom for add_panel_label's bold "c", which would otherwise collide with
-        # the topmost row label ("P2Rank prob.") in this panel's short 3cm height. 0.93 (was
-        # 0.85, shrunk per request - too much blank space between the "c" label and the grid)
-        # is the smallest reserved margin that still clears the label at this panel's width.
-        c_x_range = save_panel(fig, "c", paddings["c"], tight_layout_rect=(0, 0, 1, 0.93), transparent=True)
-
-    if "a" in subpanels:
-        fig, ax = plt.subplots(figsize=sizes["a"])
-        fig.patch.set_facecolor("white")
-        stylize(ax)
-        plot_protein_hit_counts(ax)
-        # Reserves headroom for add_panel_label's bold "a", which would otherwise collide with
-        # the rotated "Number of compounds" y-axis label now that this panel's height was
-        # halved (to 3cm, matching panel c) per request.
-        # axes_x_range=c_x_range aligns a's plot border with c's (a's own left margin is
-        # naturally narrower, so this shrinks a's plot area to match c's, per request) - only
-        # available when c is (re)generated in the same run; falls back to a's own natural
-        # margin otherwise (e.g. a lone `--subpanels a` rerun).
-        save_panel(fig, "a", paddings["a"], tight_layout_rect=(0, 0, 1, 0.85), axes_x_range=c_x_range)
-
     if "b" in subpanels:
-        fig, ax = plt.subplots(figsize=sizes["b"])
-        fig.patch.set_facecolor("white")
-        stylize(ax)
-        plot_circos_overlap(ax)
-        save_panel(fig, "b", paddings["b"])
+        build_panel_b(sizes["b"], paddings["b"])
+
+    if "c" in subpanels:
+        build_panel_c(sizes["c"], paddings["c"])
 
     if "d" in subpanels:
-        # Showcase compound poses, labeled "d" (was "c") - swapped with the tier grid (see note
-        # above). Spans the full 15cm page width (not aligned with a/c's 8cm column) - its 5
-        # structure/pose columns need the room, or their "Docking score: ..." labels clip.
-        # Both showcase compounds still stack as 2 rows within one panel, unchanged otherwise.
-        plot_compound_pose_panel("d", sizes["d"], compound_ranks=[1, 2], padding=paddings["d"], rerun=rerun)
+        build_panel_d(sizes["d"], paddings["d"])
 
     merge_panels()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rerun", action="store_true", default=False,
-                         help="Force PyMOL/RDKit re-rendering of panel d's showcase-compound "
-                              "PNGs, even if they already exist")
     parser.add_argument("--subpanels", type=str, default=None,
-                         help="Comma-separated subset of panels to generate (e.g. 'a,c'), from "
-                              f"{{{','.join(PANEL_LETTERS)}}}. Default: all.")
+                         help="Comma-separated subset of panels to (re)generate (e.g. 'b,c'), from "
+                              f"{{{','.join(PANEL_LETTERS)}}}. Panel 'a' has no build step (it's "
+                              "scheme.pdf, pasted as-is) but is still validated/merged. Default: all. "
+                              "Fig_3_full.pdf is always re-merged from whatever panel files "
+                              "currently exist on disk.")
     args = parser.parse_args()
     if args.subpanels is None:
         subpanels = PANEL_LETTERS
@@ -1307,4 +602,4 @@ if __name__ == "__main__":
         invalid = [p for p in subpanels if p not in PANEL_LETTERS]
         if invalid:
             parser.error(f"Unknown panel(s) {invalid}, must be from {PANEL_LETTERS}")
-    main(rerun=args.rerun, subpanels=subpanels)
+    main(subpanels=subpanels)

@@ -5,14 +5,14 @@ cartoon-only PyMOL ensemble render (panel d, render_lysS_ensemble). Panel d's ea
 (P2Rank pocket-probability curve + domain-annotation strips) has been split out into its own
 standalone supplementary figure, scripts/plots/figure_supp_pocket.py.
 
-Built on figure_3/figure_4's panel-per-file architecture instead of the original,
+Built on figure_4/figure_5's panel-per-file architecture instead of the original,
 oversized monolithic composite this script replaced: each panel is its own standalone
 figure, saved as its own PDF (Fig_1a.pdf ... Fig_1d.pdf) at an EXACT physical size read
 from output/plots/figure_1/panel_layout.csv (columns: panel, x, delta_x, y, delta_y,
 padding, in cm) - so stylia's fixed-point-size text renders at its true intended size on
 the page, instead of shrinking along with an oversized canvas once placed at final print
-width. Panel letters are baked onto each saved PDF (add_panel_label, from figure_3) and a
-Nature two-column-width guideline check (MAX_WIDTH_IN, also from figure_3) warns if any
+width. Panel letters are baked onto each saved PDF (add_panel_label, from figure_4) and a
+Nature two-column-width guideline check (MAX_WIDTH_IN, also from figure_4) warns if any
 panel's delta_x exceeds stylia.SIZE.
 
 Merging into one positioned master PDF (Fig_1_full.pdf, via pypdf) happens in this same
@@ -766,7 +766,7 @@ def plot_comparison_heatmap(ax, matrix, labels, cmap, vmin, vmax, cbar_label, ti
 
 
 # ===========================================================================
-# Panel-saving scaffolding (ported from figure_3_plot.py / figure_4_plot.py)
+# Panel-saving scaffolding (ported from figure_4_plot.py / figure_5_plot.py)
 # ===========================================================================
 
 PANEL_LABEL_MARGIN = 0.02
@@ -774,13 +774,13 @@ PANEL_LABEL_MARGIN = 0.02
 
 def add_panel_label(fig, letter):
     """Bold panel letter at the top-left of the FIGURE (page), fixed regardless of
-    padding - from figure_3_plot.py."""
+    padding - from figure_4_plot.py."""
     fig.text(PANEL_LABEL_MARGIN, 1 - PANEL_LABEL_MARGIN, letter, fontweight="bold",
               fontsize=stylia.FONTSIZE_BIG, color=get_fg_color(), ha="left", va="top",
               transform=fig.transFigure)
 
 
-MAX_WIDTH_IN = stylia.SIZE  # Nature two-column guideline (~7.09in/18cm) - from figure_3_plot.py
+MAX_WIDTH_IN = stylia.SIZE  # Nature two-column guideline (~7.09in/18cm) - from figure_4_plot.py
 
 
 def load_panel_sizes(panels):
@@ -820,7 +820,7 @@ def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=N
                subplots_adjust=None, padding=0.0):
     """Saves at exactly panel_layout.csv's delta_x/delta_y (no bbox_inches="tight").
     use_tight_layout=False + subplots_adjust is the escape hatch for panels where
-    tight_layout() warns/fails (e.g. panel a's packed grid) - from figure_4_plot.py.
+    tight_layout() warns/fails (e.g. panel a's packed grid) - from figure_5_plot.py.
     fig.set_tight_layout(False) defeats stylia's own auto-relayout rcParam, which would
     otherwise silently override this layout at savefig time."""
     fig.set_tight_layout(False)
@@ -842,7 +842,7 @@ CM_TO_PT = 72 / 2.54
 def merge_panels():
     """Pastes each Fig_1{letter}.pdf onto one positioned master PDF (Fig_1_full.pdf) per
     panel_layout.csv's x/y - pure translation (no rescaling, true vector via pypdf), since
-    each panel already saved at its exact target size. Ported from figure_4_merge.py, kept
+    each panel already saved at its exact target size. Ported from figure_5_merge.py, kept
     in this same file per request rather than split into a separate merge script."""
     df = pd.read_csv(panel_layout_path).set_index("panel")
     missing = [p for p in PANEL_LETTERS if p not in df.index]

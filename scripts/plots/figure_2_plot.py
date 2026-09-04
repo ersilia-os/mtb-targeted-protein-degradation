@@ -1,341 +1,628 @@
 """
-Figure 2: compound-property distributions (panel b), per-gene docking-percentile grid
-one column per canonical (deduplicated) pocket (panel c), and top docking-pose snapshots
-(panel d), from figure_2_calculations.py. Panel a is a hand-authored Inkscape schematic
-(scheme.svg, exported to scheme.pdf) - not built by this script at all, just pasted in.
+Figure 2 (main figure, sitting between Figure 1 and Figure 3): top row is panel a
+(square) - the PocketVec t-SNE (3 reference canonical pockets highlighted by gene color,
+bold-lettered callout badges pinned to fixed corners) - and panel b (remaining row width,
+currently blank - reserved placeholder, per request). The Enamine-library-docking t-SNEs
+(HLL, REAL 9.92B) that used to sit alongside PocketVec here have moved out to their own
+supplementary figure, FigSupp/tSNE_Enamine.py. Panel c is the 17-row pocket-score strip
+figure across all 276 detected pockets (ported from FigSupp/figure_supp_pocket.py - P2Rank
+info + 6 physicochemical descriptors ported in from FigSupp/pocket_physchem_molmap.py,
+domain annotation, aaRS-class strips; the docking-score summary rows that used to sit
+between domain and aaRS-class, and the 2 residue-count-within-radius rows, have both been
+removed per request), spanning the full width below. Panels a/b and c are promoted from
+supplementary to main-figure status; the 2 original source scripts were retired once this
+one was confirmed working.
 
-Built on figure_1_plot.py's panel-per-file architecture instead of the original, single
-shared b+c+d matplotlib block PIL-composited onto a rasterized scheme.pdf: b/c/d each
-save as their own standalone PDF at an EXACT physical size read from
-output/plots/figure_2/panel_layout.csv (columns: panel, x, delta_x, y, delta_y, padding,
-in cm), with a baked-in panel letter (add_panel_label). Panel a (scheme.pdf) is pasted
-the same way via pypdf, scaled to fit its declared box in case the Inkscape export
-doesn't match panel_layout.csv exactly - no rasterization, no Poppler dependency, and its
-own "a" label is baked on separately (_render_panel_a_label(), a small transparent
-overlay PDF merged on top of it) since scheme.pdf itself carries no label. Merging into
-one positioned master PDF (Fig_2_full.pdf) happens in this same file (merge_panels(),
-called at the end of main()), matching figure_1_plot.py's choice to fold plot+merge into
-one script. merge_panels() also exports a flattened Fig_2_full.png of that same merged
-page (user request) via pymupdf - a real Python dependency, but not Poppler, so this
-doesn't reintroduce the dependency panel a's own vector merge above deliberately avoids.
+Built on figure_1_plot.py's panel-per-file architecture: each panel is its own standalone
+figure, saved as its own PDF (Fig_2a.pdf, Fig_2b.pdf, Fig_2c.pdf) at an EXACT physical
+size read from output/plots/figure_2/panel_layout.csv (columns: panel, x, delta_x, y,
+delta_y, padding, in cm), then pasted onto one positioned master PDF (Fig_2_full.pdf, via
+pypdf) and flattened to a PNG (via pymupdf). panel_layout.csv is a first-draft starting
+point, meant to be tuned iteratively by rendering and looking, not solved analytically up
+front.
 
-panel_layout.csv is a first-draft starting point (a's box matches scheme.pdf's own
-measured size; b/c/d are rough guesses), to be tuned iteratively by rendering and
-looking, not solved analytically up front.
+Panel c's pocket-score data prep (residue-identity PDB parsing across ~178 structures, for
+the physicochemical descriptors) is slow, so it's cached to figure_2_pocket_scores.csv
+and only recomputed with --rerun - same convention as figure_1_plot.py's own --rerun for
+its slow PyMOL rendering step.
 
 Usage:
-    python figure_2_plot.py [--subpanels b,c,d]
+    python figure_2_plot.py [--rerun] [--subpanels a,b,c]
 """
 import argparse
 import json
 import os
+import pickle
 import sys
-from collections import defaultdict
+
+os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 root = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(root, "..", "..", "src"))
 
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from matplotlib.ticker import FormatStrFormatter, MaxNLocator
-from PIL import Image
-from pypdf import PdfReader, PdfWriter, Transformation
 import pymupdf
-from scipy.stats import gaussian_kde
 import stylia
+from pypdf import PdfReader, PdfWriter, Transformation
 from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
+
+from default import RANDOM_SEED
+from pocket_group_plots import calculate_density, density_to_sizes, load_canonical_pocket_labels, make_key
+from pocketvec_tsne_embedding import compute_pocketvec_embedding
 
 # Format: print | Style: article — change with stylia.set_format() / stylia.set_style()
 stylia.set_format("print")
 stylia.set_style("article")
 
+output_dir = os.path.join(root, "..", "..", "output")
 plots_dir = os.path.join(root, "..", "..", "output", "plots", "figure_2")
 os.makedirs(plots_dir, exist_ok=True)
 
-PANEL_LETTERS = ["a", "b", "c", "d"]
+PANEL_LETTERS = ["a", "b", "c"]
 panel_layout_path = os.path.join(plots_dir, "panel_layout.csv")
 
 # ===========================================================================
-# Panel b data + helper: compound-property distributions
-# (ported verbatim from the original shared-figure version of this script, abc/shrink_factor dropped - panel-lettering
-# is now centralized in save_panel()/add_panel_label() instead of per-axes)
+# Panel a data + helper: t-SNE comparison
+# (ported from FigSupp/reference_pockets_tsne_comparison.py)
 # ===========================================================================
 
-PROPERTIES = ["MW", "cLogP", "TPSA", "RotBonds", "HBA", "AromaticRings", "QED"]
-DISCRETE_PROPS = {"RotBonds", "HBA", "AromaticRings"}
-PROP_XLIMS = {
-    "MW":            (200, 500),
-    "cLogP":         (-3, 6),
-    "TPSA":          (0, 160),
-    "RotBonds":      (0, 11),
-    "HBA":           (0, 11),
-    "AromaticRings": (0, 5),
-    "QED":           (0.2, 1),
+# Order is A, B, C (ileS, tyrS, gltS) - also drives panel b's top-to-bottom block order.
+TARGET_CLUSTERS = ["ileS_cluster1", "gltS_cluster1", "tyrS_cluster1"]
+# Mathtext ($\bf{...}$) bolds only the letter, not "Pocket" or the gene name, per request.
+# A=ileS, B=gltS, C=tyrS (per explicit correction - not alphabetical by gene name).
+CLUSTER_LABELS = {
+    "ileS_cluster1": "Pocket $\\bf{A}$\n(ileS)",
+    "gltS_cluster1": "Pocket $\\bf{B}$\n(gltS)",
+    "tyrS_cluster1": "Pocket $\\bf{C}$\n(tyrS)",
 }
-PROP_XLABELS = {"AromaticRings": "Aromatic rings", "RotBonds": "Rot. bonds", "HBA": "HBA"}
-PROP_XTICKS = {
-    "MW":            [300, 400],
-    "cLogP":         [-2, 0, 2, 4],
-    "TPSA":          [50, 100],
-    "AromaticRings": [0, 2, 4],
-    "QED":           [0.4, 0.6, 0.8],
+
+with open(os.path.join(output_dir, "plots", "figure_1", "color_mapping.json")) as f:
+    GENE_TO_COLOR = json.load(f)["gene_to_color"]
+
+
+def cluster_color(cluster):
+    gene = cluster.split("_cluster")[0]
+    return GENE_TO_COLOR[gene]
+
+
+POINT_MIN_SIZE, POINT_MAX_SIZE = 5, 150  # wider density-size range than pocket_group_plots's default 10-70
+
+# Fixed corner per cluster, in axes-fraction coordinates - same as a legend pinned to a
+# location ("upper left", etc.) rather than placed relative to the data: (x, y, ha, va).
+LABEL_CORNERS = {
+    "ileS_cluster1": (0.03, 0.925, "left", "center"),    # A: top-left
+    "gltS_cluster1": (0.97, 0.925, "right", "center"),   # B: top-right
+    "tyrS_cluster1": (0.03, 0.075, "left", "center"),    # C: bottom-left
 }
-PROP_BINSIZE = {"RotBonds": 2, "HBA": 2}
 
-# (label, csv filename in plots/figure_2/, NamedColors name)
-LIBRARIES = [
-    ("HL",       "figure_2a_HL.csv",       "crimson"),
-    ("REAL 10M", "figure_2a_REAL10M.csv",  "turquoise"),
-    ("REAL 10B", "figure_2b_REAL10B.csv",  "amber"),
-]
+# HLL docking / REAL 10B docking t-SNEs moved out to FigSupp/tSNE_Enamine.py (per request) -
+# panel a is now just the single PocketVec embedding, so it carries the reference-pocket
+# callout badges itself instead of only the (now-removed) HLL panel.
+EMBEDDING = ("PocketVec descriptors", lambda: compute_pocketvec_embedding(output_dir, RANDOM_SEED))
 
 
-def load_libraries():
-    loaded = []
-    for label, filename, color_name in LIBRARIES:
-        df = pd.read_csv(os.path.join(plots_dir, filename))
-        loaded.append((label, color_name, df))
-    return loaded
-
-
-def load_gene_colors():
-    """Gene->color mapping from figure 1 - reused here so protein colors stay consistent
-    across figures instead of a second palette."""
-    with open(os.path.join(root, "..", "..", "output", "plots", "figure_1", "color_mapping.json")) as f:
-        return json.load(f)["gene_to_color"]
-
-
-def plot_property(ax, prop, libraries):
+def plot_tsne_panel(ax, coords, canonical, title, annotate):
     nc = stylia.NamedColors()
-    lo, hi = PROP_XLIMS[prop]
+    canonical = np.array(canonical)
+    is_target = np.isin(canonical, TARGET_CLUSTERS)
 
-    ax.patch.set_visible(False)
+    # "Other" points: light gray, sized by local 2D density (same convention as
+    # pocketvec_tsne.py's standalone density plot, widened min/max range per request); the 3
+    # reference clusters keep their own fixed color on top so they stay identifiable
+    # regardless of local density.
+    sizes = density_to_sizes(calculate_density(coords), min_size=POINT_MIN_SIZE, max_size=POINT_MAX_SIZE)
+    light_gray = nc.get("silver", lighten=0.5)
 
-    if prop in DISCRETE_PROPS:
-        bin_size = PROP_BINSIZE.get(prop, 1)
+    # Explicit z-order throughout (background < connector line < each cluster's own dots <
+    # caption badge) so the stacking is guaranteed regardless of call order, per request: the
+    # line must sit above the background but below the dots of the cluster it points to.
+    ax.scatter(coords[~is_target, 0], coords[~is_target, 1], color=light_gray, s=sizes[~is_target], zorder=1)
+    for cluster in TARGET_CLUSTERS:
+        mask = canonical == cluster
+        if not mask.any():
+            continue
+        ax.scatter(coords[mask, 0], coords[mask, 1], color=cluster_color(cluster), s=sizes[mask], zorder=3)
 
-        def binned(df):
-            return (df[prop].dropna().astype(int) // bin_size) * bin_size
+    # Fix the view limits now (data range + a bit of headroom), *before* placing labels, so
+    # the caption boxes never cross the panel border.
+    x_min, x_max = coords[:, 0].min(), coords[:, 0].max()
+    y_min, y_max = coords[:, 1].min(), coords[:, 1].max()
+    xlim = (x_min - 0.1 * (x_max - x_min), x_max + 0.1 * (x_max - x_min))
+    ylim = (y_min - 0.15 * (y_max - y_min), y_max + 0.15 * (y_max - y_min))
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
 
-        all_vals = set()
-        for _, _, df in libraries:
-            all_vals |= set(binned(df))
-        vals = sorted(all_vals)
-        edges = vals + [vals[-1] + bin_size]
-        for label, color_name, df in libraries:
-            data = binned(df)
-            freq = pd.Series(data).value_counts(normalize=True).reindex(vals, fill_value=0)
-            color = nc.get(color_name)
-            ax.stairs(freq.values, edges, baseline=0, color=color, linewidth=stylia.LINEWIDTH * 1.5,
-                      label=f"{label} (n={len(df) // 1000}k)")
-        ax.set_xlim(lo - 0.5, hi + 0.5)
-        stylia.label(ax, xlabel="", ylabel="", title=PROP_XLABELS.get(prop, prop))
-    else:
-        for label, color_name, df in libraries:
-            data = df[prop].dropna().values
-            kde = gaussian_kde(data)
-            x = np.linspace(lo, hi, 300)
-            y = kde(x)
-            color = nc.get(color_name)
-            ax.plot(x, y, color=color, linewidth=stylia.LINEWIDTH * 1.5, label=f"{label} (n={len(df) // 1000}k)")
-        ax.set_xlim(lo, hi)
-        stylia.label(ax, xlabel="", ylabel="", title=PROP_XLABELS.get(prop, prop))
-        if prop == "MW":
-            ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
-            ax.yaxis.set_major_formatter(FormatStrFormatter("%.3f"))
-
-    if prop in PROP_XTICKS:
-        ax.set_xticks(PROP_XTICKS[prop])
-
-    ax.tick_params(axis="y", left=False, labelleft=False)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.grid(False)
-
-
-# ===========================================================================
-# Panel c data + helper: per-gene docking-percentile grid
-# (ported verbatim from the original shared-figure version of this script, abc/shrink_factor dropped)
-# ===========================================================================
-
-def load_docking_percentiles():
-    return pd.read_csv(os.path.join(plots_dir, "figure_2c_docking_percentiles.csv"))
-
-
-def load_pocket_clusters():
-    """structure-level pocket id -> spatial_cluster_id, from the same 6.14 A greedy
-    centroid dedup figure_1_calculations.py uses for gene_to_unique_pocket_count
-    (scripts/77_pocket_annotation/09_cluster_pockets.py's persisted assignments) -
-    collapses panel c's per-structure pockets down to one column per canonical site."""
-    path = os.path.join(root, "..", "..", "output", "77_pocket_annotation", "pocket_clusters.csv")
-    df = pd.read_csv(path)
-    df["pocket_id"] = df["File name"].str.replace(".pdb", "", regex=False) + "_pocket_" + df["Pocket number"].astype(str)
-    return df.set_index("pocket_id")["spatial_cluster_id"].to_dict()
-
-
-def gene_docking_stats(docking_percentiles, gene, pocket_to_cluster):
-    """Per-canonical-pocket median and p1 docking score for one gene - columns are a
-    (stat, library) MultiIndex, canonical pockets sorted by REAL 10B's p1 ascending (most
-    negative/best first) so both stats share one x-axis order across all three libraries
-    instead of each sorting independently. A canonical pocket can have several
-    structure-level candidates (same physical site detected on different structures) -
-    only the one with the best (most negative) REAL 10B p1 represents it here, so each
-    cluster contributes exactly one column instead of one per redundant detection. Empty
-    DataFrame if the gene has no docking data - plot_gene_panel() falls back to its
-    dummy-dot placeholder in that case."""
-    gene_df = docking_percentiles[docking_percentiles["gene"] == gene].copy()
-    if gene_df.empty:
-        return gene_df
-    gene_df["spatial_cluster_id"] = gene_df["pocket"].map(pocket_to_cluster)
-    real10b = gene_df[gene_df["library"] == "REAL 10B"]
-    winners = real10b.sort_values("p1").drop_duplicates("spatial_cluster_id")["pocket"]
-    gene_df = gene_df[gene_df["pocket"].isin(winners)]
-    pivoted = gene_df.pivot(index="pocket", columns="library", values=["median", "p1"])
-    return pivoted.sort_values(("p1", "REAL 10B"))
-
-
-def load_docking_snapshot_index():
-    """Ordered rows (rank, gene, library, pocket, compound, score, filename) for panel d's 7
-    snapshot cells - figure_2_calculations.py's compute_docking_snapshots() writes this index
-    alongside the PNGs since panel d shows a fixed top-7 by score (repeats allowed), not one slot
-    per gene, so the same gene's snapshots need distinguishing beyond just its name."""
-    index_path = os.path.join(plots_dir, "docking_snapshots", "index.csv")
-    if not os.path.isfile(index_path):
-        return pd.DataFrame()
-    return pd.read_csv(index_path).sort_values("rank")
-
-
-def plot_gene_panel(ax, gene, color, docking_df=None, show_ylabel=False, show_yticks=False,
-                     snapshot_rows=None):
-    """One cell of panel c's 3x7 gene grid, titled with a colored circle + gene name.
-    Plots each library's per-pocket median and p1 docking score (x = pocket identity,
-    unlabeled - only their relative order matters here) when docking_df is given;
-    otherwise a dummy single-dot scatter placeholder (for a gene with no docking data at
-    all) in the gene's own color. show_ylabel (row's first column) draws the "Docking
-    score" text with no tick marks/numbers; show_yticks (row's LAST column) draws the
-    tick marks/numbers on that column's right edge with no label text - splitting the two
-    across opposite ends of the row (rather than stacking both on the first column) is
-    what lets the row's own left margin shrink to just the label's width, per request.
-    Every column is one canonical pocket (gene_docking_stats() already dedups to that),
-    so all points render at the same size."""
-    ax.patch.set_visible(False)
-    if docking_df is not None and not docking_df.empty:
-        nc = stylia.NamedColors()
-        n = len(docking_df)
-        x = list(range(n))
-        for label, _, color_name in LIBRARIES:
-            lib_color = nc.get(color_name)
-            marker_size = stylia.MARKERSIZE * 1.6
-            ax.scatter(x, docking_df[("median", label)], marker="_", s=marker_size,
-                       linewidths=stylia.LINEWIDTH * 1.5, color=lib_color, zorder=3)
-            ax.scatter(x, docking_df[("p1", label)], s=marker_size, color=lib_color, linewidth=0, zorder=3)
-        # A margin that's a pure multiple of (n - 1) shrinks to near-zero for genes with only
-        # 2-3 canonical pockets, so the outermost big points sit right on the frame - the
-        # 0.35 floor keeps a readable gap regardless of n, only kicking in below ~n=5 (0.08 *
-        # (n-1) already exceeds it from n=6 up, so larger grids are unaffected).
-        margin = max(0.08 * (n - 1), 0.35)
-        ax.set_xlim(-margin, (n - 1) + margin)
-        ax.set_ylim(-15, -6)
-
-        points = []
-        for row in snapshot_rows or []:
-            if row["pocket"] not in docking_df.index:
+    if annotate:
+        for cluster in TARGET_CLUSTERS:
+            mask = canonical == cluster
+            if not mask.any():
                 continue
-            points.append((docking_df.index.get_loc(row["pocket"]), row["score"], int(row["rank"])))
-        points.sort(key=lambda p: p[1])
-
-        LABEL_BASE_DX = 0.05 * max(n - 1, 1)
-        MIN_LABEL_SEP = 1.1
-        prev_label_y = None
-        for x_pos, score, rank in points:
-            label_y = score if prev_label_y is None else max(score, prev_label_y + MIN_LABEL_SEP)
-            prev_label_y = label_y
-            label_x = x_pos + LABEL_BASE_DX
-            ax.scatter([x_pos], [score], marker="*", s=stylia.MARKERSIZE * 1.5, color="black",
-                       linewidth=0, zorder=6)
-            ax.text(label_x, label_y, str(rank), fontsize=stylia.FONTSIZE, ha="left", va="center",
-                    zorder=6)
-
-        ax.set_xticks([])
-        ax.tick_params(axis="y", left=False, labelleft=False, right=False, labelright=False)
-        if show_yticks:
-            # Numbers on the RIGHT edge of the row's last column, not attached to the labeled
-            # first column - lets the first column's own left margin shrink to just the
-            # "Docking score" text's width instead of text+numbers stacked together (same idea as
-            # figure_1's boxplot tick_right(), which keeps a label on its own separate side).
-            ax.yaxis.tick_right()
-            ax.tick_params(axis="y", right=True, labelright=True)
-        stylia.label(ax, xlabel="", ylabel="Docking score" if show_ylabel else "")
-        ax.grid(True, axis="y")
-    else:
-        ax.scatter([0.5], [0.5], color=color, edgecolor="black", linewidth=0.5,
-                   s=stylia.MARKERSIZE * 3, zorder=2)
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        stylia.label(ax, xlabel="", ylabel="")
-        ax.grid(False)
-
-    legend_handles = [Line2D([0], [0], marker="o", color="w", label=gene, markerfacecolor=color,
-                              markeredgecolor="black", markeredgewidth=0.5, markersize=stylia.MARKERSIZE)]
-    ax.legend(handles=legend_handles, loc="lower center", frameon=False, bbox_to_anchor=(0.5, 1.05),
-              fontsize=stylia.FONTSIZE, handletextpad=0.3)
-
-
-# ===========================================================================
-# Panel d data + helper: top docking-pose snapshots
-# (ported verbatim from the original shared-figure version of this script, abc dropped)
-# ===========================================================================
-
-LIBRARY_DISPLAY_NAMES = {"HL": "Hit Locator", "REAL 10M": "REAL 10M", "REAL 10B": "REAL 10B"}
-
-
-def plot_docking_snapshot(ax, rank, image_path, library, score):
-    """One panel d cell: a best-compound PyMOL docking snapshot, titled with the panel's own
-    plain-text number (outside the frame via loc="lower center", no color/marker), plus two more
-    plain-text legends - which library (top center) and its docking score (bottom center)."""
-    ax.imshow(np.array(Image.open(image_path)))
+            # One ax.annotate() call (not split into 2 artists) so matplotlib auto-shrinks the
+            # connector line to stop at the badge's own edge instead of running into the text
+            # underneath it. zorder=2 puts the whole thing (line + badge) above the background
+            # (zorder=1) but below this cluster's own dots (zorder=3) - the badge itself never
+            # actually overlaps those dots anyway, since it's pinned to a far corner.
+            cx, cy = coords[mask, 0].mean(), coords[mask, 1].mean()
+            lx, ly, ha, va = LABEL_CORNERS[cluster]
+            # CLUSTER_LABELS is the 2-line ("Pocket A" / "(ileS)") version used by panel b's
+            # gallery labels; panel a's own corner badges stay single-line, per request.
+            badge_text = CLUSTER_LABELS[cluster].replace("\n", " ")
+            ax.annotate(badge_text, xy=(cx, cy), xycoords="data",
+                        xytext=(lx, ly), textcoords="axes fraction",
+                        ha=ha, va=va,
+                        fontsize=stylia.FONTSIZE, color="black", zorder=2,
+                        bbox=dict(facecolor=cluster_color(cluster), edgecolor="black",
+                                  alpha=0.6, boxstyle="square,pad=0.3"),
+                        # linewidth explicit: stylia's article style sets rcParam
+                        # patch.linewidth=0, which silently zeroes a FancyArrowPatch's stroke
+                        # (the connector line) unless overridden here.
+                        arrowprops=dict(arrowstyle="-", color="black", linewidth=stylia.LINEWIDTH))
+    stylia.label(ax, xlabel="t-SNE 1", ylabel="t-SNE 2", title=title)
     ax.set_xticks([])
     ax.set_yticks([])
-
-    number_handle = [Line2D([0], [0], linestyle="None", marker="None", label=str(rank))]
-    number_legend = ax.legend(handles=number_handle, loc="lower center", frameon=False,
-                               bbox_to_anchor=(0.5, 1.0), fontsize=stylia.FONTSIZE_BIG, handlelength=0,
-                               handletextpad=0, borderaxespad=0)
-    ax.add_artist(number_legend)
-
-    library_handle = [Line2D([0], [0], linestyle="None", marker="None",
-                              label=LIBRARY_DISPLAY_NAMES.get(library, library))]
-    library_legend = ax.legend(handles=library_handle, loc="upper center", frameon=True, framealpha=0.8,
-                                edgecolor="black", fontsize=stylia.FONTSIZE, handlelength=0, handletextpad=0)
-    ax.add_artist(library_legend)
-
-    score_handle = [Line2D([0], [0], linestyle="None", marker="None", label=f"Score: {score:.2f}")]
-    ax.legend(handles=score_handle, loc="lower center", frameon=True, framealpha=0.8, edgecolor="black",
-              fontsize=stylia.FONTSIZE, handlelength=0, handletextpad=0)
+    ax.set_box_aspect(1)
 
 
 # ===========================================================================
-# Panel-saving scaffolding (ported near-verbatim from figure_1_plot.py)
+# Panel c data + helpers: pocket-score strips across all 276 detected pockets
+# (ported from FigSupp/figure_supp_pocket.py)
 # ===========================================================================
 
-PANEL_LABEL_MARGIN = 0.02
+# A pocket counts as "catalytic" at catalytic_confidence >= 3 (either strong direct-PDB or
+# strong AlphaFill ligand evidence for the Catalytic Domain (ATP/ligase) label - see
+# scripts/77_pocket_annotation/10_assemble_final_table.py's confidence scale, 0-4), vs. the
+# rest (weak/no evidence or no catalytic label at all, confidence 0-2) - a threshold the
+# user specified directly, not chosen here.
+CATALYTIC_CONFIDENCE_MIN = 3
+
+# The other 3 domain rows (tRNA binding, Editing, Anticodon binding) have no ligand-evidence
+# confidence score like catalytic_confidence - only a binary "this InterPro domain label is
+# present for this pocket" (curated_labels). Present there means label present AND
+# catalytic_confidence < CATALYTIC_CONFIDENCE_MIN - mutually exclusive with the Catalytic row,
+# since a pocket can carry both a catalytic and a non-catalytic label at once.
+CURATED_LABEL_COLUMNS = {
+    "is_trna_binding": "tRNA Binding Domain",
+    "is_editing": "Editing Domain",
+    "is_anticodon_binding": "Anticodon Binding Domain",
+}
+
+# aaRS class per gene, ported from figure_1_plot.py's own AARS_CLASS_LABELS - gatA/gatB
+# aren't canonical aaRS classes, so they fall to "Other" via the .get() default.
+AARS_CLASS_LABELS = {
+    "alaS": "Class II", "argS": "Class I", "aspS": "Class II", "cysS1": "Class I",
+    "gltS": "Class I", "glyS": "Class II", "hisS": "Class II", "ileS": "Class I",
+    "leuS": "Class I", "lysS": "Class II", "metS": "Class I", "pheS": "Class II",
+    "pheT": "Class II", "proS": "Class II", "serS": "Class II", "thrS": "Class II",
+    "trpS": "Class I", "tyrS": "Class I", "valS": "Class I",
+}
+
+# Gene name + color per pocket's own protein, straight from figure_1_calculations.py's own
+# output (output/plots/figure_1/color_mapping.json) - "following the coloring scheme from
+# figure 1" per request, rather than recomputing a separate palette here.
+with open(os.path.join(output_dir, "plots", "figure_1", "color_mapping.json")) as f:
+    figure_1_mappings = json.load(f)
+uniprot_to_gene = figure_1_mappings["uniprot_to_gene"]
+gene_to_color = figure_1_mappings["gene_to_color"]
+
+# Structure files (for residue-name resolution, see PHYSCHEM_ROWS below) are cached per
+# (Uniprot AC, File name) since many pockets share the same structure.
+STRUCTURES_DIR = os.path.join(output_dir, "aligned_relaxed_structures")
+
+# 6 physicochemical descriptors ported from FigSupp/pocket_physchem_molmap.py (pocket size +
+# 4 composition fractions + average hydropathy + average B-factor/pLDDT; that script's other
+# 2 descriptors, P2Rank score/probability, are already their own rows above). Same
+# hand-rolled PDB-line parsing as parse_residue_geometry below (not Biopython, to avoid a
+# new dependency) - residue *name* is read from the same ATOM/CA line as the coordinates.
+HYDROPHOBIC = {"ALA", "VAL", "LEU", "ILE", "MET", "PHE", "TRP", "CYS"}
+AROMATIC = {"PHE", "TYR", "TRP"}
+POSITIVE = {"LYS", "ARG"}
+NEGATIVE = {"ASP", "GLU"}
+# Kyte & Doolittle, J Mol Biol 157:105-132 (1982)
+KYTE_DOOLITTLE = {
+    "ALA": 1.8, "ARG": -4.5, "ASN": -3.5, "ASP": -3.5, "CYS": 2.5, "GLN": -3.5, "GLU": -3.5,
+    "GLY": -0.4, "HIS": -3.2, "ILE": 4.5, "LEU": 3.8, "LYS": -3.9, "MET": 1.9, "PHE": 2.8,
+    "PRO": -1.6, "SER": -0.8, "THR": -0.7, "TRP": -0.9, "TYR": -1.3, "VAL": 4.2,
+}
+PHYSCHEM_ROWS = [
+    ("pocket_size", "Pocket size"),
+    ("frac_hydrophobic", "Hydroph."),
+    ("frac_aromatic", "Aromatic"),
+    ("frac_positive", "Positive"),
+    ("frac_negative", "Negative"),
+    ("avg_hydropathy", "Hydropathy"),
+]
+# Panel b's physchem gallery shows all 7 non-P2Rank descriptors from pocket_physchem_molmap.py
+# (PHYSCHEM_ROWS's 6 plus avg_bfactor, which stays excluded from panel c per earlier request).
+PANEL_B_PHYSCHEM_ROWS = PHYSCHEM_ROWS + [("avg_bfactor", "Avg. B-factor/pLDDT")]
+
+
+def parse_residue_geometry(pdb_file):
+    """Residue number -> (x, y, z, three-letter residue name), from each residue's CA atom."""
+    res_geom = {}
+    with open(pdb_file) as f:
+        for line in f:
+            if line.startswith("ATOM") and line[12:16].strip() == "CA":
+                resnum = int(line[22:26])
+                resname = line[17:20].strip()
+                x, y, z = float(line[30:38]), float(line[38:46]), float(line[46:54])
+                res_geom[resnum] = (x, y, z, resname)
+    return res_geom
+
+
+_res_geom_cache = {}
+
+
+def get_residue_geometry(uniprot_ac, file_name):
+    key = (uniprot_ac, file_name)
+    if key not in _res_geom_cache:
+        _res_geom_cache[key] = parse_residue_geometry(os.path.join(STRUCTURES_DIR, uniprot_ac, file_name))
+    return _res_geom_cache[key]
+
+
+scores_path = os.path.join(plots_dir, "figure_2_pocket_scores.csv")
+
+
+def _compute_pocket_scores():
+    pockets = pd.read_csv(os.path.join(output_dir, "pocket_detection_data.csv"))
+    pockets = pockets.sort_values("Pocket probability", ascending=False).reset_index(drop=True)
+
+    interpro = pd.read_csv(os.path.join(output_dir, "77_pocket_annotation", "pocket_detection_interpro_updated.csv"),
+                            keep_default_na=False)
+    pockets = pockets.merge(
+        interpro[["Uniprot AC", "File name", "Pocket number", "catalytic_confidence", "curated_labels",
+                  "has_direct_ligand_evidence", "alphafill_ligands"]],
+        on=["Uniprot AC", "File name", "Pocket number"], how="left",
+    )
+
+    scores = pockets[["Uniprot AC", "File name", "Pocket number", "Pocket probability", "Pocket score", "catalytic_confidence"]].copy()
+    scores.insert(0, "pocket_rank", range(1, len(scores) + 1))
+    scores = scores.rename(columns={"Pocket probability": "pocket_probability", "Pocket score": "pocket_score"})
+    scores["is_catalytic"] = scores["catalytic_confidence"] >= CATALYTIC_CONFIDENCE_MIN
+    has_label = {
+        col: pockets["curated_labels"].apply(lambda labels, label=label: label in labels.split("|"))
+        for col, label in CURATED_LABEL_COLUMNS.items()
+    }
+    for col, mask in has_label.items():
+        scores[col] = mask & ~scores["is_catalytic"]
+
+    # 3-way ligand evidence, per request: "direct" (has_direct_ligand_evidence == "yes", a real
+    # ligand seen in an experimental PDB structure of this protein) takes priority over
+    # "alphafill" (alphafill_ligands non-empty - a ligand only transplanted in from a homolog,
+    # weaker evidence), else "none".
+    has_direct_ligand = pockets["has_direct_ligand_evidence"].str.lower() == "yes"
+    has_alphafill_ligand = pockets["alphafill_ligands"] != ""
+    scores["ligand_evidence"] = pd.Series("none", index=pockets.index)
+    scores.loc[has_alphafill_ligand, "ligand_evidence"] = "alphafill"
+    scores.loc[has_direct_ligand, "ligand_evidence"] = "direct"
+
+    scores["gene"] = scores["Uniprot AC"].map(uniprot_to_gene)
+    scores["aars_class"] = scores["gene"].map(lambda g: AARS_CLASS_LABELS.get(g, "Other"))
+
+    # 6 physicochemical descriptors (see PHYSCHEM_ROWS above) - resolved from the pocket's own
+    # residue list (Pocket residues (chain_resn), e.g. "A_196"), keyed by residue number only
+    # (matching parse_residue_geometry/get_residue_geometry's own chain-agnostic convention,
+    # which already assumes single-chain structures elsewhere in this function). avg_bfactor
+    # is a 7th descriptor, computed the same way as pocket_physchem_molmap.py's own
+    # compute_descriptors (mean of the "B-factors" column, already aligned 1:1 with "Pocket
+    # residues (chain_resn)" tokens in pocket_detection_data.csv - no PDB re-parsing needed).
+    # It's kept out of PHYSCHEM_ROWS/panel c (removed there per earlier request) but used by
+    # panel b's physchem gallery, via PANEL_B_PHYSCHEM_ROWS below.
+    physchem = {name: [] for name, _ in PHYSCHEM_ROWS}
+    bfactors_avg = []
+    for _, row in pockets.iterrows():
+        res_geom = get_residue_geometry(row["Uniprot AC"], row["File name"])
+        resnames = []
+        for token in row["Pocket residues (chain_resn)"].split():
+            resnum = int(token.split("_", 1)[1])
+            entry = res_geom.get(resnum)
+            if entry is not None and entry[3] in KYTE_DOOLITTLE:
+                resnames.append(entry[3])
+        n = len(resnames)
+        frac = lambda s: sum(r in s for r in resnames) / n
+        physchem["pocket_size"].append(n)
+        physchem["frac_hydrophobic"].append(frac(HYDROPHOBIC))
+        physchem["frac_aromatic"].append(frac(AROMATIC))
+        physchem["frac_positive"].append(frac(POSITIVE))
+        physchem["frac_negative"].append(frac(NEGATIVE))
+        physchem["avg_hydropathy"].append(np.mean([KYTE_DOOLITTLE[r] for r in resnames]))
+        bfactors_avg.append(np.mean([float(b) for b in row["B-factors"].split()]))
+    for column, _ in PHYSCHEM_ROWS:
+        scores[column] = physchem[column]
+    scores["avg_bfactor"] = bfactors_avg
+
+    return scores
+
+
+def prepare_panel_c_data(rerun=False):
+    """Loads (or recomputes + caches) pocket_scores, then derives every colormap Normalize
+    that depends on its data range - both as module globals, since every plot_*_row function
+    below references them by bare name (unchanged from figure_supp_pocket.py)."""
+    global pocket_scores
+    global P2RANK_NORM, P2RANK_SCORE_NORM, CATALYTIC_CONFIDENCE_NORM, PHYSCHEM_NORMS
+
+    if not rerun and os.path.exists(scores_path):
+        pocket_scores = pd.read_csv(scores_path)
+        print(f"Loaded cached pocket scores from {scores_path}")
+    else:
+        pocket_scores = _compute_pocket_scores()
+        pocket_scores.to_csv(scores_path, index=False)
+        print(f"Saved {len(pocket_scores):,} row(s) to {scores_path}")
+
+    # Every Normalize below is fully data-adaptive (vmin/vmax = this row's own observed
+    # min/max, not a fixed theoretical bound like 0-1 for a fraction or 0-4 for
+    # catalytic_confidence) - per request, so each row uses its full color range across the
+    # pockets actually observed, however narrow that range happens to be.
+    P2RANK_NORM = mcolors.Normalize(vmin=pocket_scores["pocket_probability"].min(),
+                                     vmax=pocket_scores["pocket_probability"].max(), clip=True)
+    P2RANK_SCORE_NORM = mcolors.Normalize(vmin=pocket_scores["pocket_score"].min(),
+                                           vmax=pocket_scores["pocket_score"].max(), clip=True)
+    CATALYTIC_CONFIDENCE_NORM = mcolors.Normalize(vmin=pocket_scores["catalytic_confidence"].min(),
+                                                   vmax=pocket_scores["catalytic_confidence"].max(), clip=True)
+    # Built from PANEL_B_PHYSCHEM_ROWS (7) rather than PHYSCHEM_ROWS (6) so avg_bfactor also
+    # gets a Normalize entry, for panel b's physchem gallery - panel c only ever looks up the
+    # 6 PHYSCHEM_ROWS keys, so this superset dict doesn't change its behavior.
+    PHYSCHEM_NORMS = {
+        column: mcolors.Normalize(vmin=pocket_scores[column].min(), vmax=pocket_scores[column].max(), clip=True)
+        for column, _ in PANEL_B_PHYSCHEM_ROWS
+    }
+
+
+# P2Rank probability/score rows - stylia's "ersilia"-preset "plum" FadingColormap (pale
+# lilac -> deep plum), per request.
+P2RANK_CMAP = stylia.FadingColormap("plum", transformation=None).cmap
+P2RANK_SCORE_CMAP = stylia.FadingColormap("plum", transformation=None).cmap
+
+# Physicochemical rows - orange, anchored to gatA's own canonical gene color (gene_to_color,
+# same source as every other gene color in this figure) rather than a stylia preset (none of
+# FadingColormap's presets - crimson/cobalt/turquoise/orchid/lime/plum - are orange). Built
+# the same way stylia's own presets fade: a pale tint of the hue -> the hue itself (not true
+# white), per request.
+_gatA_orange = np.array(mcolors.to_rgb(gene_to_color["gatA"]))
+_gatA_orange_pale = 0.92 * np.array([1.0, 1.0, 1.0]) + 0.08 * _gatA_orange
+SECTION1_CMAP = mcolors.LinearSegmentedColormap.from_list("gatA_orange", [_gatA_orange_pale, _gatA_orange])
+
+# Panel b's PocketVec heatmap - same pale-tint -> hue construction, anchored to pheS's own
+# canonical gene color, per request (replacing the earlier reversed stylia "plum" preset).
+_pheS_blue = np.array(mcolors.to_rgb(gene_to_color["pheS"]))
+_pheS_blue_pale = 0.92 * np.array([1.0, 1.0, 1.0]) + 0.08 * _pheS_blue
+POCKETVEC_CMAP = mcolors.LinearSegmentedColormap.from_list("pheS_blue", [_pheS_blue_pale, _pheS_blue])
+
+# Gradient for the continuous catalytic_confidence row - stylia's own native "crimson"
+# FadingColormap (same red family as the binarized "Catalytic" domain strip), per request,
+# over the pocket's own observed confidence range (CATALYTIC_CONFIDENCE_NORM above).
+CATALYTIC_CONFIDENCE_CMAP = stylia.FadingColormap("crimson", transformation=None).cmap
+
+# The 4 domain bands: column in pocket_scores -> band title -> its own "present" color,
+# against a shared white "absent" background. Catalytic uses a ligand-evidence confidence
+# threshold (CATALYTIC_CONFIDENCE_MIN); the other 3 use plain InterPro label presence,
+# mutually exclusive with Catalytic - see CURATED_LABEL_COLUMNS above.
+DOMAIN_STRIP_COLUMNS = [
+    ("is_catalytic", "Catalytic", "crimson"),
+    ("is_trna_binding", "tRNA binding", "cobalt"),
+    ("is_editing", "Editing", "amber"),
+    ("is_anticodon_binding", "Anticodon", "lime"),
+]
+
+# 3-way ligand evidence row color, per request: black = direct (real ligand seen in an
+# experimental PDB structure), gray = alphafill (only transplanted in from a homolog),
+# white = none.
+LIGAND_EVIDENCE_COLORS = {"direct": "black", "alphafill": "gray", "none": "white"}
+
+# Each domain-row "present" mark's width, in pocket_rank units (1 unit = 1 pocket's own
+# rank spacing) - 2x a pocket's natural 1-unit spacing, for better legibility.
+DOMAIN_ROW_BAR_WIDTH = 2.0
+
+# The 21 individual gene rows collapsed into 3, per request - Class I / Class II (from
+# AARS_CLASS_LABELS) / Other (gatA, gatB).
+AARS_CLASSES = ["Class I", "Class II", "Other"]
+
+# Vertical gap between the 3 row blocks (P2Rank info / domain strips / aaRS-class strips) -
+# each block's own rows sit flush against each other (hspace=0, no gap). This is hspace on
+# the OUTER 3-row gridspec (not a single flat gridspec across all rows), so the same
+# fraction reads as a much bigger absolute gap.
+ROWS_HSPACE = 0.2
+
+# Fixed absolute left margin, comfortably wider than the longest row label ("Catalytic
+# conf.", ~0.44in at FONTSIZE_SMALL plus labelpad) so the text has visible breathing room
+# rather than sitting flush against the page edge. Set to match panel a's own plot-box left
+# edge (build_panel_a: left=0.28 on a 6cm-wide panel -> 0.28*6/2.54in) so panels a and c's
+# boxes align at the same absolute page position - c's margin is narrowed to meet a, rather
+# than a's square being shrunk to meet c.
+ROW_LABEL_LEFT_MARGIN_IN = 0.28 * 6 / 2.54
+
+# P2Rank block: pocket_probability + pocket_score + 6 physchem rows + plot_ligand_evidence_row.
+N_P2RANK_ROWS = 2 + len(PHYSCHEM_ROWS) + 1
+# Domain block: DOMAIN_STRIP_COLUMNS (4) + plot_catalytic_confidence_row (1).
+N_DOMAIN_ROWS = len(DOMAIN_STRIP_COLUMNS) + 1
+
+
+def plot_pocket_scores_row(ax):
+    """1st of 6 stacked rows (alongside plot_pocket_score_row and the 4
+    plot_domain_strip_row bands) - a gradient strip, not a distribution: one thin cell per
+    pocket (same pocket_rank x-order as plot_domain_strip_row), colored by
+    P2RANK_CMAP/P2RANK_NORM directly from its own probability value (pale lilac at this
+    row's own observed min up to deep plum at its own max, continuous - no cutoff)."""
+    colors = P2RANK_CMAP(P2RANK_NORM(pocket_scores["pocket_probability"]))
+    ax.bar(pocket_scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(pocket_scores["pocket_rank"].min(), pocket_scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel="P2Rank prob.")
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    ax.yaxis.label.set_fontsize(stylia.FONTSIZE_SMALL)
+    # Default axes.labelpad (~4pt) would otherwise push the label further left than its own
+    # text width accounts for, clipping the longest labels against the page edge given how
+    # tight ROW_LABEL_LEFT_MARGIN_IN is tuned.
+    ax.yaxis.labelpad = 6
+
+
+def plot_pocket_score_row(ax):
+    """2nd of 6 stacked rows - same gradient-strip treatment as plot_pocket_scores_row, but
+    for the raw P2Rank pocket_score instead of pocket_probability (P2RANK_SCORE_CMAP/
+    P2RANK_SCORE_NORM: pale lilac to deep plum, over the data's own min-max range, no
+    fixed cap)."""
+    colors = P2RANK_SCORE_CMAP(P2RANK_SCORE_NORM(pocket_scores["pocket_score"]))
+    ax.bar(pocket_scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(pocket_scores["pocket_rank"].min(), pocket_scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel="P2Rank score")
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    ax.yaxis.label.set_fontsize(stylia.FONTSIZE_SMALL)
+    # Default axes.labelpad (~4pt) would otherwise push the label further left than its own
+    # text width accounts for, clipping the longest labels against the page edge given how
+    # tight ROW_LABEL_LEFT_MARGIN_IN is tuned.
+    ax.yaxis.labelpad = 6
+
+
+def plot_physchem_row(ax, column, label):
+    """One of the 6 PHYSCHEM_ROWS - same gradient-strip treatment as plot_pocket_scores_row/
+    plot_pocket_score_row, but for a physicochemical descriptor (SECTION1_CMAP/
+    PHYSCHEM_NORMS[column]; see PHYSCHEM_NORMS in prepare_panel_c_data for each column's own
+    vmin/vmax)."""
+    colors = SECTION1_CMAP(PHYSCHEM_NORMS[column](pocket_scores[column]))
+    ax.bar(pocket_scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(pocket_scores["pocket_rank"].min(), pocket_scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel=label)
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    ax.yaxis.label.set_fontsize(stylia.FONTSIZE_SMALL)
+    # Default axes.labelpad (~4pt) would otherwise push the label further left than its own
+    # text width accounts for, clipping the longest labels against the page edge given how
+    # tight ROW_LABEL_LEFT_MARGIN_IN is tuned.
+    ax.yaxis.labelpad = 6
+
+
+def plot_domain_strip_row(ax, column, title, color_name):
+    """One of the 4 domain-strip rows - a thin colored cell per pocket (all 276, same
+    pocket_rank x-order - sorted by P2Rank probability descending, rank 1 leftmost), in
+    this band's own color where `column` is True, white otherwise."""
+    nc = stylia.NamedColors()
+    present_color = getattr(nc, color_name)
+    colors = [present_color if v else nc.white for v in pocket_scores[column]]
+    ax.bar(pocket_scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(pocket_scores["pocket_rank"].min(), pocket_scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel=title)
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    ax.yaxis.label.set_fontsize(stylia.FONTSIZE_SMALL)
+    # Default axes.labelpad (~4pt) would otherwise push the label further left than its own
+    # text width accounts for, clipping the longest labels against the page edge given how
+    # tight ROW_LABEL_LEFT_MARGIN_IN is tuned.
+    ax.yaxis.labelpad = 6
+
+
+def plot_catalytic_confidence_row(ax):
+    """Continuous companion to the binarized "Catalytic" domain strip - same gradient-strip
+    treatment as plot_pocket_scores_row/plot_pocket_score_row, but for catalytic_confidence
+    (0-4) via CATALYTIC_CONFIDENCE_CMAP/CATALYTIC_CONFIDENCE_NORM (pale crimson at this
+    row's own observed min up to full crimson at its own max)."""
+    colors = CATALYTIC_CONFIDENCE_CMAP(CATALYTIC_CONFIDENCE_NORM(pocket_scores["catalytic_confidence"]))
+    ax.bar(pocket_scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(pocket_scores["pocket_rank"].min(), pocket_scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel="Catalytic conf.")
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    ax.yaxis.label.set_fontsize(stylia.FONTSIZE_SMALL)
+    # Default axes.labelpad (~4pt) would otherwise push the label further left than its own
+    # text width accounts for, clipping the longest labels against the page edge given how
+    # tight ROW_LABEL_LEFT_MARGIN_IN is tuned.
+    ax.yaxis.labelpad = 6
+
+
+def plot_ligand_evidence_row(ax):
+    """Last row of the P2Rank info block - 3-way ligand_evidence (LIGAND_EVIDENCE_COLORS:
+    black "direct" / gray "alphafill" / white "none")."""
+    colors = [LIGAND_EVIDENCE_COLORS[v] for v in pocket_scores["ligand_evidence"]]
+    ax.bar(pocket_scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(pocket_scores["pocket_rank"].min(), pocket_scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel="Lig. evidence")
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    ax.yaxis.label.set_fontsize(stylia.FONTSIZE_SMALL)
+    # Default axes.labelpad (~4pt) would otherwise push the label further left than its own
+    # text width accounts for, clipping the longest labels against the page edge given how
+    # tight ROW_LABEL_LEFT_MARGIN_IN is tuned.
+    ax.yaxis.labelpad = 6
+
+
+def plot_class_strip_row(ax, aars_class):
+    """One of the 3 collapsed aaRS-class strips (AARS_CLASSES) - a thin colored cell per
+    pocket belonging to this class, still in that pocket's own PROTEIN color (gene_to_color,
+    same as figure_1_plot.py), not one flat per-class color - white for every pocket outside
+    this class."""
+    nc = stylia.NamedColors()
+    colors = [
+        gene_to_color[gene] if cls == aars_class else nc.white
+        for gene, cls in zip(pocket_scores["gene"], pocket_scores["aars_class"])
+    ]
+    ax.bar(pocket_scores["pocket_rank"], 1, width=DOMAIN_ROW_BAR_WIDTH, color=colors, edgecolor="none", zorder=2)
+    ax.set_xlim(pocket_scores["pocket_rank"].min(), pocket_scores["pocket_rank"].max())
+    ax.set_ylim(0, 1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    stylia.label(ax, xlabel="", ylabel=aars_class)
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.label.set_ha("right")
+    ax.yaxis.label.set_va("center")
+    ax.yaxis.label.set_fontsize(stylia.FONTSIZE_SMALL)
+    # Default axes.labelpad (~4pt) would otherwise push the label further left than its own
+    # text width accounts for, clipping the longest labels against the page edge given how
+    # tight ROW_LABEL_LEFT_MARGIN_IN is tuned.
+    ax.yaxis.labelpad = 6
+
+
+# ===========================================================================
+# Panel-saving scaffolding (ported from figure_1_plot.py)
+# ===========================================================================
+
+PANEL_LABEL_MARGIN_IN = 0.08  # absolute inches, not a fraction of this panel's own size
 
 
 def add_panel_label(fig, letter):
-    """Bold panel letter at the top-left of the FIGURE (page), fixed regardless of
-    padding - from figure_3_plot.py. Used for b/c/d only - panel a's label is baked on
-    separately by _render_panel_a_label(), since scheme.pdf isn't a matplotlib figure."""
-    fig.text(PANEL_LABEL_MARGIN, 1 - PANEL_LABEL_MARGIN, letter, fontweight="bold",
+    """Bold panel letter at the top-left of the FIGURE (page), fixed regardless of padding.
+    Uses a fixed ABSOLUTE margin (PANEL_LABEL_MARGIN_IN), not a fraction of this panel's
+    own width/height - a fractional margin gives every panel a different physical inset
+    (e.g. panel c, much wider and shorter than a/b, would get a much larger horizontal
+    inset and smaller vertical one), which reads as misaligned once panels of different
+    sizes are merged onto one page. A fixed absolute inset keeps every panel's letter the
+    same physical distance from its own top-left corner, so panels sharing a left edge
+    (a/c, both x=0) or a top edge (a/b, both y=0) get letters that line up cleanly."""
+    width_in, height_in = fig.get_size_inches()
+    x = PANEL_LABEL_MARGIN_IN / width_in
+    y = 1 - PANEL_LABEL_MARGIN_IN / height_in
+    fig.text(x, y, letter, fontweight="bold",
               fontsize=stylia.FONTSIZE_BIG, color=get_fg_color(), ha="left", va="top",
               transform=fig.transFigure)
 
 
-MAX_WIDTH_IN = stylia.SIZE  # Nature two-column guideline (~7.09in/18cm) - from figure_3_plot.py
+MAX_WIDTH_IN = stylia.SIZE  # Nature two-column guideline (~7.09in/18cm)
 
 
 def load_panel_sizes(panels):
@@ -373,11 +660,7 @@ def apply_padding(fig, padding):
 
 def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=None,
                subplots_adjust=None, padding=0.0):
-    """Saves at exactly panel_layout.csv's delta_x/delta_y (no bbox_inches="tight").
-    use_tight_layout=False + subplots_adjust is the escape hatch for panels where
-    tight_layout() warns/fails - from figure_4_plot.py. fig.set_tight_layout(False)
-    defeats stylia's own auto-relayout rcParam, which would otherwise silently override
-    this layout at savefig time."""
+    """Saves at exactly panel_layout.csv's delta_x/delta_y (no bbox_inches="tight")."""
     fig.set_tight_layout(False)
     if use_tight_layout:
         plt.tight_layout(pad=tight_pad, w_pad=tight_w_pad)
@@ -392,81 +675,44 @@ def save_panel(fig, letter, use_tight_layout=True, tight_pad=1.08, tight_w_pad=N
 
 
 CM_TO_PT = 72 / 2.54
-
-
-def _render_panel_a_label(delta_x_cm, delta_y_cm):
-    """Bakes a bold "a" label (same style/corner-inset as add_panel_label()) onto its own
-    transparent-background PDF, sized to match panel a's declared box - scheme.pdf itself
-    has no label drawn into it, so this overlay supplies one instead of requiring a manual
-    edit in Inkscape."""
-    fig = plt.figure(figsize=(delta_x_cm / 2.54, delta_y_cm / 2.54))
-    fig.patch.set_alpha(0)
-    add_panel_label(fig, "a")
-    label_path = os.path.join(plots_dir, "_panel_a_label.pdf")
-    fig.savefig(label_path, transparent=True)
-    plt.close(fig)
-    return label_path
+BOTTOM_MARGIN_CM = 0.3  # blank space below the lowest panel, see merge_panels()
 
 
 def merge_panels():
-    """Pastes each panel onto one positioned master PDF (Fig_2_full.pdf) per
-    panel_layout.csv's x/y. b/c/d are pure translation (already saved at their exact
-    declared size via save_panel()). Panel a (scheme.pdf, hand-authored in Inkscape, not
-    script-generated) is additionally scaled to fit its declared box, in case the
-    Inkscape export doesn't match panel_layout.csv pixel-for-pixel. Ported from
-    figure_1_plot.py's own merge_panels(), kept in this same file per the same
-    plot+merge-in-one-script convention now shared by all 4 figures."""
+    """Pastes each Fig_2{letter}.pdf onto one positioned master PDF (Fig_2_full.pdf) per
+    panel_layout.csv's x/y - pure translation (no rescaling, true vector via pypdf), since
+    each panel already saved at its exact target size."""
     df = pd.read_csv(panel_layout_path).set_index("panel")
     missing = [p for p in PANEL_LETTERS if p not in df.index]
     if missing:
         raise ValueError(f"{panel_layout_path} is missing row(s) for panel(s): {missing}")
 
     total_width_cm = max(df.loc[p, "x"] + df.loc[p, "delta_x"] for p in PANEL_LETTERS)
-    total_height_cm = max(df.loc[p, "y"] + df.loc[p, "delta_y"] for p in PANEL_LETTERS)
+    # BOTTOM_MARGIN_CM padding below the lowest panel - every panel's own y is measured from
+    # the top, so simply growing the canvas taller (without touching any panel's own y)
+    # pushes it away from the now-taller page's bottom edge, leaving blank space there.
+    total_height_cm = max(df.loc[p, "y"] + df.loc[p, "delta_y"] for p in PANEL_LETTERS) + BOTTOM_MARGIN_CM
 
     writer = PdfWriter()
     master_page = writer.add_blank_page(width=total_width_cm * CM_TO_PT, height=total_height_cm * CM_TO_PT)
 
     for p in PANEL_LETTERS:
-        panel_path = os.path.join(plots_dir, "scheme.pdf" if p == "a" else f"Fig_2{p}.pdf")
+        panel_path = os.path.join(plots_dir, f"Fig_2{p}.pdf")
         if not os.path.exists(panel_path):
             print(f"  Skipping {p}: {panel_path} not found - Fig_2_full.pdf will be missing it.")
             continue
         panel_page = PdfReader(panel_path).pages[0]
-
-        x_top_cm, y_top_cm = df.loc[p, "x"], df.loc[p, "y"]
-        delta_x_cm, delta_y_cm = df.loc[p, "delta_x"], df.loc[p, "delta_y"]
+        x_top_cm, y_top_cm, delta_y_cm = df.loc[p, "x"], df.loc[p, "y"], df.loc[p, "delta_y"]
         x_pt = x_top_cm * CM_TO_PT
         y_bottom_pt = (total_height_cm - y_top_cm - delta_y_cm) * CM_TO_PT
-
-        transform = Transformation()
-        if p == "a":
-            actual_w_pt = float(panel_page.mediabox.width)
-            actual_h_pt = float(panel_page.mediabox.height)
-            target_w_pt = delta_x_cm * CM_TO_PT
-            target_h_pt = delta_y_cm * CM_TO_PT
-            transform = transform.scale(target_w_pt / actual_w_pt, target_h_pt / actual_h_pt)
-        transform = transform.translate(tx=x_pt, ty=y_bottom_pt)
-
-        master_page.merge_transformed_page(panel_page, transform)
-        print(f"  Placed {os.path.basename(panel_path)} at x={x_top_cm}cm, y={y_top_cm}cm (top-left)")
-
-        if p == "a":
-            label_path = _render_panel_a_label(delta_x_cm, delta_y_cm)
-            label_page = PdfReader(label_path).pages[0]
-            master_page.merge_transformed_page(label_page, Transformation().translate(tx=x_pt, ty=y_bottom_pt))
-            os.remove(label_path)
+        master_page.merge_transformed_page(panel_page, Transformation().translate(tx=x_pt, ty=y_bottom_pt))
+        print(f"  Placed Fig_2{p}.pdf at x={x_top_cm}cm, y={y_top_cm}cm (top-left)")
 
     output_path = os.path.join(plots_dir, "Fig_2_full.pdf")
     with open(output_path, "wb") as f:
         writer.write(f)
     print(f"Saved merged master figure ({total_width_cm:.2f} x {total_height_cm:.2f} cm) to {output_path}")
 
-    # Flattened PNG alongside the vector PDF (user request), rendered at the same dpi=600
-    # save_panel's own PDFs already use for their embedded raster content - pymupdf renders the
-    # already-merged page directly (no external Poppler binary, unlike pdftoppm/pdf2image, so
-    # this doesn't reintroduce the Poppler dependency panel a's own merge deliberately avoids -
-    # see module docstring).
     png_path = os.path.join(plots_dir, "Fig_2_full.png")
     pdf_doc = pymupdf.open(output_path)
     zoom = 600 / 72  # pymupdf's Pixmap render defaults to 72dpi
@@ -480,89 +726,167 @@ def merge_panels():
 # Panel builders
 # ===========================================================================
 
-# Panels c and d are both 7-column grids at the same panel_layout.csv delta_x, and are meant to
-# read as one continuous set of columns (panel d's numbered snapshots cross-reference panel c's
-# per-gene plots via the same rank stars) - so their 7 columns must land at IDENTICAL x-positions/
-# widths. left/right/wspace here are explicit and shared between both build_panel_c/build_panel_d
-# (each with save_panel(..., use_tight_layout=False, ...)) instead of each panel's own independent
-# plt.tight_layout() call, which would otherwise size each panel's left margin to just its own
-# content (panel c's leftmost "Docking score" y-axis label needs real room; panel d's cells have no
-# axis decoration at all) and misalign the two grids. left is set wide enough for panel c's y-axis
-# label + tick numbers; panel d just carries that same margin as blank space on its own left edge.
-POCKET_ROW_LEFT = 0.035
-POCKET_ROW_RIGHT = 0.95
-POCKET_ROW_WSPACE = 0.08
+def build_panel_a(size, padding):
+    title, embed_fn = EMBEDDING
+    keys, coords = embed_fn()
+    canonical = load_canonical_pocket_labels(output_dir, keys)
 
-
-def build_panel_b(size, padding):
-    libraries = load_libraries()
-    fig, axs = plt.subplots(1, len(PROPERTIES), figsize=size)
+    fig, ax = plt.subplots(figsize=size)
     fig.patch.set_facecolor("white")
-    for ax, prop in zip(axs, PROPERTIES):
-        stylize(ax)
-        plot_property(ax, prop, libraries)
+    stylize(ax)
+    plot_tsne_panel(ax, coords, canonical, title, annotate=True)
+    save_panel(fig, "a", use_tight_layout=False,
+               subplots_adjust=dict(left=0.28, right=0.97, top=0.85, bottom=0.15), padding=padding)
+
+
+def build_panel_b(size, padding, rerun=False):
+    """PocketVec 128-dim rank-fingerprint heatmap gallery, one thin row per individual
+    pocket structure belonging to the 3 reference canonical pockets highlighted in panel a
+    (TARGET_CLUSTERS: ileS_cluster1, gltS_cluster1, tyrS_cluster1 - ~30 rows total, grouped
+    into 3 blocks in that order: A, B, C). Same probe column order and fixed vmin/vmax=1/131
+    (the rank range including dummy/penalty ranks) as FigSupp/pocketvec_molmap.py's own
+    gallery_by_canonical_pocket - reuses that script's cached probe_order.pkl directly for
+    exact between-figure consistency, rather than recomputing the correlation-clustering
+    ordering here. POCKETVEC_CMAP (pheS-anchored, reversed) colors it - low rank/strong hit
+    renders as the salient deep color.
+
+    Each block has 4 side-by-side pieces (BLOCK_WIDTH_RATIOS): a text label (CLUSTER_LABELS,
+    right-aligned so it sits right up against the color swatch), a solid color swatch
+    (cluster_color, its own axes rather than a spine on the heatmap - a distinct visual
+    element, not touching the heatmap), the PocketVec heatmap, and - right next to it - all 7
+    non-P2Rank physicochemical descriptors from pocket_physchem_molmap.py (PANEL_B_PHYSCHEM_ROWS
+    - PHYSCHEM_ROWS's 6 plus avg_bfactor, which panel c excludes per earlier request), one
+    column each, for that same pocket - reusing panel c's own PHYSCHEM_NORMS/SECTION1_CMAP so a
+    given color means the same thing in both panels. subplots_adjust's own right=0.995 uses
+    almost the full panel width for content, prioritizing a large gallery over matching
+    panel c's own right margin exactly."""
+    prepare_panel_c_data(rerun=rerun)
+    physchem = pocket_scores.copy()
+    physchem["key"] = [make_key(fn, pn) for fn, pn in zip(physchem["File name"], physchem["Pocket number"])]
+    key_to_physchem = physchem.set_index("key")
+
+    fps = pickle.load(open(os.path.join(output_dir, "pocketvec_RUN", "fps_rank.pkl"), "rb"))
+    keys = sorted(fps)
+    key_to_canonical = dict(zip(keys, load_canonical_pocket_labels(output_dir, keys)))
+
+    order = pickle.load(open(
+        os.path.join(output_dir, "plots", "FigSupp", "pocketvec_molmap", "probe_order.pkl"), "rb"))
+
+    cmap = POCKETVEC_CMAP.reversed()
+    vmin, vmax = 1, 131
+
+    blocks = [(cluster, sorted(k for k in keys if key_to_canonical[k] == cluster)) for cluster in TARGET_CLUSTERS]
+    block_sizes = [len(members) for _, members in blocks]
+
+    fig = plt.figure(figsize=size)
+    fig.patch.set_facecolor("white")
+    outer_gs = fig.add_gridspec(len(blocks), 1, height_ratios=block_sizes, hspace=0.15)
+
+    # LABEL_W narrowed now that CLUSTER_LABELS are 2 short lines ("Pocket A" / "(ileS)")
+    # rather than one long line - the label text is right-aligned within this column, so a
+    # too-wide column just leaves dead blank space at the panel's left edge. The reserved
+    # right-hand margin lives in subplots_adjust (below), not in these ratios, so it stays in
+    # sync with panel c's own margin regardless of block width tweaks here.
+    LABEL_W, GAP_W, SWATCH_W, HEATMAP_W, PHYSCHEM_W = 0.09, 0.015, 0.02, 0.65, 0.18
+    BLOCK_WIDTH_RATIOS = [LABEL_W, GAP_W, SWATCH_W, GAP_W, HEATMAP_W, GAP_W * 2, PHYSCHEM_W]
+
+    for i, (cluster, members) in enumerate(blocks):
+        color = cluster_color(cluster)
+        block_gs = outer_gs[i, 0].subgridspec(1, 7, width_ratios=BLOCK_WIDTH_RATIOS, wspace=0)
+
+        label_ax = fig.add_subplot(block_gs[0, 0])
+        label_ax.axis("off")
+        label_ax.text(1.0, 0.5, CLUSTER_LABELS[cluster], transform=label_ax.transAxes,
+                      ha="right", va="center", fontsize=stylia.FONTSIZE_SMALL, color="black")
+
+        swatch_ax = fig.add_subplot(block_gs[0, 2])
+        swatch_ax.set_facecolor(color)
+        swatch_ax.set_xticks([])
+        swatch_ax.set_yticks([])
+        for spine in swatch_ax.spines.values():
+            spine.set_visible(False)
+
+        heatmap_gs = block_gs[0, 4].subgridspec(len(members), 1, hspace=0)
+        physchem_gs = block_gs[0, 6].subgridspec(len(members), 1, hspace=0)
+        for j, key in enumerate(members):
+            ax = stylize(fig.add_subplot(heatmap_gs[j, 0]))
+            row = np.asarray(fps[key])[order].reshape(1, -1)
+            ax.imshow(row, cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto")
+            ax.set_xticks([])
+            ax.set_yticks([])
+            title = "PocketVec descriptors" if (i == 0 and j == 0) else ""
+            stylia.label(ax, xlabel="", ylabel="", title=title)
+
+            # Each of the 7 columns is normalized (and colored) by its own PHYSCHEM_NORMS
+            # entry, so the RGBA image is built cell-by-cell rather than via a single
+            # cmap/vmin/vmax imshow call (unlike the PocketVec heatmap, whose 128 columns
+            # all share one rank scale).
+            pc_row = key_to_physchem.loc[key]
+            rgba = np.array([[SECTION1_CMAP(PHYSCHEM_NORMS[column](pc_row[column]))
+                               for column, _ in PANEL_B_PHYSCHEM_ROWS]])
+            pax = stylize(fig.add_subplot(physchem_gs[j, 0]))
+            pax.imshow(rgba, aspect="auto")
+            pax.set_xticks([])
+            pax.set_yticks([])
+            pc_title = "Physchem. properties" if (i == 0 and j == 0) else ""
+            stylia.label(pax, xlabel="", ylabel="", title=pc_title)
+
+    # top=0.85/bottom=0.15 matches panel a's own subplots_adjust exactly (both panels are
+    # the same 6cm height), so panel b's gallery content is vertically aligned with panel
+    # a's actual plot box, not just sharing the same overall page height. left is small and
+    # independent of ROW_LABEL_LEFT_MARGIN_IN - panel b's own row labels are short, two-line
+    # ("Pocket A" / "(ileS)") and don't need nearly as much reserved room as panel c's
+    # single-line labels, so most of panel b's own width goes to content. right=0.95 aligns
+    # the physchem columns' own right edge with panel c's right edge (right=0.9667 there,
+    # over c's full 18cm vs. b's 12cm width starting at page x=6cm: 0.9667*18 == 6 + 0.95*12).
     save_panel(fig, "b", use_tight_layout=False,
-               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.62, bottom=0.32,
-                                     wspace=POCKET_ROW_WSPACE),
+               subplots_adjust=dict(left=0.02, right=0.95, top=0.85, bottom=0.15),
                padding=padding)
 
 
-def build_panel_c(size, padding):
-    gene_colors = load_gene_colors()
-    genes = sorted(gene_colors.keys())
-    n_gene_rows = 3
-    assert len(genes) == n_gene_rows * len(PROPERTIES), (
-        f"Expected {n_gene_rows * len(PROPERTIES)} genes for a {n_gene_rows}x{len(PROPERTIES)} "
-        f"grid, got {len(genes)}.")
+def build_panel_c(size, padding, rerun=False):
+    prepare_panel_c_data(rerun=rerun)
 
-    docking_percentiles = load_docking_percentiles()
-    pocket_to_cluster = load_pocket_clusters()
-    snapshot_index = load_docking_snapshot_index()
-    snapshot_rows_by_gene = defaultdict(list)
-    for _, row in snapshot_index.iterrows():
-        snapshot_rows_by_gene[row["gene"]].append(row)
-
-    fig, axs = plt.subplots(n_gene_rows, len(PROPERTIES), figsize=size)
+    fig = plt.figure(figsize=size)
     fig.patch.set_facecolor("white")
-    for i, gene in enumerate(genes):
-        row, col = divmod(i, len(PROPERTIES))
-        ax = stylize(axs[row, col])
-        docking_df = gene_docking_stats(docking_percentiles, gene, pocket_to_cluster)
-        plot_gene_panel(ax, gene, gene_colors[gene], docking_df=docking_df,
-                         show_ylabel=(col == 0), show_yticks=(col == len(PROPERTIES) - 1),
-                         snapshot_rows=snapshot_rows_by_gene.get(gene))
+    # 3 blocks, in order: P2Rank info, domain strips, aaRS-class strips - each with its own
+    # inner subgridspec at hspace=0 (no gap between rows within a block), while ROWS_HSPACE
+    # is kept only between the blocks themselves. Docking-score rows removed per request.
+    block_sizes = [N_P2RANK_ROWS, N_DOMAIN_ROWS, len(AARS_CLASSES)]
+    outer_gs = fig.add_gridspec(3, 1, height_ratios=block_sizes, hspace=ROWS_HSPACE)
+
+    p2rank_gs = outer_gs[0, 0].subgridspec(block_sizes[0], 1, hspace=0)
+    plot_pocket_scores_row(stylize(fig.add_subplot(p2rank_gs[0, 0])))
+    plot_pocket_score_row(stylize(fig.add_subplot(p2rank_gs[1, 0])))
+    row_idx = 2
+    for column, label in PHYSCHEM_ROWS:
+        plot_physchem_row(stylize(fig.add_subplot(p2rank_gs[row_idx, 0])), column, label)
+        row_idx += 1
+    plot_ligand_evidence_row(stylize(fig.add_subplot(p2rank_gs[row_idx, 0])))
+
+    domain_gs = outer_gs[1, 0].subgridspec(block_sizes[1], 1, hspace=0)
+    row_idx = 0
+    for column, title, color_name in DOMAIN_STRIP_COLUMNS:
+        ax = stylize(fig.add_subplot(domain_gs[row_idx, 0]))
+        plot_domain_strip_row(ax, column=column, title=title, color_name=color_name)
+        row_idx += 1
+        if column == "is_catalytic":
+            plot_catalytic_confidence_row(stylize(fig.add_subplot(domain_gs[row_idx, 0])))
+            row_idx += 1
+
+    class_gs = outer_gs[2, 0].subgridspec(block_sizes[2], 1, hspace=0)
+    for i, aars_class in enumerate(AARS_CLASSES):
+        ax = stylize(fig.add_subplot(class_gs[i, 0]))
+        plot_class_strip_row(ax, aars_class)
+
+    # right=0.90 (not 0.995) reserves blank space at the panel's right edge for other content
+    # later, matching panel b's own reserved margin.
     save_panel(fig, "c", use_tight_layout=False,
-               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.88, bottom=0.02,
-                                     wspace=POCKET_ROW_WSPACE, hspace=0.35),
+               subplots_adjust=dict(left=ROW_LABEL_LEFT_MARGIN_IN / size[0], right=0.9667, top=0.88, bottom=0.12),
                padding=padding)
 
 
-def build_panel_d(size, padding):
-    snapshot_index = load_docking_snapshot_index()
-    fig, axs = plt.subplots(1, len(PROPERTIES), figsize=size)
-    fig.patch.set_facecolor("white")
-    for i, ax in enumerate(axs):
-        stylize(ax)
-        stylia.label(ax, xlabel="", ylabel="")
-        ax.set_xticks([])
-        ax.set_yticks([])
-        if i < len(snapshot_index):
-            row = snapshot_index.iloc[i]
-            image_path = os.path.join(plots_dir, "docking_snapshots", row["filename"])
-            plot_docking_snapshot(ax, i + 1, image_path, row["library"], row["score"])
-    # top=0.76 (not 0.93 like panels b/c) - imshow's default equal-aspect shrinks each square
-    # snapshot to the column WIDTH (fixed, shared with panel c), so a nominal box much taller
-    # than it is wide (as panel_layout.csv's old delta_y=4 gave at top=0.93) just pads blank
-    # space above+below the visible image instead of enlarging it. top=0.76 with delta_y=3.1
-    # (panel_layout.csv) sizes the nominal box to match the column width, while still leaving
-    # enough absolute top margin for the "d" label plus each cell's rank-number legend.
-    save_panel(fig, "d", use_tight_layout=False,
-               subplots_adjust=dict(left=POCKET_ROW_LEFT, right=POCKET_ROW_RIGHT, top=0.76, bottom=0.05,
-                                     wspace=POCKET_ROW_WSPACE),
-               padding=padding)
-
-
-def main(subpanels=None):
+def main(rerun=False, subpanels=None):
     if subpanels is None:
         subpanels = PANEL_LETTERS
     sizes = load_panel_sizes(subpanels)
@@ -574,26 +898,26 @@ def main(subpanels=None):
                   f"the {MAX_WIDTH_IN * 2.54:.2f}cm Nature two-column guideline by "
                   f"{(sizes[letter][0] - MAX_WIDTH_IN) * 2.54:.2f}cm.")
 
+    if "a" in subpanels:
+        build_panel_a(sizes["a"], paddings["a"])
+
     if "b" in subpanels:
-        build_panel_b(sizes["b"], paddings["b"])
+        build_panel_b(sizes["b"], paddings["b"], rerun=rerun)
 
     if "c" in subpanels:
-        build_panel_c(sizes["c"], paddings["c"])
-
-    if "d" in subpanels:
-        build_panel_d(sizes["d"], paddings["d"])
+        build_panel_c(sizes["c"], paddings["c"], rerun=rerun)
 
     merge_panels()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--rerun", action="store_true", default=False,
+                         help="Force panel c's pocket-score data recomputation instead of reusing the cached CSV")
     parser.add_argument("--subpanels", type=str, default=None,
-                         help="Comma-separated subset of panels to (re)generate (e.g. 'b,c'), from "
-                              f"{{{','.join(PANEL_LETTERS)}}}. Panel 'a' has no build step (it's "
-                              "scheme.pdf, pasted as-is) but is still validated/merged. Default: all. "
-                              "Fig_2_full.pdf is always re-merged from whatever panel files "
-                              "currently exist on disk.")
+                         help="Comma-separated subset of panels to (re)generate (e.g. 'a' or 'c'), from "
+                              f"{{{','.join(PANEL_LETTERS)}}}. Default: all. Fig_2_full.pdf is always "
+                              "re-merged from whatever Fig_2{letter}.pdf files currently exist on disk.")
     args = parser.parse_args()
     if args.subpanels is None:
         subpanels = PANEL_LETTERS
@@ -602,4 +926,4 @@ if __name__ == "__main__":
         invalid = [p for p in subpanels if p not in PANEL_LETTERS]
         if invalid:
             parser.error(f"Unknown panel(s) {invalid}, must be from {PANEL_LETTERS}")
-    main(subpanels=subpanels)
+    main(rerun=args.rerun, subpanels=subpanels)
