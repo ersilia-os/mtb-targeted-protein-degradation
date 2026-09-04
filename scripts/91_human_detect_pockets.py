@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Runs P2Rank on script 90's 38 human AlphaFold DB structures and extracts pocket data. Direct port
-of script 08's logic, simplified for a single structure source per protein (always AlphaFold2-type
+Runs P2Rank on script 90's AlphaFold DB structures and extracts pocket data. Direct port of script
+08's logic, simplified for a single structure source per protein (always AlphaFold2-type
 confidence, so no prediction_type branching, and no separate aligned/relaxed vs. original
 directory split -- one raw AFDB structure per gene is used throughout).
 
@@ -10,9 +10,14 @@ catalytic-pocket selection is a later step). Confidence is reported as the minim
 residues within RADIUS_A of each pocket's own centroid -- a simple, reproducible geometric
 neighborhood, independent of P2Rank's own (SAS-point-based) residue_ids list.
 
+--organism selects which of script 90's outputs to read: "human" (default, 38 genes) or "mtb" (all
+21 Mtb CRISPR-screen genes) -- see that script's docstring. Fully independent per-organism output
+paths, so running one never touches or recomputes the other's pockets.
+
 Usage:
-    python 91_human_detect_pockets.py
+    python 91_human_detect_pockets.py [--organism human|mtb]
 """
+import argparse
 import math
 import os
 import subprocess
@@ -20,11 +25,6 @@ import subprocess
 import pandas as pd
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-
-STRUCTURES_DATA_CSV = os.path.join(ROOT, "output", "90_human_download_alphafold", "structures_data.csv")
-OUTPUT_DIR = os.path.join(ROOT, "output", "91_human_detect_pockets")
-DETECTED_POCKETS_DIR = os.path.join(OUTPUT_DIR, "detected_pockets")
-os.makedirs(DETECTED_POCKETS_DIR, exist_ok=True)
 
 RADIUS_A = 8.0  # neighborhood radius (Angstrom) around each pocket centroid for the pLDDT check
 
@@ -106,7 +106,17 @@ def write_pocket_pdbs(pocket_dict, output_dir):
 
 
 def main():
-    structures = pd.read_csv(STRUCTURES_DATA_CSV)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--organism", choices=["human", "mtb"], default="human",
+                         help="Gene set whose script-90 structures to detect pockets in (default: human)")
+    args = parser.parse_args()
+
+    structures_data_csv = os.path.join(ROOT, "output", f"90_{args.organism}_download_alphafold", "structures_data.csv")
+    output_dir = os.path.join(ROOT, "output", f"91_{args.organism}_detect_pockets")
+    detected_pockets_dir = os.path.join(output_dir, "detected_pockets")
+    os.makedirs(detected_pockets_dir, exist_ok=True)
+
+    structures = pd.read_csv(structures_data_csv)
     structures = structures[structures["status"] == "ok"]
 
     report = []
@@ -117,7 +127,7 @@ def main():
         file_stem = file_name.replace(".pdb", "")
 
         print(f"---------------  Detecting pockets in: {uniprot_ac}, {file_name}  -------------")
-        gene_out_dir = os.path.join(DETECTED_POCKETS_DIR, uniprot_ac, file_stem)
+        gene_out_dir = os.path.join(detected_pockets_dir, uniprot_ac, file_stem)
         os.makedirs(gene_out_dir, exist_ok=True)
 
         detect_pockets(absolute_file_path, gene_out_dir)
@@ -153,7 +163,7 @@ def main():
         f"N residues within {RADIUS_A}A", f"Min pLDDT within {RADIUS_A}A",
         f"Mean pLDDT within {RADIUS_A}A", "P2Rank residues (chain_resn)",
     ])
-    out_path = os.path.join(OUTPUT_DIR, "pocket_detection_data.csv")
+    out_path = os.path.join(output_dir, "pocket_detection_data.csv")
     report.to_csv(out_path, index=False)
 
     n_genes_with_pockets = report["Uniprot AC"].nunique()

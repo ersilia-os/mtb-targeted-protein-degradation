@@ -1,32 +1,34 @@
 #!/usr/bin/env python3
 """
-Downloads structures per human aminoacyl-tRNA synthetase gene (38 total,
-data/human_trna_synthetases_uniprot.csv), for the structure-based human counter-screen of the
-1,095 filtered Mtb hits: one AlphaFold DB predicted monomer (queried directly, model version
+Downloads structures per aminoacyl-tRNA synthetase gene, for the structure-based counter-screen of
+the 1,095 filtered Mtb hits: one AlphaFold DB predicted monomer (queried directly, model version
 resolved per UniProt AC rather than hardcoded), plus one AlphaFill entry (.cif + .json) per gene --
 same source and download mechanism as script 01's Mtb AlphaFill pull, kept as a raw download only
 (no PDB conversion, no ligand stripping, no report) for now; a possible later step for
 ligand-evidence-based catalytic-pocket annotation, mirroring script 77.
 
+--organism selects the gene set: "human" (default, 38 genes, data/human_trna_synthetases_uniprot.csv)
+-- the original counter-screen -- or "mtb" (all 21 CRISPR-screen genes,
+data/mtb_trna_synthetases_bosch_2021_fig5_annotated.csv), added to run the exact same
+AF2-monomer-only, no-curation recipe against the Mtb targets themselves for a directly comparable
+on-target/off-target scan. The two organisms write to entirely separate paths (see
+src/utils/counterscreen_targets.py), so running one never touches the other's data.
+
 Resumable: skips a download if its target file already exists on disk.
 
 Usage:
-    python 90_human_download_alphafold.py
+    python 90_human_download_alphafold.py [--organism human|mtb]
 """
+import argparse
 import os
+import sys
 
 import requests
 import pandas as pd
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-
-HUMAN_AARS_CSV = os.path.join(ROOT, "data", "human_trna_synthetases_uniprot.csv")
-STRUCTURES_DIR = os.path.join(ROOT, "data", "structures", "human_alphafold2_database")
-ALPHAFILL_DIR = os.path.join(ROOT, "data", "structures", "human_alphafill_database")
-OUTPUT_DIR = os.path.join(ROOT, "output", "90_human_download_alphafold")
-os.makedirs(STRUCTURES_DIR, exist_ok=True)
-os.makedirs(ALPHAFILL_DIR, exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+sys.path.append(os.path.join(ROOT, "src"))
+from utils.counterscreen_targets import load_targets  # noqa: E402
 
 AFDB_API_URL = "https://alphafold.ebi.ac.uk/api/prediction/{}"
 
@@ -107,7 +109,19 @@ def parse_structure_stats(pdb_path):
 
 
 def main():
-    proteins = pd.read_csv(HUMAN_AARS_CSV)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--organism", choices=["human", "mtb"], default="human",
+                         help="Gene set to download structures for (default: human)")
+    args = parser.parse_args()
+
+    structures_dir = os.path.join(ROOT, "data", "structures", f"{args.organism}_alphafold2_database")
+    alphafill_dir = os.path.join(ROOT, "data", "structures", f"{args.organism}_alphafill_database")
+    output_dir = os.path.join(ROOT, "output", f"90_{args.organism}_download_alphafold")
+    os.makedirs(structures_dir, exist_ok=True)
+    os.makedirs(alphafill_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+
+    proteins = load_targets(args.organism)
     rows = []
 
     for _, row in proteins.iterrows():
@@ -115,10 +129,10 @@ def main():
         n_residues_uniprot = row["sequence_length"]
         print(f"--- {gene_name} ({uniprot_ac}) ---")
 
-        gene_dir = os.path.join(STRUCTURES_DIR, uniprot_ac)
+        gene_dir = os.path.join(structures_dir, uniprot_ac)
         os.makedirs(gene_dir, exist_ok=True)
 
-        download_alphafill(uniprot_ac, os.path.join(ALPHAFILL_DIR, uniprot_ac))
+        download_alphafill(uniprot_ac, os.path.join(alphafill_dir, uniprot_ac))
 
         entry = fetch_afdb_entry(uniprot_ac)
         if entry is None:
@@ -148,7 +162,7 @@ def main():
         "gene_name", "uniprot_ac", "file_path", "n_residues_uniprot", "n_residues_pdb",
         "coverage_pct", "mean_plddt", "min_plddt", "status",
     ])
-    out_path = os.path.join(OUTPUT_DIR, "structures_data.csv")
+    out_path = os.path.join(output_dir, "structures_data.csv")
     report.to_csv(out_path, index=False)
 
     n_ok = (report["status"] == "ok").sum()

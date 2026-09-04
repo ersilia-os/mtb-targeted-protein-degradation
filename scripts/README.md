@@ -562,31 +562,40 @@ scoped down from the full Mtb structure-prep pipeline (scripts 00–08): AlphaFo
 only (no PDB/multi-source pipeline), no alignment, no relaxation. Ligand preparation and docking
 against these pockets are separate, later scripts.
 
+Scripts 90 and 91 also accept `--organism mtb`, which runs the exact same AF2-monomer-only,
+no-curation recipe against all 21 Mtb CRISPR-screen genes instead (not just the 5 genes covered by
+the 12 hand-curated Mtb pockets, scripts 62–66) — for a directly comparable on-target vs.
+off-target scan against the same 1,095 compounds. `--organism` defaults to `human` everywhere, so
+every command below is unchanged when the flag is omitted; the two organisms write to entirely
+separate `data/structures/{organism}_*` and `output/{90,91}_{organism}_*` paths
+(`src/utils/counterscreen_targets.py` supplies the per-organism gene list), so running one never
+touches or recomputes the other's results.
+
 ### `90_human_download_alphafold.py`
-Downloads structures per human gene from two sources. (1) One AlphaFold DB predicted structure,
-resolved via the AFDB prediction API per UniProt AC (not a hardcoded model version). (2) One
-AlphaFill entry (`.cif` + `.json`) per gene — same source/mechanism as script 01's Mtb pull, kept
-as a raw download only for now (no PDB conversion, no ligand stripping, no report) — potential raw
-material for a later ligand-evidence-based catalytic-pocket annotation step, mirroring script 77.
-Only the AlphaFold DB structures feed into script 91's pocket detection at this stage. Resumable
-(skips a download if its target file already exists).
+Downloads structures per gene from two sources. (1) One AlphaFold DB predicted structure, resolved
+via the AFDB prediction API per UniProt AC (not a hardcoded model version). (2) One AlphaFill entry
+(`.cif` + `.json`) per gene — same source/mechanism as script 01's Mtb pull, kept as a raw download
+only for now (no PDB conversion, no ligand stripping, no report) — potential raw material for a
+later ligand-evidence-based catalytic-pocket annotation step, mirroring script 77. Only the
+AlphaFold DB structures feed into script 91's pocket detection at this stage. Resumable (skips a
+download if its target file already exists). `--organism human` (default) or `mtb`.
 
-**Inputs:** `data/human_trna_synthetases_uniprot.csv`.
+**Inputs:** `data/human_trna_synthetases_uniprot.csv` or (`--organism mtb`) `data/mtb_trna_synthetases_bosch_2021_fig5_annotated.csv`, via `src/utils/counterscreen_targets.py::load_targets`.
 
-**Outputs:** `data/structures/human_alphafold2_database/<uniprot_ac>/AF-<uniprot_ac>-F1-model_<version>.pdb`; `data/structures/human_alphafill_database/<uniprot_ac>/<uniprot_ac>.{cif,json}`; `output/90_human_download_alphafold/structures_data.csv` (`gene_name, uniprot_ac, file_path, n_residues_uniprot, n_residues_pdb, coverage_pct, mean_plddt, min_plddt, status` — AlphaFold DB only, AlphaFill downloads aren't tracked in this report).
+**Outputs:** `data/structures/{organism}_alphafold2_database/<uniprot_ac>/AF-<uniprot_ac>-F1-model_<version>.pdb`; `data/structures/{organism}_alphafill_database/<uniprot_ac>/<uniprot_ac>.{cif,json}`; `output/90_{organism}_download_alphafold/structures_data.csv` (`gene_name, uniprot_ac, file_path, n_residues_uniprot, n_residues_pdb, coverage_pct, mean_plddt, min_plddt, status` — AlphaFold DB only, AlphaFill downloads aren't tracked in this report).
 
 ### `91_human_detect_pockets.py`
-Runs P2Rank on script 90's 38 structures and extracts pocket data — a direct port of script 08's
+Runs P2Rank on script 90's structures and extracts pocket data — a direct port of script 08's
 logic, simplified for a single AlphaFold2-type structure source per protein. Keeps every pocket
 P2Rank reports (no top-K/probability/pLDDT filtering, for the time being — catalytic-pocket
 selection is a later step). Confidence is reported as the minimum (and mean) pLDDT among residues
 whose Cα falls within `RADIUS_A = 8` Å of that pocket's own centroid — a simple geometric
 neighborhood, independent of P2Rank's own SAS-point-based `residue_ids` list (also kept, for
-reference).
+reference). `--organism human` (default) or `mtb`.
 
-**Inputs:** `output/90_human_download_alphafold/structures_data.csv`.
+**Inputs:** `output/90_{organism}_download_alphafold/structures_data.csv`.
 
-**Outputs:** `output/91_human_detect_pockets/detected_pockets/<uniprot_ac>/<structure>/` (raw P2Rank output + `pockets/pocket_<n>.pdb` centroid markers, one per detected pocket); `output/91_human_detect_pockets/pocket_detection_data.csv` (`Gene name, Uniprot AC, File name, Prediction type, Full path, Pocket number, Pocket score, Pocket probability, Pocket centroid coordinate (x y z), N residues within 8A, Min pLDDT within 8A, Mean pLDDT within 8A, P2Rank residues (chain_resn)`).
+**Outputs:** `output/91_{organism}_detect_pockets/detected_pockets/<uniprot_ac>/<structure>/` (raw P2Rank output + `pockets/pocket_<n>.pdb` centroid markers, one per detected pocket); `output/91_{organism}_detect_pockets/pocket_detection_data.csv` (`Gene name, Uniprot AC, File name, Prediction type, Full path, Pocket number, Pocket score, Pocket probability, Pocket centroid coordinate (x y z), N residues within 8A, Min pLDDT within 8A, Mean pLDDT within 8A, P2Rank residues (chain_resn)`).
 
 ### `92_human_pocket_annotation.py`
 Annotates the 389 human pockets, mimicking script 77's Mtb approach (InterPro domain
