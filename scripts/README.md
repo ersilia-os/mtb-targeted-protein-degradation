@@ -658,23 +658,26 @@ been `95`): confirmed directly that all 1,095 filtered hits already have a prepa
 `output/64_aggregated_ligandprep/conformations_prepared/` (script 66 had already verified 0
 losses for the full 2,923-compound aggregated set), so script 96 reads from there directly.
 
+Script 94 also accepts `--organism mtb` (same convention as scripts 90/91, default `human`) to
+prepare receptors for the 21-gene AF2-only Mtb counter-screen instead.
+
 ### `94_human_receptor_prep.py`
-Prepares Uni-Dock receptors (`.pdbqt`) for the 38 human AF2 monomers — raw, unprotonated AlphaFold
-DB downloads (no relaxation was done for this sub-pipeline), so PDB2PQR protonation (pH 7.0, AMBER,
-`adda4tb` env) runs first, then `unidocktools proteinprep` (`unidock_tools` env), mirroring script
-49's approach for the unrelaxed Mtb multimer structures. Adds one step script 49 didn't need: 4 of
-the 38 (the largest proteins — EPRS1, IARS1, LARS1, VARS1) hit a rare PDB2PQR edge case where a
-single hydrogen is placed anomalously close to the wrong heavy atom (confirmed via RDKit's
-`DetectChemistryProblems` — heavy-atom geometry and pLDDT at the affected residue are both normal,
-and PDB2PQR's own log flags the exact residue as "Unable to debump"), which breaks RDKit's valence
-sanitization inside `proteinprep`. Fixed generally (not hardcoded per-protein) via
-`src/utils/fix_pdb_valence.py`, run as an always-on step between protonation and `proteinprep` (a
-safe no-op when a structure has no valence problems — confirmed on the 34 unaffected genes).
-Resumable per gene.
+Prepares Uni-Dock receptors (`.pdbqt`) for script 90's AF2 monomers (38 human genes by default, 21
+Mtb genes with `--organism mtb`) — raw, unprotonated AlphaFold DB downloads (no relaxation was done
+for this sub-pipeline), so PDB2PQR protonation (pH 7.0, AMBER, `adda4tb` env) runs first, then
+`unidocktools proteinprep` (`unidock_tools` env), mirroring script 49's approach for the unrelaxed
+Mtb multimer structures. Adds one step script 49 didn't need: 4 of the 38 human genes (the largest
+proteins — EPRS1, IARS1, LARS1, VARS1) hit a rare PDB2PQR edge case where a single hydrogen is
+placed anomalously close to the wrong heavy atom (confirmed via RDKit's `DetectChemistryProblems`
+— heavy-atom geometry and pLDDT at the affected residue are both normal, and PDB2PQR's own log
+flags the exact residue as "Unable to debump"), which breaks RDKit's valence sanitization inside
+`proteinprep`. Fixed generally (not hardcoded per-protein) via `src/utils/fix_pdb_valence.py`, run
+as an always-on step between protonation and `proteinprep` (a safe no-op when a structure has no
+valence problems). Resumable per gene.
 
-**Inputs:** `output/90_human_download_alphafold/structures_data.csv`.
+**Inputs:** `output/90_{organism}_download_alphafold/structures_data.csv`.
 
-**Outputs:** `output/94_human_receptor_prep/<uniprot_ac>/<uniprot_ac>.pdbqt` (38/38, verified).
+**Outputs:** `output/94_{organism}_receptor_prep/<uniprot_ac>/<uniprot_ac>.pdbqt` (38/38 human, verified; 21/21 Mtb, verified).
 
 ### `96_human_docking.py` + `96_human_run_array.sh`
 Docks all 1,095 compounds against each of the 389 pockets. Reuses `run_unidock`/

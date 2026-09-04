@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Prepares Uni-Dock receptors (.pdbqt) for the 38 human aaRS AlphaFold DB monomers (script 90).
-Mirrors script 49's approach for the unrelaxed Mtb multimer structures: these are raw AlphaFold DB
-downloads with no explicit hydrogens (no relaxation was done for this human sub-pipeline, unlike
-script 04 for the main Mtb structures), so PDB2PQR protonation (pH 7.0, AMBER force field) runs
-first, then `unidocktools proteinprep`'s RDKit-based charge/H-bond typing has hydrogens to work
-with.
+Prepares Uni-Dock receptors (.pdbqt) for script 90's AlphaFold DB monomers -- 38 human aaRS genes
+by default, or all 21 Mtb genes via --organism mtb. Mirrors script 49's approach for the unrelaxed
+Mtb multimer structures: these are raw AlphaFold DB downloads with no explicit hydrogens (no
+relaxation was done for this sub-pipeline, unlike script 04 for the main Mtb structures), so
+PDB2PQR protonation (pH 7.0, AMBER force field) runs first, then `unidocktools proteinprep`'s
+RDKit-based charge/H-bond typing has hydrogens to work with.
 
 Requires two conda environments, both reached via SimpleConda regardless of which environment this
 script itself is launched from:
@@ -13,7 +13,7 @@ script itself is launched from:
   - "unidock_tools" for `unidocktools proteinprep`
 
 Usage:
-    python 94_human_receptor_prep.py [--genes AARS1,KARS1]
+    python 94_human_receptor_prep.py [--organism human|mtb] [--genes AARS1,KARS1]
 """
 import argparse
 import os
@@ -24,9 +24,6 @@ sys.path.append(os.path.join(ROOT, "src"))
 from utils.conda import SimpleConda  # noqa: E402
 
 import pandas as pd  # noqa: E402
-
-STRUCTURES_DATA_CSV = os.path.join(ROOT, "output", "90_human_download_alphafold", "structures_data.csv")
-OUTPUT_ROOT = os.path.join(ROOT, "output", "94_human_receptor_prep")
 
 CONDA_ENV_PROTONATION = "adda4tb"
 CONDA_ENV_UNIDOCK = "unidock_tools"
@@ -70,11 +67,11 @@ def fix_valence_problems(input_file, output_file):
     ])
 
 
-def prepare_receptor(uniprot_ac, src_pdb):
+def prepare_receptor(uniprot_ac, src_pdb, output_root):
     """Protonates (idempotent), fixes any valence problems (idempotent, safe no-op if none), then
     proteinpreps (idempotent) src_pdb into a receptor .pdbqt. Returns True on success, False on
     any failure (skip-and-continue at the call site)."""
-    gene_dir = os.path.join(OUTPUT_ROOT, uniprot_ac)
+    gene_dir = os.path.join(output_root, uniprot_ac)
     os.makedirs(gene_dir, exist_ok=True)
     protonated_pdb = os.path.join(gene_dir, f"{uniprot_ac}.pdb")
     fixed_pdb = os.path.join(gene_dir, f"{uniprot_ac}_fixed.pdb")
@@ -108,13 +105,17 @@ def prepare_receptor(uniprot_ac, src_pdb):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--organism", choices=["human", "mtb"], default="human",
+                         help="Gene set to prepare receptors for (default: human)")
     parser.add_argument("--genes", default=None,
                          help="Comma-separated gene names (default: all in structures_data.csv)")
     args = parser.parse_args()
 
-    os.makedirs(OUTPUT_ROOT, exist_ok=True)
+    structures_data_csv = os.path.join(ROOT, "output", f"90_{args.organism}_download_alphafold", "structures_data.csv")
+    output_root = os.path.join(ROOT, "output", f"94_{args.organism}_receptor_prep")
+    os.makedirs(output_root, exist_ok=True)
 
-    structures = pd.read_csv(STRUCTURES_DATA_CSV)
+    structures = pd.read_csv(structures_data_csv)
     structures = structures[structures["status"] == "ok"]
     if args.genes:
         wanted = set(args.genes.split(","))
@@ -125,7 +126,7 @@ def main():
         gene_name, uniprot_ac = row["gene_name"], row["uniprot_ac"]
         src_pdb = os.path.join(ROOT, row["file_path"])
         print(f"--- {gene_name} ({uniprot_ac}) ---")
-        if prepare_receptor(uniprot_ac, src_pdb):
+        if prepare_receptor(uniprot_ac, src_pdb, output_root):
             n_ok += 1
         else:
             n_fail += 1
