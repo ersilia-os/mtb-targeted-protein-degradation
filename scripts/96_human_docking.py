@@ -3,18 +3,22 @@
 ### WITHIN THE unidock_tools CONDA ENVIRONMENT
 ### IN A GPU JOB ON THE IRB CLUSTER (sbnb_gpu_3090 / sbnb_gpu_h200 -- see script 96_human_run_array.sh)
 """
-Docks the 1,095 filtered Mtb hits against each of the 389 human pockets (all 38 genes) -- a full
-per-pocket run, single shot (no replicates, confirmed with the user: 389 x 1,095 ~= 425,955
-endpoints is already a lot of GPU time on cluster nodes we don't have unlimited access to).
-Reuses `run_unidock`/`extract_score_from_sdf`/`generate_report` verbatim from scripts 46/60/65
-(box 22.5A, seed 42, search_mode=fast, scoring=vina, cpu=32).
+Docks the 1,095 filtered Mtb hits against each detected pocket of the counter-screen's target
+genes -- 389 human pockets (all 38 genes) by default, or all Mtb-AF2-monomer pockets (21 genes)
+via --organism mtb -- a full per-pocket run, single shot (no replicates, confirmed with the user
+for the human screen: 389 x 1,095 ~= 425,955 endpoints is already a lot of GPU time on cluster
+nodes we don't have unlimited access to). Reuses `run_unidock`/`extract_score_from_sdf`/
+`generate_report` verbatim from scripts 46/60/65 (box 22.5A, seed 42, search_mode=fast,
+scoring=vina, cpu=32).
 
 Ligands: script 64's already-prepared SDFs (output/64_aggregated_ligandprep/conformations_prepared/),
 filtered down to the 1,095 filtered_hits.csv compound IDs -- confirmed directly (not assumed) that
-all 1,095 are present there, so no separate ligand-prep script was needed.
+all 1,095 are present there, so no separate ligand-prep script was needed. Identical for both
+organisms (same 1,095-compound set); only the ligand-index cache file is organism-scoped so the
+two runs don't share/race on it.
 
-Receptors: script 94's per-gene .pdbqt files. Box center per pocket comes from script 91's
-pocket_detection_data.csv.
+Receptors: script 94's per-gene .pdbqt files (organism-scoped). Box center per pocket comes from
+script 91's pocket_detection_data.csv (also organism-scoped).
 
 Unlike scripts 80/86 (Nesso-1), there's no --no-aggregate/--aggregate-only split here: each pocket
 writes its own independent report.csv (no shared file for concurrent SLURM array tasks to race
@@ -32,8 +36,8 @@ Usage:
     # Smoke test: one gene, few compounds, isolated output.
     python 96_human_docking.py --genes AARS1 --max-compounds 5 --out-subdir smoke_test
 
-    # One SLURM array task's worth of work (called from 96_human_run_array.sh).
-    python 96_human_docking.py --genes <gene_name> --out-subdir docking_results
+    # One SLURM array task's worth of work (called from 96_human_run_array.sh / 96_mtb_run_array.sh).
+    python 96_human_docking.py [--organism human|mtb] --genes <gene_name> --out-subdir docking_results
 """
 import argparse
 import csv
@@ -52,18 +56,13 @@ import subprocess  # noqa: E402
 # Resolved relative to sys.executable, not looked up on PATH -- see module docstring for why.
 UNIDOCK_BIN = os.path.join(os.path.dirname(sys.executable), "unidock")
 
-POCKET_DETECTION_DATA_CSV = os.path.join(ROOT, "output", "91_human_detect_pockets", "pocket_detection_data.csv")
 FILTERED_HITS_CSV = os.path.join(ROOT, "output", "70_filtering", "filtered_hits.csv")
 LIGANDS_DIR = os.path.join(ROOT, "output", "64_aggregated_ligandprep", "conformations_prepared")
-RECEPTOR_DIR = os.path.join(ROOT, "output", "94_human_receptor_prep")
-
-OUTPUT_DIR = os.path.join(ROOT, "output", "96_human_docking")
-os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-def load_pockets(genes=None):
+def load_pockets(pocket_detection_data_csv, genes=None):
     """{uniprot_ac: {"gene_name": ..., "pockets": [(pocket_number, file_name, (cx, cy, cz)), ...]}}"""
-    df = pd.read_csv(POCKET_DETECTION_DATA_CSV)
+    df = pd.read_csv(pocket_detection_data_csv)
     if genes:
         df = df[df["Gene name"].isin(genes)]
 
@@ -209,28 +208,35 @@ def dock_pocket(uniprot_ac, receptor, pocket_number, file_name, centroid, ligand
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--genes", default=None, help="Comma-separated gene names (default: all 38)")
+    parser.add_argument("--organism", choices=["human", "mtb"], default="human",
+                         help="Gene set to dock against (default: human, 38 genes; mtb: 21 genes)")
+    parser.add_argument("--genes", default=None, help="Comma-separated gene names (default: all)")
     parser.add_argument("--max-compounds", type=int, default=None,
                          help="Limit to the first N compounds, sorted by compound_id (default: all 1,095)")
     parser.add_argument("--out-subdir", default="docking_results",
-                         help="Output subdirectory under output/96_human_docking/ (default: docking_results)")
+                         help="Output subdirectory under output/96_<organism>_docking/ (default: docking_results)")
     args = parser.parse_args()
 
+    pocket_detection_data_csv = os.path.join(ROOT, "output", f"91_{args.organism}_detect_pockets", "pocket_detection_data.csv")
+    receptor_dir = os.path.join(ROOT, "output", f"94_{args.organism}_receptor_prep")
+    output_dir = os.path.join(ROOT, "output", f"96_{args.organism}_docking")
+    os.makedirs(output_dir, exist_ok=True)
+
     genes = set(args.genes.split(",")) if args.genes else None
-    out_dir = os.path.join(OUTPUT_DIR, args.out_subdir)
+    out_dir = os.path.join(output_dir, args.out_subdir)
     os.makedirs(out_dir, exist_ok=True)
 
-    pockets_by_gene = load_pockets(genes)
+    pockets_by_gene = load_pockets(pocket_detection_data_csv, genes)
     print(f"Genes: {len(pockets_by_gene)}, total pockets: {sum(len(v['pockets']) for v in pockets_by_gene.values())}")
 
-    ligand_index_path = os.path.join(OUTPUT_DIR, "input_ligands.txt" if args.max_compounds is None
+    ligand_index_path = os.path.join(output_dir, "input_ligands.txt" if args.max_compounds is None
                                       else f"input_ligands_max{args.max_compounds}.txt")
     n_ligands = build_ligand_index(ligand_index_path, args.max_compounds)
     print(f"Ligand set: {n_ligands:,} prepared compounds (shared across all pockets)")
 
     for ac, info in pockets_by_gene.items():
         gene_name = info["gene_name"]
-        receptor = os.path.join(RECEPTOR_DIR, ac, f"{ac}.pdbqt")
+        receptor = os.path.join(receptor_dir, ac, f"{ac}.pdbqt")
         if not os.path.isfile(receptor):
             print(f"--- {gene_name} ({ac}): WARNING no receptor at {receptor}, skipping gene ---")
             continue

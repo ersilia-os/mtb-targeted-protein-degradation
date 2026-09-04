@@ -679,21 +679,28 @@ valence problems). Resumable per gene.
 
 **Outputs:** `output/94_{organism}_receptor_prep/<uniprot_ac>/<uniprot_ac>.pdbqt` (38/38 human, verified; 21/21 Mtb, verified).
 
-### `96_human_docking.py` + `96_human_run_array.sh`
-Docks all 1,095 compounds against each of the 389 pockets. Reuses `run_unidock`/
-`extract_score_from_sdf`/`generate_report` verbatim from scripts 46/60/65 (box 22.5 Å, seed 42,
-`search_mode="fast"`, `scoring="vina"`, `cpu=32`). Ligand index is built directly from script 64's
-prepared SDFs, filtered to `filtered_hits.csv`'s 1,095 compound IDs. Resumable per pocket
-(`report.csv` exists with the expected row count → skip). Runs as a SLURM array on the IRB cluster,
-one task per gene (38, not 389 — mirrors scripts 83/89's own per-gene array convention); unlike
-83/89 there's no `--no-aggregate`/`--aggregate-only` split, since each pocket already writes its
-own independent `report.csv` — nothing for concurrent array tasks to race on. Must run inside the
-`unidock_tools` conda env (needs the actual Uni-Dock GPU binary, not just `unidocktools`) on a GPU
-node.
+### `96_human_docking.py` + `96_human_run_array.sh` / `96_mtb_run_array.sh`
+Docks all 1,095 compounds against every detected pocket (389 for human, all Mtb-AF2-monomer
+pockets for `--organism mtb`, 157 across 21 genes). Reuses `run_unidock`/`extract_score_from_sdf`/
+`generate_report` verbatim from scripts 46/60/65 (box 22.5 Å, seed 42, `search_mode="fast"`,
+`scoring="vina"`, `cpu=32`). Ligand index is built directly from script 64's prepared SDFs,
+filtered to `filtered_hits.csv`'s 1,095 compound IDs (organism-scoped cache file so the two runs
+don't share it — same 1,095-compound set either way). Resumable per pocket (`report.csv` exists
+with the expected row count → skip). Runs as a SLURM array on the IRB cluster, one task per gene
+(`96_human_run_array.sh`: 38 tasks; `96_mtb_run_array.sh`: 21 tasks — mirrors scripts 83/89's own
+per-gene array convention, calling this same script with `--organism mtb`); unlike 83/89 there's no
+`--no-aggregate`/`--aggregate-only` split, since each pocket already writes its own independent
+`report.csv` — nothing for concurrent array tasks to race on. Must run inside the `unidock_tools`
+conda env (needs the actual Uni-Dock GPU binary, not just `unidocktools`) on a GPU node. When
+submitting an interactive/ad-hoc `srun` (rather than `sbatch`-ing the array script) against
+`--nodelist` with more than one candidate node, always pass `--nodes=1` explicitly — omitting it
+lets SLURM default to requesting *all* listed nodes simultaneously, which can silently deadlock the
+job in queue (confirmed the hard way: an initial smoke-test `srun` without `--nodes=1` sat queued
+for a projected month before this was caught and fixed).
 
-**Inputs:** `output/94_human_receptor_prep/`, `output/64_aggregated_ligandprep/conformations_prepared/`, `output/70_filtering/filtered_hits.csv`, `output/91_human_detect_pockets/pocket_detection_data.csv`.
+**Inputs:** `output/94_{organism}_receptor_prep/`, `output/64_aggregated_ligandprep/conformations_prepared/`, `output/70_filtering/filtered_hits.csv`, `output/91_{organism}_detect_pockets/pocket_detection_data.csv`.
 
-**Outputs:** `output/96_human_docking/docking_results/<uniprot_ac>/<pocket_number>/report.csv` (+ `docking.tar.gz`, `logs.tar.gz`).
+**Outputs:** `output/96_{organism}_docking/docking_results/<uniprot_ac>/<pocket_number>/report.csv` (+ `docking.tar.gz`, `logs.tar.gz`).
 
 ## Pending review (no README text yet)
 
