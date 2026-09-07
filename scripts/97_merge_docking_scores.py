@@ -13,6 +13,20 @@ script 77, so the Mtb output has no InterPro/AlphaFill columns. Expected row cou
 dynamically (n_pockets_detected * 1,095) rather than hardcoded, since the Mtb pocket count isn't
 fixed like the human screen's 389.
 
+Also writes two more per-compound files, both reindexed to the full 1,095-compound list and full
+expected gene list (NaN for a gene not detected/docked yet, same partial-run handling as script
+98's best_score_per_gene) so their shape is always the final one regardless of how much of the
+counter-screen has completed so far:
+
+* `gene_min_scores.csv` -- wide table, one row per compound, one column per gene (alphabetically
+  sorted) holding that gene's best (lowest) score across all of its own pockets.
+* `top_n_summary.csv` -- top1/top5/top10 = the Nth-most-favorable value among a compound's
+  per-gene best scores (from the file above) -- e.g. `top5` is the 5th-most-favored of this
+  organism's genes, a promiscuity/robustness read ("even the 5th-most-favored off-target scores
+  this well"), not an average. Same convention as script 98's own human_top1/5/10 / mtb_top1/5/10
+  columns -- kept here too so this organism's summary is available directly off of script 97,
+  without needing script 98's full cross-pipeline join.
+
 Usage:
     python 97_merge_docking_scores.py [--organism human|mtb]
 """
@@ -20,7 +34,10 @@ import argparse
 import glob
 import os
 
+import numpy as np
 import pandas as pd
+
+TOP_NS = [1, 5, 10]
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -42,6 +59,25 @@ def load_docking_scores(docking_results_dir):
         df.insert(0, "Uniprot AC", uniprot_ac)
         rows.append(df)
     return pd.concat(rows, ignore_index=True)
+
+
+def min_score_per_gene(merged, fallback_genes, fallback_compounds):
+    """Wide table (compound_id index, one alphabetically-sorted column per gene) -- best (min)
+    score per (compound, gene) across all of that gene's own pockets, reindexed to the full
+    expected gene list and the full 1,095-compound list (NaN where not docked/detected yet)."""
+    per_gene = merged.groupby(["compound_id", "Gene name"])["score"].min().unstack("Gene name")
+    return per_gene.reindex(index=fallback_compounds, columns=sorted(fallback_genes))
+
+
+def top_n_summary(per_gene):
+    """{compound_id: top1/top5/top10} -- the n-th smallest (n-th most favorable) value per row of
+    min_score_per_gene()'s wide table, for each n in TOP_NS (ascending sort, so index 0 = best/most
+    negative score; NaNs -- a gene not yet docked -- sort to the end)."""
+    sorted_vals = np.sort(per_gene.to_numpy(), axis=1)
+    out = pd.DataFrame(index=per_gene.index)
+    for n in TOP_NS:
+        out[f"top{n}"] = sorted_vals[:, n - 1]
+    return out
 
 
 def main():
@@ -81,6 +117,20 @@ def main():
           f"{'MATCH' if len(merged) == n_expected else 'MISMATCH'}")
     print(f"\nScore summary:\n{merged['score'].describe()}")
     print(f"\nMissing scores: {merged['score'].isna().sum()}")
+
+    fallback_genes = sorted(pocket_annotation["Gene name"].unique())
+    fallback_compounds = compounds["compound_id"]
+    per_gene = min_score_per_gene(merged, fallback_genes, fallback_compounds)
+
+    gene_min_path = os.path.join(output_dir, "gene_min_scores.csv")
+    per_gene.reset_index(names="compound_id").to_csv(gene_min_path, index=False)
+    print(f"\nSaved {len(per_gene):,} rows x {len(per_gene.columns)} genes -> {gene_min_path}")
+    print(f"Missing (compound, gene) cells: {per_gene.isna().sum().sum()}")
+
+    topn = top_n_summary(per_gene)
+    topn_path = os.path.join(output_dir, "top_n_summary.csv")
+    topn.reset_index(names="compound_id").to_csv(topn_path, index=False)
+    print(f"\nSaved top-N summary ({', '.join(f'top{n}' for n in TOP_NS)}) -> {topn_path}")
 
 
 if __name__ == "__main__":
