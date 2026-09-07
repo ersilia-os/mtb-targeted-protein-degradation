@@ -18,7 +18,7 @@ of the two boltz2_ columns) and the top 5 compounds by that average are kept -- 
 read, not a top-5-per-gene-then-intersect.
 
 Multi hits: same averaging idea, but over all 4 genes at once (one group, not a combinatorial
-choice like dual) -- per method, the top `TOP_N_MULTI = 20` compounds (4x single/dual's top 5,
+choice like dual) -- per method, the top `TOP_N_MULTI = 50` compounds (5x single/dual's top 10,
 since there's only one 4-gene group to select from rather than 4 genes or 6 pairs) by the mean of
 all 4 docking_<gene>_CAT (or boltz2_<gene>_CAT) columns.
 
@@ -69,8 +69,8 @@ GENES = ["alaS", "aspS", "lysS", "pheST"]
 PAIRS = list(itertools.combinations(GENES, 2))
 ALL_TARGET_GROUPS = [(g,) for g in GENES] + PAIRS + [tuple(GENES)]
 HIT_TYPE_BY_SIZE = {1: "single", 2: "dual", 4: "multi"}
-TOP_N = 5
-TOP_N_MULTI = 20
+TOP_N = 10
+TOP_N_MULTI = 50
 METHODS = {"docking": "docking_{gene}_CAT", "boltz2": "boltz2_{gene}_CAT"}
 SELECTIVITY_NS = [1, 5, 10]
 
@@ -99,9 +99,12 @@ def hits_for_targets(df, targets, method, col_template, top_n):
     """Top-N rows (by column average across `targets`, ascending -- lower is always better) for
     one (targets, method) combination -- shared by single hits (targets = one gene, average of one
     column is just that column), dual hits (targets = a gene pair) and multi hits (targets = all
-    4 genes)."""
+    4 genes). skipna=False: a dual/multi group is only ranked if EVERY target in it has a real
+    (non-gated) score -- otherwise pandas' default skipna=True would silently average over fewer
+    targets than claimed whenever the Boltz-2 low-confidence gating (script 98) NaN's one of them,
+    misreporting a single-target result as a dual/multi hit."""
     cols = [col_template.format(gene=gene) for gene in targets]
-    avg = df[cols].mean(axis=1)
+    avg = df[cols].mean(axis=1, skipna=False)
     top = df.loc[avg.nsmallest(top_n).index]
     rows = []
     for rank, (_, row) in enumerate(top.iterrows(), start=1):

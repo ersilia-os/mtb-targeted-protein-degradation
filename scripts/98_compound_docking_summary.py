@@ -36,6 +36,23 @@ the two structure-based Uni-Dock counter-screens (scripts 90-97), the 12 hand-cu
    `output/75_boltz2_collect_affinities/affinity_results.csv`. Boltz-2 only covers the 12 curated
    Mtb pockets (scripts 71-75) -- no human run, no AF2-only 21-gene Mtb run.
 
+Low-confidence affinity gating (both raw and aggregated Boltz-2/Nesso-1 columns above, columns 5
+and 6): before any pivoting/aggregation, `affinity_pred_value` is set to NaN wherever:
+
+* Boltz-2 -- `affinity_probability_binary < BOLTZ2_MIN_PROBABILITY` (0.4). Not a threshold from the
+  Boltz-2 paper/docs (no per-prediction confidence cutoff is documented there -- confirmed by
+  reading both the bioRxiv preprint and the official repo docs); this is a project-level policy
+  choice, decided after inspecting our own 13,140-row distribution (median 0.425, so ~44% of rows
+  are affected overall, unevenly across pockets: 22.5% for pheS_CAT vs. 72.2% for pheT_NONCAT).
+* Nesso-1 -- `entropy_crop_pl == 0.0`, exactly. This one IS an explicit, author-stated rule from
+  `docs/prediction.md` in `recursionpharma/nesso`: "If the value of entropy_crop_pl is 0.0, then it
+  means the model wasn't able to confidently place the ligand, the predictions in those cases
+  should not be trusted." Affects very few rows (3 of 22,995 Mtb, 0 of 41,610 human).
+
+A NaN'd cell still participates in min()/aggregation as a missing value (skipped, not treated as
+0 or dropped from the row entirely) -- a curated pocket GROUP's score is NaN only if every pocket
+in that group was itself gated out.
+
 Also saves a condensed second file, `compound_docking_summary_condensed.csv`: the 12 raw
 (un-aggregated) curated-pocket scores for docking and for Boltz-2 (24 columns,
 `docking_<gene>_<CAT|NONCAT>[_n]` / `boltz2_<gene>_<CAT|NONCAT>[_n]`, via curated_pocket_labels())
@@ -68,6 +85,7 @@ OUTPUT_DIR = os.path.join(ROOT, "output", "98_compound_docking_summary")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 TOP_NS = [1, 5, 10]
+BOLTZ2_MIN_PROBABILITY = 0.4  # see module docstring's "Low-confidence affinity gating" section
 
 
 def ic50_nm(log10_ic50_um):
@@ -114,17 +132,30 @@ def curated_pocket_scores():
 def nesso1_scores(affinity_csv, prefix):
     """{"<prefix>_<gene>": Series indexed by compound_id} -- Nesso-1's predicted IC50 (nM, integer,
     see ic50_nm()) per gene. Protein-level (no pocket concept), so each (gene, compound) already
-    has exactly one row -- pivoted directly, no aggregation needed."""
-    df = pd.read_csv(affinity_csv, usecols=["gene_name", "compound_id", "affinity_pred_value"])
+    has exactly one row -- pivoted directly, no aggregation needed. affinity_pred_value is NaN'd
+    first wherever entropy_crop_pl == 0.0 (see module docstring's low-confidence gating section)."""
+    df = pd.read_csv(affinity_csv, usecols=["gene_name", "compound_id", "affinity_pred_value", "entropy_crop_pl"])
+    df.loc[df["entropy_crop_pl"] == 0.0, "affinity_pred_value"] = np.nan
     wide = df.pivot(index="compound_id", columns="gene_name", values="affinity_pred_value")
     return ic50_nm(wide).add_prefix(f"{prefix}_")
+
+
+def load_boltz2_affinities():
+    """Long-format Boltz-2 affinity results (script 75), with affinity_pred_value NaN'd wherever
+    affinity_probability_binary < BOLTZ2_MIN_PROBABILITY (see module docstring's low-confidence
+    gating section) -- shared by curated_boltz2_scores() and raw_boltz2_pocket_scores() so the
+    gating logic lives in one place."""
+    df = pd.read_csv(BOLTZ2_MTB_CSV, usecols=["pocket_name", "compound_id", "affinity_pred_value", "affinity_probability_binary"])
+    df.loc[df["affinity_probability_binary"] < BOLTZ2_MIN_PROBABILITY, "affinity_pred_value"] = np.nan
+    return df
 
 
 def curated_boltz2_scores():
     """{"boltz2_<group>_<CAT|NONCAT>": Series indexed by compound_id} -- best (lowest predicted
     IC50, nM, integer, see ic50_nm()) Boltz-2 affinity per curated Mtb pocket group, reusing
-    curated_pocket_groups() (same 12 pockets as the Uni-Dock curated columns)."""
-    long_df = pd.read_csv(BOLTZ2_MTB_CSV, usecols=["pocket_name", "compound_id", "affinity_pred_value"])
+    curated_pocket_groups() (same 12 pockets as the Uni-Dock curated columns). A group's score is
+    NaN only if every one of its pockets was gated out by load_boltz2_affinities()."""
+    long_df = load_boltz2_affinities()
     wide = ic50_nm(long_df.pivot(index="compound_id", columns="pocket_name", values="affinity_pred_value"))
     out = pd.DataFrame(index=wide.index)
     for col, pockets in curated_pocket_groups().items():
@@ -164,8 +195,9 @@ def raw_docking_pocket_scores():
 def raw_boltz2_pocket_scores():
     """{"boltz2_<gene>_<CAT|NONCAT>[_n]": Series indexed by compound_id} -- un-aggregated
     per-pocket Boltz-2 predicted IC50 (nM, integer, see ic50_nm()) for each of the 12 curated
-    pockets, same labeling as raw_docking_pocket_scores()."""
-    long_df = pd.read_csv(BOLTZ2_MTB_CSV, usecols=["pocket_name", "compound_id", "affinity_pred_value"])
+    pockets, same labeling as raw_docking_pocket_scores(). NaN wherever load_boltz2_affinities()
+    gated that (pocket, compound) out."""
+    long_df = load_boltz2_affinities()
     wide = ic50_nm(long_df.pivot(index="compound_id", columns="pocket_name", values="affinity_pred_value"))
     labels = curated_pocket_labels()
     return wide[list(labels.keys())].rename(columns=labels).add_prefix("boltz2_")
@@ -173,8 +205,10 @@ def raw_boltz2_pocket_scores():
 
 def topn_columns(per_gene_df, prefix, top_ns):
     """{"<prefix>_top<n>": Series} -- the n-th best (n-th most negative) value per row across
-    per_gene_df's columns, for each n in top_ns."""
-    sorted_vals = np.sort(per_gene_df.to_numpy(), axis=1)  # ascending: index 0 = best (min) score
+    per_gene_df's columns, for each n in top_ns. `na_value=np.nan` forces a plain float64 array --
+    needed since the low-confidence gating can leave pandas' nullable Int64 dtype with pd.NA cells,
+    and np.sort can't compare pd.NA (raises "boolean value of NA is ambiguous")."""
+    sorted_vals = np.sort(per_gene_df.to_numpy(dtype="float64", na_value=np.nan), axis=1)  # ascending: index 0 = best (min) score
     out = pd.DataFrame(index=per_gene_df.index)
     for n in top_ns:
         out[f"{prefix}_top{n}"] = sorted_vals[:, n - 1]
@@ -209,6 +243,14 @@ def main():
                       ("nesso1 human", nesso1_human), ("boltz2 curated", boltz2_curated)]:
         n_missing = df.reindex(hits.index).isna().sum().sum()
         print(f"  {name}: {df.shape[1]} columns, {n_missing} missing cells")
+
+    n_boltz2_gated = (pd.read_csv(BOLTZ2_MTB_CSV, usecols=["affinity_probability_binary"])["affinity_probability_binary"] < BOLTZ2_MIN_PROBABILITY).sum()
+    n_nesso1_mtb_gated = (pd.read_csv(NESSO1_MTB_CSV, usecols=["entropy_crop_pl"])["entropy_crop_pl"] == 0.0).sum()
+    n_nesso1_human_gated = (pd.read_csv(NESSO1_HUMAN_CSV, usecols=["entropy_crop_pl"])["entropy_crop_pl"] == 0.0).sum()
+    print(f"\nLow-confidence affinity gating (see module docstring):")
+    print(f"  Boltz-2: {n_boltz2_gated:,} / 13,140 raw (pocket, compound) rows NaN'd (affinity_probability_binary < {BOLTZ2_MIN_PROBABILITY})")
+    print(f"  Nesso-1 mtb: {n_nesso1_mtb_gated:,} rows NaN'd (entropy_crop_pl == 0.0)")
+    print(f"  Nesso-1 human: {n_nesso1_human_gated:,} rows NaN'd (entropy_crop_pl == 0.0)")
 
     docking_raw = raw_docking_pocket_scores()
     boltz2_raw = raw_boltz2_pocket_scores()
