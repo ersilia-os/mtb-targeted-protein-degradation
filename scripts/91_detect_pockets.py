@@ -15,7 +15,7 @@ neighborhood, independent of P2Rank's own (SAS-point-based) residue_ids list.
 paths, so running one never touches or recomputes the other's pockets.
 
 Usage:
-    python 91_human_detect_pockets.py [--organism human|mtb]
+    python 91_detect_pockets.py [--organism human|mtb]
 """
 import argparse
 import math

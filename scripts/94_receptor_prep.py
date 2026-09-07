@@ -13,7 +13,7 @@ script itself is launched from:
   - "unidock_tools" for `unidocktools proteinprep`
 
 Usage:
-    python 94_human_receptor_prep.py [--organism human|mtb] [--genes AARS1,KARS1]
+    python 94_receptor_prep.py [--organism human|mtb] [--genes AARS1,KARS1]
 """
 import argparse
 import os

@@ -27,17 +27,17 @@ once, after the array finishes.
 
 The `unidock` binary is resolved relative to the running interpreter (sys.executable), not looked
 up on PATH -- same convention as script 80's NESSO_BIN, for the same reason: this script is always
-invoked as `envs/unidock_tools/bin/python scripts/96_human_docking.py` (the SLURM array and the
+invoked as `envs/unidock_tools/bin/python scripts/96_docking.py` (the SLURM array and the
 smoke test alike), never via `conda activate`, so a bare "unidock" is not found on PATH -- its
 sibling binary in the same env's bin/ directory is (confirmed the hard way: the first smoke test
 run hit FileNotFoundError: 'unidock' before this fix).
 
 Usage:
     # Smoke test: one gene, few compounds, isolated output.
-    python 96_human_docking.py --genes AARS1 --max-compounds 5 --out-subdir smoke_test
+    python 96_docking.py --genes AARS1 --max-compounds 5 --out-subdir smoke_test
 
     # One SLURM array task's worth of work (called from 96_human_run_array.sh / 96_mtb_run_array.sh).
-    python 96_human_docking.py [--organism human|mtb] --genes <gene_name> --out-subdir docking_results
+    python 96_docking.py [--organism human|mtb] --genes <gene_name> --out-subdir docking_results
 """
 import argparse
 import csv

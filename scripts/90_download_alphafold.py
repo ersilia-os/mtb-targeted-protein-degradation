@@ -17,7 +17,7 @@ src/utils/counterscreen_targets.py), so running one never touches the other's da
 Resumable: skips a download if its target file already exists on disk.
 
 Usage:
-    python 90_human_download_alphafold.py [--organism human|mtb]
+    python 90_download_alphafold.py [--organism human|mtb]
 """
 import argparse
 import os

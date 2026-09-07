@@ -571,7 +571,7 @@ separate `data/structures/{organism}_*` and `output/{90,91}_{organism}_*` paths
 (`src/utils/counterscreen_targets.py` supplies the per-organism gene list), so running one never
 touches or recomputes the other's results.
 
-### `90_human_download_alphafold.py`
+### `90_download_alphafold.py`
 Downloads structures per gene from two sources. (1) One AlphaFold DB predicted structure, resolved
 via the AFDB prediction API per UniProt AC (not a hardcoded model version). (2) One AlphaFill entry
 (`.cif` + `.json`) per gene — same source/mechanism as script 01's Mtb pull, kept as a raw download
@@ -584,7 +584,7 @@ download if its target file already exists). `--organism human` (default) or `mt
 
 **Outputs:** `data/structures/{organism}_alphafold2_database/<uniprot_ac>/AF-<uniprot_ac>-F1-model_<version>.pdb`; `data/structures/{organism}_alphafill_database/<uniprot_ac>/<uniprot_ac>.{cif,json}`; `output/90_{organism}_download_alphafold/structures_data.csv` (`gene_name, uniprot_ac, file_path, n_residues_uniprot, n_residues_pdb, coverage_pct, mean_plddt, min_plddt, status` — AlphaFold DB only, AlphaFill downloads aren't tracked in this report).
 
-### `91_human_detect_pockets.py`
+### `91_detect_pockets.py`
 Runs P2Rank on script 90's structures and extracts pocket data — a direct port of script 08's
 logic, simplified for a single AlphaFold2-type structure source per protein. Keeps every pocket
 P2Rank reports (no top-K/probability/pLDDT filtering, for the time being — catalytic-pocket
@@ -661,7 +661,7 @@ losses for the full 2,923-compound aggregated set), so script 96 reads from ther
 Script 94 also accepts `--organism mtb` (same convention as scripts 90/91, default `human`) to
 prepare receptors for the 21-gene AF2-only Mtb counter-screen instead.
 
-### `94_human_receptor_prep.py`
+### `94_receptor_prep.py`
 Prepares Uni-Dock receptors (`.pdbqt`) for script 90's AF2 monomers (38 human genes by default, 21
 Mtb genes with `--organism mtb`) — raw, unprotonated AlphaFold DB downloads (no relaxation was done
 for this sub-pipeline), so PDB2PQR protonation (pH 7.0, AMBER, `adda4tb` env) runs first, then
@@ -679,7 +679,7 @@ valence problems). Resumable per gene.
 
 **Outputs:** `output/94_{organism}_receptor_prep/<uniprot_ac>/<uniprot_ac>.pdbqt` (38/38 human, verified; 21/21 Mtb, verified).
 
-### `96_human_docking.py` + `96_human_run_array.sh` / `96_mtb_run_array.sh`
+### `96_docking.py` + `96_human_run_array.sh` / `96_mtb_run_array.sh`
 Docks all 1,095 compounds against every detected pocket (389 for human, all Mtb-AF2-monomer
 pockets for `--organism mtb`, 157 across 21 genes). Reuses `run_unidock`/`extract_score_from_sdf`/
 `generate_report` verbatim from scripts 46/60/65 (box 22.5 Å, seed 42, `search_mode="fast"`,

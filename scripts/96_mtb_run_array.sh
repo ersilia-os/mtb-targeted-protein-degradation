@@ -2,7 +2,7 @@
 # SLURM array job: Mtb counterpart of 96_human_run_array.sh -- one task per Mtb aaRS gene (21
 # total, all CRISPR-screen targets, not just the 5 covered by the 12 hand-curated pockets), each
 # docking the 1,095 filtered Mtb hits against that gene's own AF2-monomer pockets (script 91
-# --organism mtb). Exact same recipe as the human counter-screen (script 96_human_docking.py
+# --organism mtb). Exact same recipe as the human counter-screen (script 96_docking.py
 # --organism mtb) so Mtb on-target scores are directly comparable to the human off-target scores --
 # see that script's own docstring for the full rationale. See 96_human_run_array.sh's own header
 # for the shared design notes (no --no-aggregate/--aggregate-only split, spot_gpu authorization,
@@ -43,7 +43,7 @@ print(genes[$SLURM_ARRAY_TASK_ID])
 
 echo "SLURM_ARRAY_TASK_ID=$SLURM_ARRAY_TASK_ID -> gene=$GENE"
 
-envs/unidock_tools/bin/python -u scripts/96_human_docking.py \
+envs/unidock_tools/bin/python -u scripts/96_docking.py \
     --organism mtb \
     --genes "$GENE" \
     --out-subdir docking_results

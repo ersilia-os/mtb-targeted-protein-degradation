@@ -55,6 +55,6 @@ print(genes[$SLURM_ARRAY_TASK_ID])
 
 echo "SLURM_ARRAY_TASK_ID=$SLURM_ARRAY_TASK_ID -> gene=$GENE"
 
-envs/unidock_tools/bin/python -u scripts/96_human_docking.py \
+envs/unidock_tools/bin/python -u scripts/96_docking.py \
     --genes "$GENE" \
     --out-subdir docking_results
