@@ -7,15 +7,15 @@ script 98) -- each of which has exactly one CAT pocket (output/selected_pockets.
 aggregate across several.
 
 Single hits: for each of the 4 genes, independently by each method:
-* docking -- top 5 compounds by docking_<gene>_CAT (ascending, most negative = best)
-* boltz2  -- top 5 compounds by boltz2_<gene>_CAT (ascending, lowest predicted IC50 nM = best)
-A compound can rank top-5 by both methods for the same gene -- kept as two separate rows (no
+* docking -- top `TOP_N` (10) compounds by docking_<gene>_CAT (ascending, most negative = best)
+* boltz2  -- top `TOP_N` (10) compounds by boltz2_<gene>_CAT (ascending, lowest predicted IC50 nM = best)
+A compound can rank top-N by both methods for the same gene -- kept as two separate rows (no
 dedup), since the two methods are independent evidence and the overlap itself is a signal.
 
 Dual hits: for each of the C(4,2) = 6 unordered gene pairs, independently by each method, the two
 genes' scores are averaged per compound (mean of docking_<geneA>_CAT and docking_<geneB>_CAT, or
-of the two boltz2_ columns) and the top 5 compounds by that average are kept -- a joint-potency
-read, not a top-5-per-gene-then-intersect.
+of the two boltz2_ columns) and the top `TOP_N` (10) compounds by that average are kept -- a
+joint-potency read, not a top-N-per-gene-then-intersect.
 
 Multi hits: same averaging idea, but over all 4 genes at once (one group, not a combinatorial
 choice like dual) -- per method, the top `TOP_N_MULTI = 50` compounds (5x single/dual's top 10,
@@ -26,7 +26,7 @@ All three sections share one `hit_type` column ("single"/"dual"/"multi") and one
 `scores` schema: `targets` is the "|"-joined gene name(s) (one for single, two for dual, all four
 for multi), and `scores` is "|"-joined "<gene>:<value>" pairs holding each gene's own raw score
 (NOT the average dual/multi hits are ranked by -- that average isn't itself stored anywhere, only
-used to pick the top 5).
+used to pick the top N).
 
 Also reports each selected compound's Mtb-vs-human off-target selectivity, for both counter-screen
 methods (script 98's own off-target columns -- NOT the 4 curated on-target CAT pockets this script
