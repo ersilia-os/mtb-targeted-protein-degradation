@@ -1,14 +1,14 @@
 """
-Supplementary figure: the 2 Enamine-library-docking t-SNE embeddings (HLL docking, REAL
+Extended Data Figure 4: the 2 Enamine-library-docking t-SNE embeddings (HLL docking, REAL
 9.92B docking) split out of the former Figure 2's panel a - which showed only the
-PocketVec embedding, and has since moved into figure_1_plot.py as panel e (Figure 2 itself
+PocketVec embedding, and has since moved into figure_1_plot.py as panel f (Figure 2 itself
 is now retired). Same 3 reference canonical pockets (gltS_cluster1, tyrS_cluster1,
 ileS_cluster1) highlighted by their gene's canonical color, with bold-lettered callout
 badges pinned to fixed corners of the HLL panel only (as before - both panels show the
 same 3 pockets, so a 2nd legend on REAL 9.92B would be redundant).
 
 Usage:
-    python tSNE_Enamine.py
+    python ExtendedDataFigure4.py
 """
 import json
 import os
@@ -31,15 +31,17 @@ stylia.set_format("print")
 stylia.set_style("article")
 
 output_dir = os.path.join(root, "..", "..", "..", "output")
-plots_dir = os.path.join(output_dir, "plots", "FigSupp", "tSNE_Enamine")
+plots_dir = os.path.join(output_dir, "plots", "FigSupp", "ExtendedDataFigure4")
 os.makedirs(plots_dir, exist_ok=True)
 
 TARGET_CLUSTERS = ["gltS_cluster1", "tyrS_cluster1", "ileS_cluster1"]
-# Mathtext ($\bf{...}$) bolds only the letter, not "Pocket" or the gene name.
+# Mathtext ($\bf{...}$) bolds only the letter, not "Pocket" or the gene name. Same X/Y/Z
+# lettering as Figure 1e and Extended Data Figure 3 (ileS=X, gltS=Y, tyrS=Z), for these same
+# 3 reference canonical pockets, so labels are consistent across figures.
 CLUSTER_LABELS = {
-    "ileS_cluster1": r"Pocket $\bf{A}$ (ileS)",
-    "tyrS_cluster1": r"Pocket $\bf{B}$ (tyrS)",
-    "gltS_cluster1": r"Pocket $\bf{C}$ (gltS)",
+    "ileS_cluster1": r"Pocket $\bf{X}$ (ileS)",
+    "gltS_cluster1": r"Pocket $\bf{Y}$ (gltS)",
+    "tyrS_cluster1": r"Pocket $\bf{Z}$ (tyrS)",
 }
 
 with open(os.path.join(output_dir, "plots", "figure_1", "color_mapping.json")) as f:
@@ -130,7 +132,7 @@ def main():
         keys, coords = embed_fn()
         canonical = load_canonical_pocket_labels(output_dir, keys)
         plot_tsne_panel(axs.next(), coords, canonical, title, annotate=(title == "HLL docking"))
-    stylia.save_figure(os.path.join(plots_dir, "tSNE_Enamine.png"))
+    stylia.save_figure(os.path.join(plots_dir, "ExtendedDataFigure4.png"))
 
 
 if __name__ == "__main__":

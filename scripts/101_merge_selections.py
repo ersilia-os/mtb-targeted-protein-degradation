@@ -12,19 +12,30 @@ Writes two files:
    "non-catalytic") so provenance survives the merge. One row per selection event -- a compound
    selected under multiple (targets, method) combinations still appears multiple times here.
 
-2. `audit_input.csv` -- one row per UNIQUE compound (the actual audit-skill input), joining:
+2. `audit_input.csv` -- one row per compound in the full 1,095-compound filtered_hits.csv (script
+   70), not just the prioritized ones -- see `prioritized` below. Joins:
    * physchem/ADMET/liability columns from script 70's filtered_hits.csv (MW, cLogP, QED, PAINS/
      Brenk flags, cytotoxicity, mycomembrane permeation, etc.) -- notably, NONE of these ever made
      it into script 70's own audit explorer (confirmed by inspecting its config.json), even though
      they were sitting right there in the same input file.
    * on-target scores from script 98's compound_docking_summary.csv: the 8 curated
-     docking_<gene>_CAT/NONCAT and boltz2_<gene>_CAT/NONCAT columns, plus the diff_* off-target-
-     selectivity columns (already present per-row in merged_selections.csv too, but a single value
-     per compound here).
-   * selection provenance, summarized from merged_selections.csv: `origins` (catalytic/non-
-     catalytic/both), `n_selections` (row count for this compound across both files), `best_rank`,
-     `hit_types`/`selected_targets` (sorted, semicolon-joined unique values), and `starred_columns`
-     -- the set of on-target audit columns (docking_<gene>_<CAT|NONCAT> / boltz2_<gene>_<CAT|NONCAT>)
+     docking_<gene>_CAT/NONCAT and boltz2_<gene>_CAT/NONCAT columns.
+   * `diff_*` off-target-selectivity columns, `human_best_af2`/`mtb_best_af2` (each compound's
+     single strongest docking score across, respectively, the 38-gene human and 21-gene Mtb
+     AF2-monomer counter-screens) and `nesso1_human_best_um`/`nesso1_mtb_best_um` (the co-folding
+     analogue, script 98's nesso1_human_top1/nesso1_mtb_top1 converted nM -> uM) -- computed
+     directly from script 97/98's tables for EVERY compound (compute_diffs(), best_af2_score(),
+     best_nesso1_um()), independent of selection status, so these are populated whether or not a
+     compound was prioritized.
+   * `prioritized` (bool) -- True for the 240 compounds scripts 99/100 actually selected plus the 4
+     hand-picked MANUAL_ADDITIONS near-misses, False for the other ~851. Lets the audit explorer
+     default to showing only the prioritized set while keeping the full 1,095-compound background
+     available as an opt-in toggle.
+   * selection provenance, summarized from merged_selections.csv -- NaN/empty for a non-prioritized
+     compound, since none of it applies: `origins` (catalytic/non-catalytic/both), `n_selections`
+     (row count for this compound across both files), `best_rank`, `hit_types_catalytic`/
+     `hit_types_noncatalytic` (per-origin hit type), `selected_targets`, and `starred_columns` --
+     the set of on-target audit columns (docking_<gene>_<CAT|NONCAT> / boltz2_<gene>_<CAT|NONCAT>)
      that actually qualified this compound for inclusion, across every selection event. Script 99's
      `targets` are bare gene names (always CAT); script 100's are individual pocket labels (e.g.
      "alaS_NONCAT_1", "pheS_NONCAT_2") that map back to the single gene-level NONCAT column the
@@ -52,6 +63,7 @@ NONCATALYTIC_CSV = os.path.join(ROOT, "output", "100_noncatalytic_selection", "n
 FILTERED_HITS_CSV = os.path.join(ROOT, "output", "70_filtering", "filtered_hits.csv")
 SUMMARY_CSV = os.path.join(ROOT, "output", "98_compound_docking_summary", "compound_docking_summary.csv")
 HUMAN_GENE_MIN_CSV = os.path.join(ROOT, "output", "97_human_merge_docking_scores", "gene_min_scores.csv")
+MTB_GENE_MIN_CSV = os.path.join(ROOT, "output", "97_mtb_merge_docking_scores", "gene_min_scores.csv")
 
 OUTPUT_DIR = os.path.join(ROOT, "output", "101_merge_selections")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -64,7 +76,6 @@ ADMET_COLS = ["MW", "cLogP", "TPSA", "HBD", "HBA", "RotBonds", "AromaticRings", 
 GENES = ["alaS", "aspS", "lysS", "pheST"]
 ONTARGET_COLS = [f"{method}_{gene}_{site}" for method in ("docking", "boltz2")
                   for gene in GENES for site in ("CAT", "NONCAT")]
-DIFF_COLS = [f"diff_top{n}" for n in (1, 5, 10)] + [f"diff_nesso1_top{n}" for n in (1, 5, 10)] + ["diff_curated"]
 SELECTIVITY_NS = [1, 5, 10]
 CURATED_GROUP_COLS = [f"docking_{gene}_{site}" for gene in GENES for site in ("CAT", "NONCAT")]
 
@@ -82,20 +93,33 @@ MANUAL_ADDITIONS = [
 ]
 
 
-def manual_addition_rows(summary):
+def compute_diffs(summary):
+    """{compound_id: diff_top1/5/10, diff_nesso1_top1/5/10, diff_curated} for EVERY compound in
+    `summary` (all 1,095, not just the selected/prioritized ones) -- same formulas as scripts
+    99/100's own off_target_selectivity(): mtb-minus-human off-target margins (docking and Nesso-1)
+    plus diff_curated (best curated on-target score minus human_top1). Computed directly from
+    script 98's summary table, with no dependency on selection events, so it's available for the
+    full 1,095-compound audit view."""
+    summary = summary.set_index("compound_id")
+    out = pd.DataFrame(index=summary.index)
+    for n in SELECTIVITY_NS:
+        out[f"diff_top{n}"] = (summary[f"mtb_top{n}"] - summary[f"human_top{n}"]).round(3)
+        out[f"diff_nesso1_top{n}"] = (summary[f"nesso1_mtb_top{n}"] - summary[f"nesso1_human_top{n}"]).round(3)
+    out["diff_curated"] = (summary[CURATED_GROUP_COLS].min(axis=1) - summary["human_top1"]).round(3)
+    return out
+
+
+def manual_addition_rows(summary, diffs):
     """Builds rows for MANUAL_ADDITIONS in the exact schema scripts 99/100 produce, so they merge
     into `merged` and flow through starred_columns/provenance identically to a real selection --
-    smiles/scores/diff_* all read from script 98's own summary table, same source everything else
-    uses."""
+    smiles/scores read from script 98's own summary table, diff_* from compute_diffs(), same
+    sources everything else uses."""
     summary = summary.set_index("compound_id")
     rows = []
     for add in MANUAL_ADDITIONS:
         row = summary.loc[add["compound_id"]]
         gene_site = target_to_gene_site(add["targets"], add["origin"])
         col = f"{add['method']}_{gene_site}"
-        diffs = {f"diff_top{n}": round(row[f"mtb_top{n}"] - row[f"human_top{n}"], 3) for n in SELECTIVITY_NS}
-        diffs.update({f"diff_nesso1_top{n}": round(row[f"nesso1_mtb_top{n}"] - row[f"nesso1_human_top{n}"], 3) for n in SELECTIVITY_NS})
-        diffs["diff_curated"] = round(row[CURATED_GROUP_COLS].min() - row["human_top1"], 3)
         rows.append({
             "compound_id": add["compound_id"],
             "smiles": row["smiles"],
@@ -105,19 +129,19 @@ def manual_addition_rows(summary):
             "targets": add["targets"],
             "scores": f"{add['targets']}:{row[col]}",
             "origin": add["origin"],
-            **diffs,
+            **diffs.loc[add["compound_id"]].to_dict(),
         })
     return pd.DataFrame(rows)
 
 
-def merged_selections():
+def merged_selections(diffs):
     """Concatenates scripts 99 and 100's output (tagging each with an `origin` column) plus
     MANUAL_ADDITIONS' hand-picked near-miss rows."""
     cat = pd.read_csv(CATALYTIC_CSV)
     cat.insert(0, "origin", "catalytic")
     noncat = pd.read_csv(NONCATALYTIC_CSV)
     noncat.insert(0, "origin", "non-catalytic")
-    manual = manual_addition_rows(pd.read_csv(SUMMARY_CSV))
+    manual = manual_addition_rows(pd.read_csv(SUMMARY_CSV), diffs)
     return pd.concat([cat, noncat, manual], ignore_index=True)
 
 
@@ -180,19 +204,19 @@ def hit_types_by_origin(merged, origin, index):
 
 
 def selection_provenance(merged):
-    """One row per unique compound_id: origins (catalytic/non-catalytic/both, "|"-joined sorted
-    unique values), n_selections (row count across both files), best_rank (min rank achieved by
-    any of its selections), hit_types_catalytic/hit_types_noncatalytic (format_hit_types() per
-    origin, "None" if this compound has no selection under that origin -- see
-    hit_types_by_origin()) and selected_targets (sorted, "|"-joined unique values), plus the diff_*
-    columns -- identical across every row for a given compound_id (computed purely from
-    compound_id in scripts 99/100), so `.first()` is safe, not an arbitrary pick."""
+    """One row per unique compound_id **that was actually selected** (i.e. not the full
+    1,095 -- see `prioritized` in main() for how this gets reindexed to the full set): origins
+    (catalytic/non-catalytic/both, "|"-joined sorted unique values), n_selections (row count for
+    this compound across both files), best_rank (min rank achieved by any of its selections),
+    hit_types_catalytic/hit_types_noncatalytic (format_hit_types() per origin, "None" if this
+    compound has no selection under that origin -- see hit_types_by_origin()), selected_targets
+    (sorted, "|"-joined unique values), and starred_columns."""
     merged = merged.copy()
     merged["starred"] = merged.apply(starred_columns_for_row, axis=1)
 
     grouped = merged.groupby("compound_id")
     compound_index = grouped.size().index
-    out = pd.DataFrame({
+    return pd.DataFrame({
         "origins": grouped["origin"].agg(lambda s: "|".join(sorted(s.unique()))),
         "n_selections": grouped.size(),
         "best_rank": grouped["rank"].min(),
@@ -201,24 +225,35 @@ def selection_provenance(merged):
         "selected_targets": grouped["targets"].agg(lambda s: "|".join(sorted(set("|".join(s).split("|"))))),
         "starred_columns": grouped["starred"].agg(format_starred_columns),
     })
-    return out.join(grouped[DIFF_COLS].first())
 
 
-def top2_human_offtargets(compound_index):
-    """{compound_id: human_offtarget_1, human_offtarget_2} -- the compound's two most favorable
-    (lowest) docking scores among the 38 human off-target genes, as plain numbers (equal to
-    human_top1/human_top2 -- kept here, rather than just reusing those, so the exact same
-    per-gene lookup is available if a gene-name label is wanted again later)."""
-    wide = pd.read_csv(HUMAN_GENE_MIN_CSV).set_index("compound_id").reindex(compound_index)
-    sorted_vals = np.sort(wide.to_numpy(dtype="float64", na_value=np.inf), axis=1)
+def best_af2_score(compound_index, csv_path, col_name):
+    """The compound's single most favorable (lowest) docking score across every gene in a
+    per-gene AF2-monomer gene_min_scores.csv (script 97) -- used for both the 38-gene human
+    counter-screen (human_best_af2) and the 21-gene Mtb counter-screen (mtb_best_af2). Equal to
+    that organism's top1 column in script 98's summary, recomputed here from the per-gene table
+    so the exact same lookup is available if a gene-name label is wanted again later."""
+    wide = pd.read_csv(csv_path).set_index("compound_id").reindex(compound_index)
+    best = wide.to_numpy(dtype="float64", na_value=np.inf).min(axis=1)
+    return pd.DataFrame({col_name: best}, index=wide.index)
+
+
+def best_nesso1_um(summary, compound_index):
+    """{compound_id: nesso1_human_best_um, nesso1_mtb_best_um} -- script 98's own
+    nesso1_human_top1/nesso1_mtb_top1 (best per-gene Nesso-1 IC50 across the 38 human / 21 Mtb
+    genes, nM, already confidence-gated on entropy_crop_pl), converted to uM for display."""
+    wide = summary.set_index("compound_id").reindex(compound_index)
     out = pd.DataFrame(index=wide.index)
-    out["human_offtarget_1"] = sorted_vals[:, 0]
-    out["human_offtarget_2"] = sorted_vals[:, 1]
+    out["nesso1_human_best_um"] = wide["nesso1_human_top1"] / 1000.0
+    out["nesso1_mtb_best_um"] = wide["nesso1_mtb_top1"] / 1000.0
     return out
 
 
 def main():
-    merged = merged_selections()
+    summary = pd.read_csv(SUMMARY_CSV)
+    diffs = compute_diffs(summary)
+
+    merged = merged_selections(diffs)
     merged_path = os.path.join(OUTPUT_DIR, "merged_selections.csv")
     merged.to_csv(merged_path, index=False)
     print(f"Saved {len(merged):,} rows -> {merged_path}")
@@ -226,22 +261,37 @@ def main():
           f"non-catalytic: {(merged.origin == 'non-catalytic').sum():,} rows")
 
     provenance = selection_provenance(merged)
-    unique_ids = provenance.index
-    print(f"\n{len(unique_ids):,} unique compounds "
+    selected_ids = provenance.index
+    print(f"\n{len(selected_ids):,} unique compounds selected/prioritized "
           f"({(provenance['origins'] == 'catalytic').sum():,} catalytic-only, "
           f"{(provenance['origins'] == 'non-catalytic').sum():,} non-catalytic-only, "
           f"{(provenance['origins'] == 'catalytic|non-catalytic').sum():,} both)")
 
-    admet = pd.read_csv(FILTERED_HITS_CSV)[["compound_id", "smiles"] + ADMET_COLS].set_index("compound_id")
-    ontarget = pd.read_csv(SUMMARY_CSV)[["compound_id"] + ONTARGET_COLS].set_index("compound_id")
-    human_offtargets = top2_human_offtargets(unique_ids)
+    # Reindex to ALL 1,095 filtered hits (script 70), not just the prioritized ones -- `prioritized`
+    # marks which rows are the real selection so the audit explorer can default to showing only
+    # those while still making the full 1,095-compound background available on demand. Provenance
+    # columns (origins/n_selections/best_rank/hit_types_*/selected_targets/starred_columns) are
+    # NaN/empty for a non-prioritized compound, since none of that applies to it; diff_* and
+    # human_best_af2/mtb_best_af2 are computed independently for every compound (no selection-event
+    # dependency), so they're populated for all 1,095, prioritized or not.
+    all_ids = pd.read_csv(FILTERED_HITS_CSV)["compound_id"]
+    provenance_full = provenance.reindex(all_ids)
+    provenance_full["prioritized"] = provenance_full.index.isin(selected_ids)
 
-    audit_input = provenance.join([admet, ontarget, human_offtargets], how="left")
-    audit_input = audit_input.reset_index()
+    admet = pd.read_csv(FILTERED_HITS_CSV)[["compound_id", "smiles"] + ADMET_COLS].set_index("compound_id")
+    ontarget = summary[["compound_id"] + ONTARGET_COLS].set_index("compound_id")
+    human_best_af2 = best_af2_score(all_ids, HUMAN_GENE_MIN_CSV, "human_best_af2")
+    mtb_best_af2 = best_af2_score(all_ids, MTB_GENE_MIN_CSV, "mtb_best_af2")
+    nesso1_best = best_nesso1_um(summary, all_ids)
+
+    audit_input = provenance_full.join(
+        [admet, ontarget, human_best_af2, mtb_best_af2, nesso1_best, diffs], how="left")
+    audit_input = audit_input.reset_index(names="compound_id")
 
     audit_path = os.path.join(OUTPUT_DIR, "audit_input.csv")
     audit_input.to_csv(audit_path, index=False)
-    print(f"\nSaved {len(audit_input):,} rows x {len(audit_input.columns)} columns -> {audit_path}")
+    print(f"\nSaved {len(audit_input):,} rows x {len(audit_input.columns)} columns -> {audit_path}"
+          f" ({audit_input['prioritized'].sum():,} prioritized)")
     print(f"Missing cells (ADMET/on-target join): {audit_input[ADMET_COLS + ONTARGET_COLS].isna().sum().sum()}")
 
 

@@ -22,16 +22,19 @@ fully-screened sets.
 Docking snapshots (compute_docking_snapshots): a PyMOL render (cartoon protein + stick ligand +
 pocket-residue lines + H-bond dashes, following notebooks/46_docking_exploration_IIa.ipynb's
 pymol_screenshot()) of the single best-scoring compound per gene. Docked 3D poses (not just
-scores) are only archived (as a per-pocket docking.tar.gz) for a small hand-curated subset of
-pockets - 6 of 276 for HL, 14 of 276 for REAL 10B, 0 for REAL 10M - covering 6 genes total
-(alaS, aspS, ileS, lysS, pheS, pheT). Candidates are further restricted to each gene's
+scores) are only archived (as a per-pocket docking.tar.gz) for a hand-curated subset of pockets -
+8 of 276 for HL, 20 of 276 for REAL 10B, 0 for REAL 10M - covering 10 genes total (alaS, aspS,
+gatA, glyS, ileS, lysS, pheS, pheT, trpS, tyrS). Candidates are further restricted to each gene's
 canonical-pocket winners (best REAL 10B p1 per spatial_cluster_id, matching figure_2_plot.py's
 panel c dedup) so panel d's stars always land on one of panel c's columns - a pose-archived
 structure that isn't its cluster's winner is skipped even if its own single best compound
 scores well. So "best compound" here is the best score among only that gene's pose-archived,
 canonical-winner (library, pocket) candidates, restricted to HL/REAL 10B (REAL 10M can never
 contribute a renderable snapshot - no poses are archived for it anywhere) - not the true best
-across all of a gene's pockets/libraries, most of which only ever had their score kept.
+across all of a gene's pockets/libraries, most of which only ever had their score kept. Of the
+7 snapshot slots, at most SHOWCASE_GENE_CAP may go to a gene figures 3/4 already showcase on
+their own (FIGURE_3_4_SHOWCASE_GENES) - user-confirmed, so panel d doesn't just repeat those
+figures' protein choices.
 
 Usage:
     python figure_2_calculations.py [--max-chunks N]
@@ -355,28 +358,53 @@ def pymol_snapshot(pocket, compound, library_dir, out_path):
 
 
 # Matches panel D's 7-column layout in figure_2_plot.py - a fixed count, not one-per-gene, since
-# only 6 genes have any pose-archived candidates at all (see POSE_LIBRARIES above) and repeats
+# only 10 genes have any pose-archived candidates at all (see POSE_LIBRARIES above) and repeats
 # are wanted rather than leaving a slot empty.
 N_SNAPSHOTS = 7
 
+# Genes figures 3/4 already showcase on their own (figure_3_calculations.py's SHOWCASE_GENES,
+# ["pheS", "aspS", "lysS", "alaS"], plus pheT via figure_4_plot.py's pheS/pheT pairing) - capped
+# in select_minimizing_repeats() below so panel d doesn't just repeat those figures' protein
+# choices (user-confirmed, replacing the earlier 6-gene ORIGINAL_POSE_GENES freeze).
+FIGURE_3_4_SHOWCASE_GENES = {"pheS", "pheT", "aspS", "lysS", "alaS"}
+SHOWCASE_GENE_CAP = 3  # max of the 7 snapshot slots that may come from that set
 
-def select_minimizing_repeats(candidates_by_gene, n):
-    """Picks n entries with the minimum possible number of repeated genes: every gene's own best
-    candidate is taken before any gene's second-best, every gene's second-best before any third,
-    etc. - a gene only repeats once all other genes (with a candidate left) have already gotten
-    that many picks. Within each round, ties across genes are broken by score."""
+
+def _round_robin_order(candidates_by_gene):
+    """Every gene's own best candidate first (sorted by score across genes), then every gene's
+    second-best, etc., until every gene's candidate list is exhausted - the full ordering
+    select_minimizing_repeats() draws its picks from, not just the first n."""
     remaining = {gene: sorted(entries, key=lambda e: e["score"]) for gene, entries in candidates_by_gene.items()}
-    selected = []
+    order = []
     round_index = 0
-    while len(selected) < n:
+    while any(len(entries) > round_index for entries in remaining.values()):
         round_pool = sorted(
             (entries[round_index] for entries in remaining.values() if len(entries) > round_index),
             key=lambda e: e["score"],
         )
-        if not round_pool:
-            break  # no gene has any candidate left at this depth
-        selected.extend(round_pool[:n - len(selected)])
+        order.extend(round_pool)
         round_index += 1
+    return order
+
+
+def select_minimizing_repeats(candidates_by_gene, n, capped_genes=(), cap=None):
+    """Picks n entries with the minimum possible number of repeated genes: every gene's own best
+    candidate is taken before any gene's second-best, every gene's second-best before any third,
+    etc. - a gene only repeats once all other genes (with a candidate left) have already gotten
+    that many picks. Within each round, ties across genes are broken by score. If cap is given,
+    at most `cap` of the n picks may come from a gene in capped_genes - such entries are skipped
+    (not treated as exhausting the round) once the cap is reached, letting later, lower-scoring
+    non-capped candidates fill their slots instead."""
+    selected = []
+    capped_count = 0
+    for entry in _round_robin_order(candidates_by_gene):
+        if len(selected) >= n:
+            break
+        if cap is not None and entry["gene"] in capped_genes:
+            if capped_count >= cap:
+                continue
+            capped_count += 1
+        selected.append(entry)
     return selected
 
 
@@ -389,19 +417,17 @@ def compute_docking_snapshots():
     winner_pockets = canonical_pocket_winners(load_pocket_clusters())
     candidates_by_gene = best_compound_candidates(uniprot_to_gene, winner_pockets)
 
-    # Frozen to the original 6-gene pose-archived pool (2026-08-25, user decision): gatA/glyS/
-    # trpS/tyrS picked up pose archives on 2026-08-10/08-19, after this panel was last built
-    # (2026-08-07) - excluding them here keeps this revision scoped to the requested lysS -> aspS
-    # swap only. Drop this filter in a later, separate update to fold the new genes in.
-    ORIGINAL_POSE_GENES = {"alaS", "aspS", "ileS", "lysS", "pheS", "pheT"}
-    candidates_by_gene = {g: v for g, v in candidates_by_gene.items() if g in ORIGINAL_POSE_GENES}
-
     all_candidates = [e for entries in candidates_by_gene.values() for e in entries]
     for e in sorted(all_candidates, key=lambda e: e["score"]):
         print(f"  {e['gene']:<8} {e['library']:<8} {e['pocket']:<45} {e['compound']:<15} {e['score']:.3f}")
 
-    banner(f"Rendering top-{N_SNAPSHOTS} PyMOL snapshots (minimum repeated genes, best score first)")
-    top = sorted(select_minimizing_repeats(candidates_by_gene, N_SNAPSHOTS), key=lambda e: e["score"])
+    banner(f"Rendering top-{N_SNAPSHOTS} PyMOL snapshots (minimum repeated genes, best score first, "
+           f"<= {SHOWCASE_GENE_CAP} from figures 3/4's own showcase genes)")
+    top = sorted(
+        select_minimizing_repeats(candidates_by_gene, N_SNAPSHOTS,
+                                   capped_genes=FIGURE_3_4_SHOWCASE_GENES, cap=SHOWCASE_GENE_CAP),
+        key=lambda e: e["score"],
+    )
 
     output_dir = os.path.join(plots_dir, "docking_snapshots")
     os.makedirs(output_dir, exist_ok=True)

@@ -1,6 +1,6 @@
 """
 Extended Data Figure 1: protein-level domain presence for Catalytic/tRNA binding/Editing/
-Anticodon binding domains (panel a), per-residue AlphaFold2 pLDDT class breakdown as a
+Anticodon domains (panel a), per-residue AlphaFold2 pLDDT class breakdown as a
 stacked bar (panel b), and structure inventory by source (panel c), across all 21 Mtb
 tRNA synthetases.
 All 3 panels share the same x-axis: genes sorted alphabetically, same order/colors as
@@ -34,10 +34,22 @@ import stylia
 from Bio.PDB import PDBParser
 from matplotlib.colors import ListedColormap, to_hex
 from matplotlib.transforms import Bbox
+from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
 
 stylia.set_format("print")
 stylia.set_style("article")
+
+# stylia's own print-format defaults (axes.labelsize/tick/legend=FONTSIZE=6pt) read too small
+# for this figure's dense 21-gene shared axis and 3 stacked legend-bearing panels. Rather than
+# hardcoding literal point values, every text element in this figure is sized off stylia's own
+# FONTSIZE_BIG constant (8pt in print format), per explicit user request.
+plt.rcParams.update({
+    "axes.labelsize": stylia.FONTSIZE_BIG,
+    "xtick.labelsize": stylia.FONTSIZE_BIG,
+    "ytick.labelsize": stylia.FONTSIZE_BIG,
+    "legend.fontsize": stylia.FONTSIZE_BIG,
+})
 
 data_dir = os.path.join(root, "..", "..", "..", "data")
 output_dir = os.path.join(root, "..", "..", "..", "output")
@@ -94,7 +106,7 @@ DOMAIN_LABELS = {
     "Catalytic Domain (ATP/ligase)": "Catalytic",
     "tRNA Binding Domain": "tRNA binding",
     "Editing Domain": "Editing",
-    "Anticodon Binding Domain": "Anticodon binding",
+    "Anticodon Binding Domain": "Anticodon",
 }
 CATEGORIZED_TABLE_TEMPLATE = os.path.join(output_dir, "77_pocket_annotation", "{uid}_annotation_table_categorized.csv")
 
@@ -153,8 +165,8 @@ FIGSIZE = (stylia.SIZE, 6.0)
 # and c - so panels sit in rows 0, 2, 4 of a 5-row gridspec with hspace=0, and rows 1/3
 # are blank spacer rows sized by GAP_AB/GAP_BC instead.
 HEIGHT_RATIOS = [1, 2, 2]
-GAP_AB = 0.7
-GAP_BC = 0.7
+GAP_AB = 1.1
+GAP_BC = 1.1
 BAR_WIDTH = 0.7
 
 # Panel letters sit at a fixed figure-fraction x (near the page's own left edge, clearing
@@ -167,7 +179,7 @@ PANEL_LABEL_X = 0.01
 PANEL_LABEL_Y_PAD = 0.015
 # Legend row, shared by every panel that has one: one horizontal row just above the axes
 # (outside the plot, not inside/right), per request.
-LEGEND_KWARGS = dict(frameon=False, fontsize=stylia.FONTSIZE_SMALL, loc="lower left",
+LEGEND_KWARGS = dict(frameon=False, fontsize=stylia.FONTSIZE_BIG, loc="lower left",
                       bbox_to_anchor=(0.0, 1.0), borderaxespad=0.2, handletextpad=0.3, columnspacing=1.2)
 
 
@@ -179,8 +191,8 @@ def add_panel_label(fig, ax, letter):
         bbox = Bbox.union([bbox, legend.get_window_extent(renderer)])
     top_y = fig.transFigure.inverted().transform((0, bbox.y1))[1]
     fig.text(PANEL_LABEL_X, top_y + PANEL_LABEL_Y_PAD, letter,
-              fontweight="bold", fontsize=stylia.FONTSIZE_BIG, ha="left", va="bottom",
-              transform=fig.transFigure)
+              fontweight="bold", fontsize=stylia.FONTSIZE_BIG, color=get_fg_color(),
+              ha="left", va="bottom", transform=fig.transFigure)
 
 
 def plot_structure_counts(ax):
@@ -193,7 +205,7 @@ def plot_structure_counts(ax):
         bottom += values
     ax.set_xlim(-0.5, len(GENES) - 0.5)
     ax.set_xticks(x)
-    ax.set_xticklabels(GENES, rotation=90)
+    ax.set_xticklabels(GENES, rotation=90, fontsize=stylia.FONTSIZE_BIG)
     stylia.label(ax, xlabel="", ylabel="Number of structures")
     ax.legend(ncol=len(SOURCE_LABELS), **LEGEND_KWARGS)
 
@@ -227,7 +239,7 @@ def plot_domain_presence(ax):
         spine.set_linewidth(BORDER_LINEWIDTH)
         spine.set_color("black")
     ax.set_xticks(np.arange(len(GENES)))
-    ax.set_xticklabels(GENES, rotation=90)
+    ax.set_xticklabels(GENES, rotation=90, fontsize=stylia.FONTSIZE_BIG)
     # gatA/gatB flagged in the Catalytic row, per request - GatA/GatB's catalytic mechanism
     # is transamidation (Glu-tRNA(Gln)/Asp-tRNA(Asn) + glutamine), not the aminoacyl-adenylate
     # ligase mechanism the other 19 targets share (see scripts/77_pocket_annotation/03_categorize.py).
@@ -238,7 +250,7 @@ def plot_domain_presence(ax):
         ax.text(col, catalytic_row + ASTERISK_Y_OFFSET, "*", ha="center", va="center",
                  color=text_color, fontsize=stylia.FONTSIZE_BIG, fontweight="bold", zorder=3)
     ax.set_yticks(np.arange(len(domain_presence.index)))
-    ax.set_yticklabels(domain_presence.index)
+    ax.set_yticklabels(domain_presence.index, fontsize=stylia.FONTSIZE_BIG)
     stylia.label(ax, xlabel="", ylabel="")
 
 
@@ -253,7 +265,7 @@ def plot_plddt_stacked_bar(ax):
     ax.set_xlim(-0.5, len(GENES) - 0.5)
     ax.set_ylim(0, 1)
     ax.set_xticks(x)
-    ax.set_xticklabels(GENES, rotation=90)
+    ax.set_xticklabels(GENES, rotation=90, fontsize=stylia.FONTSIZE_BIG)
     stylia.label(ax, xlabel="", ylabel="Fraction of residues\n(AlphaFold2 pLDDT)")
     ax.legend(ncol=len(PLDDT_BAND_LABELS), **LEGEND_KWARGS)
 
@@ -276,8 +288,8 @@ def main():
 
     pdf_path = os.path.join(plots_dir, "ExtendedDataFigure1.pdf")
     png_path = os.path.join(plots_dir, "ExtendedDataFigure1.png")
-    fig.savefig(pdf_path, dpi=600, transparent=False, bbox_inches="tight")
-    fig.savefig(png_path, dpi=600, transparent=False, bbox_inches="tight")
+    stylia.save_figure(pdf_path)
+    stylia.save_figure(png_path)
     plt.close(fig)
     print(f"Saved {pdf_path}")
     print(f"Saved {png_path}")

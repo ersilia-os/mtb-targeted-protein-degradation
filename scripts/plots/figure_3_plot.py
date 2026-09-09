@@ -159,10 +159,12 @@ PANEL_LETTERS = ["a", "b", "c", "d"]  # panel c (P2Rank prob./domain strips) mig
 # figure_1_plot.py's own panel d; former "d"/"e" (showcase compounds/tier grid) relabeled
 # "c"/"d" to keep the letters contiguous, then swapped with each other so the tier grid is
 # "c" and showcase compounds is "d". Order here is merge_panels()'s PASTE order (last =
-# drawn on top) - "c" is pasted after "a" (its own bold "c" label needs to stay visible),
-# but c is saved with a transparent background (see main()'s "c" block) so a's gene-name
-# x-tick labels - which sit in the 0.5cm band where a's box deliberately overlaps c's, per
-# request - show through c's blank margin instead of being hidden behind an opaque page.
+# drawn on top) - "c" is pasted after "a" (its own bold "c" label needs to stay visible), and
+# c is saved with a transparent background (see main()'s "c" block) so a's blank margin below
+# it (if any) shows through instead of being hidden behind an opaque page. a's own delta_y no
+# longer deliberately overlaps c's - that 0.5cm overlap (added so a's gene-name x-tick labels
+# had extra room to descend into) was removed per request; a's height now matches c's own
+# start exactly (panel_layout.csv).
 panel_layout_path = os.path.join(plots_dir, "panel_layout.csv")
 
 
@@ -238,7 +240,8 @@ def add_panel_label(fig, letter):
 MAX_WIDTH_IN = stylia.SIZE
 
 
-def save_panel(fig, letter, padding=0.0, tight_layout_rect=None, transparent=False, axes_x_range=None):
+def save_panel(fig, letter, padding=0.0, tight_layout_rect=None, transparent=False, axes_x_range=None,
+               tight_layout_pad=1.08):
     # No bbox_inches="tight" (unlike stylia.save_figure) - that recomputes the saved page to fit
     # the actual rendered content, ignoring figsize. Panels must save at EXACTLY their
     # panel_layout.csv delta_x/delta_y, per request - plt.tight_layout() (also on via stylia's
@@ -259,7 +262,12 @@ def save_panel(fig, letter, padding=0.0, tight_layout_rect=None, transparent=Fal
     # a's "400"/"200"/"0" vs c's "HL non-cat."/"REAL non-cat.") otherwise get different left
     # insets - this lets one match the other's plot border exactly, per request (used to make a's
     # border match c's, shrinking a's own plot area since c's row labels need more room).
-    plt.tight_layout(rect=tight_layout_rect)
+    # tight_layout_pad: matplotlib's own tight_layout(pad=...) - 1.08 (its default) is a large,
+    # fixed absolute margin relative to a very short panel, which no amount of tight_layout_rect
+    # tuning alone can shrink (rect only bounds where the content MAY sit, not the fixed pad
+    # tight_layout itself adds around that content) - panel a passes a smaller value to close the
+    # resulting gap between its legend and the bold panel-letter above it, per request.
+    plt.tight_layout(rect=tight_layout_rect, pad=tight_layout_pad)
     computed_x_range = (fig.axes[0].get_position().x0, fig.axes[0].get_position().x1)
     if axes_x_range is not None:
         x0, x1 = axes_x_range
@@ -358,7 +366,7 @@ def reserve_top_header(ax, frac):
 CUTOFFS = [-8, -9, -10, -11, -12]
 SELECTED_SET_CUTOFF = -11
 SORT_BY_CUTOFF = -11
-YLIM_MAX = 500
+YLIM_MAX = 400
 
 
 def plot_protein_hit_counts(ax):
@@ -379,9 +387,10 @@ def plot_protein_hit_counts(ax):
     ax.set_xlim(-1, 21)
     ax.set_xticks(range(len(counts)))
     ax.set_xticklabels(counts["gene"], rotation=90, fontsize=stylia.FONTSIZE_SMALL)
-    # Outside the axes to the right, vertically centered - no xlim padding trick needed since it
-    # doesn't compete with the plot area at all.
-    ax.legend(title="Docking score", loc="upper center", bbox_to_anchor=(0.5, 1), fontsize=stylia.FONTSIZE_SMALL, framealpha=0.8, ncol=5)
+    # Above the axes (anchor's own lower edge pinned to the axes' top, loc="lower center") rather
+    # than inside the plot area, so it no longer sits on top of the tallest bars, per request.
+    ax.legend(title="Docking score", loc="lower center", bbox_to_anchor=(0.5, 1.0),
+              fontsize=stylia.FONTSIZE_SMALL, framealpha=0.8, ncol=5)
     stylia.label(ax, xlabel="", ylabel="Number of\ncompounds")
 
 
@@ -444,7 +453,7 @@ def _build_cropped_circos_image(matrix, cmap, label_size):
     return img[y0:y1 + 1, x0:x1 + 1]
 
 
-def plot_circos_overlap(ax):
+def plot_circos_overlap(ax, tight_layout_rect=None):
     hits_path = os.path.join(data_dir, f"figure_3_multi_target_hits_cutoff{abs(CIRCOS_CUTOFF)}.csv")
     selected = pd.read_csv(hits_path)
     gene_cols = [c.removeprefix("score_") for c in selected.columns if c.startswith("score_")]
@@ -495,7 +504,8 @@ def plot_circos_overlap(ax):
     probe_img = _build_cropped_circos_image(matrix, cmap, PROBE_LABEL_SIZE)
     ax.imshow(probe_img)
     ax.axis("off")
-    ax.figure.tight_layout()  # matches save_panel()'s own call, so the measured box is the real one
+    ax.figure.tight_layout(rect=tight_layout_rect)  # matches save_panel()'s own call (same rect
+    # passed through by the caller), so the measured box is the real one
     ax.figure.canvas.draw()
 
     p0x = ax.transData.transform((0, 0))[0]
@@ -721,11 +731,19 @@ def plot_tier_grid_placeholder(ax):
                                         edgecolor="white", linewidth=stylia.LINEWIDTH))
 
     ax.set_xlim(0, len(genes))
-    ax.set_ylim(0, len(TIER_GRID_ROW_LABELS))
+    # Lower bound extended below 0 (rather than 0) to reserve blank headroom above row 0 for the
+    # "*"/"x" marker row below - without this, a marker placed outside [0, n_rows] gets clipped
+    # by save_panel's tight_layout(rect=...) instead of actually rendering above the grid.
+    ax.set_ylim(-0.1, len(TIER_GRID_ROW_LABELS))
     ax.invert_yaxis()  # first row (TIER_ROW_FIELDS[0]) at the top
 
     ax.set_xticks([i + 0.5 for i in range(len(genes))])
     ax.set_xticklabels(genes, rotation=90, fontsize=stylia.FONTSIZE_SMALL)
+    # stylize()'s light grey grid lines are normally hidden behind the grid's own opaque cells
+    # (axisbelow=True), but the blank headroom reserved above row 0 (for the "*"/"x" marker row)
+    # has no cells covering it, so the per-column vertical gridlines show through there as
+    # stray tick-like marks. Not wanted - this heatmap has its own white cell borders already.
+    ax.xaxis.grid(False)
     ax.set_yticks([i + 0.5 for i in range(len(TIER_GRID_ROW_LABELS))])
     ax.set_yticklabels(TIER_GRID_ROW_LABELS, fontsize=stylia.FONTSIZE_SMALL)
     stylia.label(ax, xlabel="", ylabel="")
@@ -748,12 +766,10 @@ def plot_tier_grid_placeholder(ax):
     # nudge is scale-dependent (it broke, silently misaligning the two glyphs again, the first
     # time this panel's y-axis scale changed from a later margin tweak); a points offset is a
     # fixed physical distance, so it stays correct regardless of any future axes-scale change.
-    # MARKER_Y_BASE=0.4 (was -0.15, moved closer to the grid per request) - the nominal offset
-    # from ylim's lower bound (0) needed to be well into row 0's own data range (0 to 1) before
-    # the rendered ink actually sits close above the grid, given how much invisible padding
-    # va="bottom" leaves below each glyph. clip_on=False since the anchor sits inside the axes'
-    # own drawable area (not past ylim).
-    MARKER_Y_BASE = 0.25
+    # MARKER_Y_BASE=-0.08 (previously 0.25, inside row 0's own data range) - sits in the blank
+    # headroom reserved by ylim's -0.2 lower bound above, close to the grid but fully clear of
+    # row 0's cells, per request.
+    MARKER_Y_BASE = 0.05
     MARKER_Y_NUDGE_PT = {"*": 0.0, "x": 1.9}
     for col, gene in enumerate(genes):
         if gene in selected_genes:
@@ -1242,8 +1258,9 @@ def main(rerun=False, subpanels=None):
                   f"{(sizes[letter][0] - MAX_WIDTH_IN) * 2.54:.2f}cm.")
 
     # "c" is built before "a" (despite drawing/lettering order) purely so its own natural
-    # tight_layout margin - sized to its longest row label ("HL non-cat." etc.) - is known
-    # up front and can be reused as "a"'s own left/right plot border below, per request.
+    # tight_layout margin - sized to its longest row label ("HL non-cat." etc.) - is known up
+    # front and can be reused as "a"'s own left/right plot border below, per request ("a and c
+    # should be aligned").
     c_x_range = None
     if "c" in subpanels:
         # Tier grid, labeled "c" (was "d", "e", "f") - swapped with the showcase-compound panel
@@ -1266,20 +1283,33 @@ def main(rerun=False, subpanels=None):
         stylize(ax)
         plot_protein_hit_counts(ax)
         # Reserves headroom for add_panel_label's bold "a", which would otherwise collide with
-        # the rotated "Number of compounds" y-axis label now that this panel's height was
-        # halved (to 3cm, matching panel c) per request.
+        # the legend now sitting above the axes (see plot_protein_hit_counts). 0.97 (was 0.85,
+        # shrunk per request - too much blank space between the "a" label and the legend).
         # axes_x_range=c_x_range aligns a's plot border with c's (a's own left margin is
-        # naturally narrower, so this shrinks a's plot area to match c's, per request) - only
-        # available when c is (re)generated in the same run; falls back to a's own natural
-        # margin otherwise (e.g. a lone `--subpanels a` rerun).
-        save_panel(fig, "a", paddings["a"], tight_layout_rect=(0, 0, 1, 0.85), axes_x_range=c_x_range)
+        # naturally narrower, so this shrinks a's plot area to match c's wider one, needed for
+        # c's longer row labels) - per request; only available when c is (re)generated in the
+        # same run, falls back to a's own natural margin otherwise (e.g. a lone `--subpanels a`
+        # rerun). This does leave a visible blank gap between the page edge and "Number of\n
+        # compounds" (a's own narrower natural margin doesn't need c's full width) - a known,
+        # accepted trade-off for keeping a/c's borders aligned, per this same request.
+        # tight_layout_pad=0.9 (down from the 1.08 default) closes the same top-margin gap as
+        # panel c's own headroom reservation above.
+        save_panel(fig, "a", paddings["a"], tight_layout_rect=(0, 0, 1, 0.97), tight_layout_pad=0.9,
+                   axes_x_range=c_x_range)
 
     if "b" in subpanels:
         fig, ax = plt.subplots(figsize=sizes["b"])
         fig.patch.set_facecolor("white")
         stylize(ax)
-        plot_circos_overlap(ax)
-        save_panel(fig, "b", paddings["b"])
+        # Top margin matches panel a's own ~0.88cm gap above its plot box (letter + legend +
+        # legend title), converted to a figure-fraction of b's own (much taller, 6.9cm) height,
+        # so a's and b's plotted content start at the same absolute page height - per request,
+        # "a and b plots & borders should be aligned". Passed to plot_circos_overlap too so its
+        # own internal calibration pass measures the same (smaller) final box save_panel below
+        # actually renders into, keeping the circos labels correctly sized.
+        b_tight_layout_rect = (0, 0, 1, 1 - 0.88 / (sizes["b"][1] * 2.54))
+        plot_circos_overlap(ax, tight_layout_rect=b_tight_layout_rect)
+        save_panel(fig, "b", paddings["b"], tight_layout_rect=b_tight_layout_rect)
 
     if "d" in subpanels:
         # Showcase compound poses, labeled "d" (was "c") - swapped with the tier grid (see note

@@ -26,6 +26,8 @@ sys.path.append(os.path.join(root, "..", "..", "..", "src"))
 import pandas as pd
 import stylia
 
+from default import AARS_CLASS_LABELS
+
 # Format: print | Style: article - matches ExtendedDataFigure1.py (publication supplementary figure)
 stylia.set_format("print")
 stylia.set_style("article")
@@ -42,15 +44,9 @@ with open(os.path.join(output_dir, "plots", "figure_1", "color_mapping.json")) a
     figure_1_mappings = json.load(f)
 uniprot_to_gene = figure_1_mappings["uniprot_to_gene"]
 
-# Same aaRS Class I/II mapping as figure_1_plot.py (AARS_CLASS_LABELS) - gatA/gatB have no aaRS
-# class (transamidases, not ligases) and are excluded from this figure entirely.
-AARS_CLASS_LABELS = {
-    "alaS": "Class II", "argS": "Class I", "aspS": "Class II", "cysS1": "Class I",
-    "gltS": "Class I", "glyS": "Class II", "hisS": "Class II", "ileS": "Class I",
-    "leuS": "Class I", "lysS": "Class II", "metS": "Class I", "pheS": "Class II",
-    "pheT": "Class II", "proS": "Class II", "serS": "Class II", "thrS": "Class II",
-    "trpS": "Class I", "tyrS": "Class I", "valS": "Class I",
-}
+# Same aaRS Class I/II mapping as figure_1_plot.py, now centralized in src/default.py
+# (AARS_CLASS_LABELS) - gatA/gatB have no aaRS class (transamidases, not ligases) and are
+# excluded from this figure entirely.
 classified_uniprots = sorted(uid for uid, gene in uniprot_to_gene.items() if gene in AARS_CLASS_LABELS)
 
 # Same coverage cutoff and rationale as figure_1_calculations.py's structural RMSD matrix: a
@@ -108,15 +104,16 @@ def plot_global_vs_local_rmsd(ax, pair_data):
         subset = pair_data[pair_data["category"] == category]
         ax.scatter(subset["global_rmsd"], subset["local_rmsd"], color=category_colors[category],
                    label=f"{category} (n={len(subset)})")
-    # Two-line title (fits over the narrower square box now that the legend sits outside it)
     stylia.label(ax, xlabel="Global RMSD, 10%-coverage-filtered min (Å)", ylabel="Local RMSD, min (Å)",
                  title="Global vs. local structural RMSD\nper protein pair, by Class I/II category")
-    # box_aspect(1) forces a physically square plot box even with the legend occupying space
-    # outside the axes to the right - without it, the layout engine steals width from the axes
-    # to make room for the legend, stretching the box into a tall rectangle.
+    # box_aspect(1) forces a physically square plot box (square data space, per stylia convention).
     ax.set_box_aspect(1)
-    # Single-column legend, outside the axes to the right (not overlapping any data point).
-    ax.legend(loc="upper left", bbox_to_anchor=(1.03, 1.0), frameon=False)
+    # Default stylia legend (no loc/bbox_to_anchor/frameon override) - was placed outside the axes
+    # to the right, which forced save_figure's tight bbox to widen the whole canvas around a small
+    # square plot, making the (correctly-sized) text look oversized relative to the mostly-blank
+    # image (user-flagged). Stylia's own default (white semi-transparent frame, inside the axes)
+    # lands wherever matplotlib's "best" placement finds the least data overlap.
+    ax.legend()
 
 
 def main():

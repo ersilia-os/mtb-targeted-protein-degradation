@@ -239,6 +239,11 @@ PANEL_F_N = 6
 # PANEL_F_N slots side by side in a single row without overlapping.
 PANEL_F_N_ROWS = 2
 PANEL_F_N_COLS = 3
+# Per-slot zoom multiplier on top of the shared mol_zoom (see plot_compound_cards_panel) - user
+# request: compound numbers 3/5/6/8 slightly smaller than the rest, keyed by that displayed
+# number (str(filled.index(source_key) + 3)), not by cpd_id, since the ask was framed in terms of
+# the numbers actually printed on the cards. Missing keys (4, 7) default to 1.0 (unscaled).
+PANEL_F_SLOT_ZOOM_SCALE = {"3": 0.85, "5": 0.85, "6": 0.85, "8": 0.85}
 # Same wspace/hspace passed to add_gridspec() in plot_compound_cards_panel, and the same margins
 # save_panel's own default subplots_adjust applies - factored out here because _mol_image_zoom()
 # needs them to compute each slot's actual physical size analytically (see that function).
@@ -248,9 +253,11 @@ GRIDSPEC_MARGIN = 0.01
 # should fill - panel_layout.csv's panel-e row size is still being tuned by hand, so the zoom is
 # derived from the actual slot size at render time (below) rather than a fixed value tuned for
 # one specific panel size, which broke every time that row was resized.
-MOL_IMAGE_FILL_FRAC = 0.9  # bigger (user request) - was 0.85, then 0.7 while the panel still had
-# center grids stealing vertical space; now that those are gone (replaced by small corner grids,
-# see CORNER_GRID_N below) the molecule can take up most of the card again.
+MOL_IMAGE_FILL_FRAC = 0.7  # shrunk twice on user request: 0.9 -> 0.8 -> 0.7, for more breathing
+# room around each molecule (clear of both the compound-number label and the corner grids).
+# Coincidentally back to an earlier 0.7 that existed for an unrelated reason (the panel still had
+# center grids stealing vertical space then; those are gone now, replaced by small corner grids,
+# see CORNER_GRID_N below).
 # Border inset (axes-fraction units) - keeps the border from cutting into the molecule at the
 # corners, and doubles as the corner grids' own inset from the card edge below; purely cosmetic,
 # doesn't affect mol image sizing.
@@ -1076,13 +1083,14 @@ def plot_structure_panel(letter, size, rerun=False, padding=0.0):
     # crimson, orchid, in that left-to-right order per user request) - same box style as panel
     # b's own _site_type_label, but each box's own facecolor now matches its pocket sphere's
     # color (user request), instead of the plain white every other caption box in this figure
-    # uses - so text stays legible, edgecolor/text stay black throughout.
+    # uses. Box alpha 1.0 (fully opaque, was 0.6, user request), text white for all 3 labels (user
+    # request, was per-label black/white) - edgecolor stays black throughout.
     for x, label, color in zip((1 / 6, 0.5, 5 / 6),
                                 ["Non catalytic (int.)", "Catalytic (pheS)", "Non catalytic (pheT)"],
                                 (ac.lime, ac.crimson, ac.orchid)):
         ax.text(x, 0.05, label, transform=ax.transAxes,
-                ha="center", va="bottom", fontsize=stylia.FONTSIZE, color="black",
-                bbox=dict(facecolor=color, edgecolor="black", alpha=0.6, boxstyle="square,pad=0.3"))
+                ha="center", va="bottom", fontsize=stylia.FONTSIZE, color="white",
+                bbox=dict(facecolor=color, edgecolor="black", alpha=1.0, boxstyle="square,pad=0.3"))
 
     # use_tight_layout=False (same near-zero-margin path as panel b) so the render fills the
     # whole panel box instead of tight_layout's conservative padding around a blank/off axis.
@@ -1364,7 +1372,12 @@ def plot_affinity_panel(letter, size, padding=0.0):
     ax.set_xticklabels(tick_labels)  # single upper-edge number, horizontal (user request,
     # no ranges) - short enough not to need the earlier range-string's 45-degree rotation.
 
-    stylia.label(ax, xlabel="Docking score", ylabel="IC50 (nM)")
+    # Mathtext subscript ($_{50}$) - unicode subscript digits (₅₀) were tried first and silently
+    # failed to render at all (Arial, as registered by stylia, has no glyphs for U+2085/U+2080 -
+    # the label came out as just "IC (nM)", "50" vanishing entirely - user-flagged). Mathtext
+    # guarantees the subscript actually renders, at the cost of that one substring using
+    # matplotlib's own mathtext font rather than stylia's Arial.
+    stylia.label(ax, xlabel="Docking score", ylabel=r"IC$_{50}$ (nM)")
     ax.tick_params(axis="y", pad=1.5)
 
     # Own left margin now that this axis no longer shares the former combined figure's wspace
@@ -1781,8 +1794,9 @@ LABEL_REACH_STEP = 0.05
 # Safety margin on the label's own MEASURED footprint (see _text_half_size_in) - also the knob
 # for how much breathing room sits between a label and the structure, since _label_xy_for_mol
 # keeps searching outward until this padded footprint (not the bare glyph) is ink-free. Bumped
-# from 1.25 (labels sat right at the edge of the nearest bond - user-flagged, "too close").
-LABEL_FOOTPRINT_MARGIN = 2.0
+# from 1.25 (labels sat right at the edge of the nearest bond - user-flagged, "too close"), then
+# to 2.4 (user request: numbers "slightly more far away from molecules").
+LABEL_FOOTPRINT_MARGIN = 2.4
 
 
 def _text_half_size_in(s):
@@ -1944,6 +1958,10 @@ def plot_compound_cards_panel(letter, size, padding=0.0):
             continue
 
         row = table.loc[source_key]
+        # Computed here (not later, alongside the label's own text/placement) since this slot's
+        # own zoom already depends on it - see PANEL_F_SLOT_ZOOM_SCALE.
+        label_text = str(filled.index(source_key) + 3)
+        slot_zoom = mol_zoom * PANEL_F_SLOT_ZOOM_SCALE.get(label_text, 1.0)
 
         # OffsetImage/AnnotationBbox instead of imshow - places the RDKit raster at a uniform,
         # dynamically-fit mol_zoom (see _mol_image_zoom; never stretched/distorted to fill an
@@ -1952,7 +1970,7 @@ def plot_compound_cards_panel(letter, size, padding=0.0):
         # so a molecule that overlaps a corner never covers it (user-flagged: "some grids are
         # not being seen now" - centering makes overlap with the taller-than-wide molecules more
         # likely, not less, so this needs an explicit z-order rather than relying on draw order).
-        imagebox = OffsetImage(mol_imgs[source_key], zoom=mol_zoom)
+        imagebox = OffsetImage(mol_imgs[source_key], zoom=slot_zoom)
         ab = AnnotationBbox(imagebox, (0.5, 0.5), xycoords="axes fraction",
                              frameon=False, box_alignment=(0.5, 0.5), pad=0, annotation_clip=False,
                              zorder=1)
@@ -1992,13 +2010,14 @@ def plot_compound_cards_panel(letter, size, padding=0.0):
                 (x0, y0), corner_w, corner_h, transform=ax.transData, clip_on=False,
                 facecolor="none", edgecolor="black", linewidth=CARD_BORDER_LINEWIDTH, zorder=2))
 
-        # Compound number (1-6, in PANEL_F_CPD_IDS_CSV's own row order - user request), placed
+        # Compound number (3-8, in PANEL_F_CPD_IDS_CSV's own row order - user request; starts at
+        # 3 rather than 1 since compounds 1-2 are figure 3's own showcase compounds), placed
         # by _label_xy_for_mol in whichever part of THIS molecule's own structure has the most
         # free space, clear of the 4 corner grids. zorder=3 (above both the molecule's zorder=1
         # and the corner grids' zorder=2) as a legibility backstop, though the placement itself
-        # is already chosen to avoid overlapping either.
-        label_text = str(filled.index(source_key) + 1)
-        label_x, label_y = _label_xy_for_mol(mol_imgs[source_key], mol_zoom, slot_w_in, slot_h_in,
+        # is already chosen to avoid overlapping either. slot_zoom (not mol_zoom) so the search
+        # measures this slot's own actual displayed size for slots in PANEL_F_SLOT_ZOOM_SCALE.
+        label_x, label_y = _label_xy_for_mol(mol_imgs[source_key], slot_zoom, slot_w_in, slot_h_in,
                                               corner_xy, corner_w, corner_h, label_text)
         ax.text(label_x, label_y, label_text, transform=ax.transAxes,
                 ha="center", va="center", zorder=3, **LABEL_FONT)
