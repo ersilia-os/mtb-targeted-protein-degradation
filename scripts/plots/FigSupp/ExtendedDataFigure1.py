@@ -33,6 +33,7 @@ import pandas as pd
 import stylia
 from Bio.PDB import PDBParser
 from matplotlib.colors import ListedColormap, to_hex
+from matplotlib.ticker import MaxNLocator
 from matplotlib.transforms import Bbox
 from stylia.config import get_fg_color
 from stylia.figure.figure import stylize
@@ -206,6 +207,9 @@ def plot_structure_counts(ax):
     ax.set_xlim(-0.5, len(GENES) - 0.5)
     ax.set_xticks(x)
     ax.set_xticklabels(GENES, rotation=90, fontsize=stylia.FONTSIZE_BIG)
+    # Integer-only y-ticks (user request) - counts of structures, so a default matplotlib tick
+    # spacing that lands on non-integer values (e.g. 2.5, 7.5) is misleading.
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     stylia.label(ax, xlabel="", ylabel="Number of structures")
     ax.legend(ncol=len(SOURCE_LABELS), **LEGEND_KWARGS)
 
