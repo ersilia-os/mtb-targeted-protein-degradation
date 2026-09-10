@@ -117,7 +117,7 @@ def plot_global_vs_local_rmsd(ax, pair_data):
 
 
 def main():
-    fig, axs = stylia.create_figure(1, 1, width=0.5, height=0.5)
+    fig, axs = stylia.create_figure(1, 1, width=0.6, height=0.6)
     ax = axs.next()
     plot_global_vs_local_rmsd(ax, pair_data)
 
